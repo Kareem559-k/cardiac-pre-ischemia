@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -15,7 +15,7 @@ RUN mkdir -p /app/backend
 COPY backend/requirements.txt /app/backend/requirements.txt
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgomp1 \
+    && apt-get install -y --no-install-recommends libgomp1 libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
