@@ -832,6 +832,113 @@ class AnalysisSessionDraft {
   }
 }
 
+class ReportLibraryEntry {
+  final PatientModel patient;
+  final ReportModel report;
+  final String latestRisk;
+  final String latestBpm;
+  final String latestLabel;
+  final String latestDate;
+
+  const ReportLibraryEntry({
+    required this.patient,
+    required this.report,
+    required this.latestRisk,
+    required this.latestBpm,
+    required this.latestLabel,
+    required this.latestDate,
+  });
+}
+
+class DoctorHomeSnapshot {
+  final StatsModel stats;
+  final List<PatientModel> patients;
+  final List<AppointmentModel> appointments;
+  final List<ReportLibraryEntry> reports;
+  final bool onboardingComplete;
+
+  const DoctorHomeSnapshot({
+    required this.stats,
+    required this.patients,
+    required this.appointments,
+    required this.reports,
+    required this.onboardingComplete,
+  });
+}
+
+class PatientHistorySnapshot {
+  final PatientModel? patient;
+  final ReportModel? report;
+  final List<AppointmentModel> appointments;
+
+  const PatientHistorySnapshot({
+    required this.patient,
+    required this.report,
+    required this.appointments,
+  });
+}
+
+class PipelineStage {
+  final String title;
+  final String subtitle;
+  final bool done;
+  final bool active;
+
+  const PipelineStage({
+    required this.title,
+    required this.subtitle,
+    required this.done,
+    required this.active,
+  });
+}
+
+String _safeDateLabel(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return 'No date';
+  final cleaned = raw.trim();
+  if (cleaned.contains('T')) {
+    return cleaned.split('T').first;
+  }
+  return cleaned;
+}
+
+String _safeTimeLabel(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return '--:--';
+  final cleaned = raw.trim();
+  if (cleaned.contains('T')) {
+    final parts = cleaned.split('T');
+    if (parts.length > 1) {
+      return parts[1].split('.').first;
+    }
+  }
+  return cleaned;
+}
+
+Color _riskColor(String risk) {
+  final lower = risk.toLowerCase();
+  if (lower.contains('high')) return AppColors.danger;
+  if (lower.contains('medium')) return AppColors.warning;
+  return AppColors.success;
+}
+
+Widget _emptyState(String text) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+    decoration: BoxDecoration(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
+
 Widget _settingsAction(BuildContext context) {
   return IconButton(
     onPressed: () => Navigator.push(
@@ -3202,6 +3309,8 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   final TextEditingController _phone = TextEditingController();
+  final TextEditingController _specialty = TextEditingController(text: 'Cardiology');
+  final TextEditingController _clinic = TextEditingController(text: 'Heart Clinic');
 
   @override
   void initState() {
@@ -3213,6 +3322,8 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    _specialty.dispose();
+    _clinic.dispose();
     super.dispose();
   }
 
@@ -3220,8 +3331,8 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
     if (!_formKey.currentState!.validate()) return;
     final doctor = AppState.createDoctor(
       name: _name.text.trim(),
-      specialty: 'Cardiology',
-      clinic: 'Heart Clinic',
+      specialty: _specialty.text.trim(),
+      clinic: _clinic.text.trim(),
       phone: _phone.text.trim(),
       email:
           '${_name.text.trim().replaceAll(' ', '.').toLowerCase()}@clinic.com',
@@ -3305,6 +3416,20 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
                         _name,
                         _t('Full Name', 'الاسم الكامل'),
                         Icons.person_outline_rounded,
+                        required: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _formField(
+                        _specialty,
+                        _t('Specialty', 'التخصص'),
+                        Icons.medical_services_outlined,
+                        required: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _formField(
+                        _clinic,
+                        _t('Clinic / Hospital', 'العيادة / المستشفى'),
+                        Icons.local_hospital_outlined,
                         required: true,
                       ),
                       const SizedBox(height: 14),
@@ -3523,7 +3648,7 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final ApiService api = ApiService(baseUrl: _apiBaseUrl());
-  late Future<StatsModel> _statsFuture;
+  late Future<DoctorHomeSnapshot> _snapshotFuture;
 
   @override
   void initState() {
@@ -3534,11 +3659,51 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       username: widget.username,
       workspace: 'doctor_dashboard',
     ));
-    _statsFuture = api.getStats();
+    _snapshotFuture = _loadSnapshot();
   }
 
   void _refreshStats() {
-    setState(() => _statsFuture = api.getStats());
+    setState(() => _snapshotFuture = _loadSnapshot());
+  }
+
+  Future<DoctorHomeSnapshot> _loadSnapshot() async {
+    final stats = await api.getStats();
+    final patients = await api.listPatients();
+    final appointments = await api.listAppointments();
+    final reports = <ReportLibraryEntry>[];
+    for (final patient in patients.take(8)) {
+      final patientId = patient.id;
+      if (patientId == null) continue;
+      try {
+        final report = await api.getReport(patientId);
+        final latestRisk = report.riskLevels.isNotEmpty ? report.riskLevels.last : 'No risk';
+        final latestBpm = report.bpm.isNotEmpty ? '${report.bpm.last} bpm' : 'Unavailable';
+        final latestLabel = report.labels.isNotEmpty ? report.labels.last : 'No timeline label';
+        reports.add(
+          ReportLibraryEntry(
+            patient: patient,
+            report: report,
+            latestRisk: latestRisk,
+            latestBpm: latestBpm,
+            latestLabel: latestLabel,
+            latestDate: _safeDateLabel(report.createdAt ?? patient.createdAt),
+          ),
+        );
+      } catch (_) {}
+    }
+    final profile = AppState.currentDoctorProfile;
+    final onboardingComplete = profile != null &&
+        profile.name.trim().isNotEmpty &&
+        profile.phone.trim().isNotEmpty &&
+        profile.specialty.trim().isNotEmpty &&
+        profile.clinic.trim().isNotEmpty;
+    return DoctorHomeSnapshot(
+      stats: stats,
+      patients: patients,
+      appointments: appointments,
+      reports: reports,
+      onboardingComplete: onboardingComplete,
+    );
   }
 
   @override
@@ -3556,8 +3721,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           children: [
             _doctorHeader(username: widget.username),
             const SizedBox(height: 16),
-            FutureBuilder<StatsModel>(
-              future: _statsFuture,
+            FutureBuilder<DoctorHomeSnapshot>(
+              future: _snapshotFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SizedBox(
@@ -3567,11 +3732,22 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 }
                 if (snapshot.hasError) {
                   return _retryCard(
-                    message: _t('Failed to load stats', 'فشل تحميل الإحصائيات'),
+                    message: _t(
+                      'Clinical home could not load. Check backend connectivity and retry.',
+                      'تعذر تحميل الصفحة السريرية. تحقّق من اتصال الخادم ثم أعد المحاولة.',
+                    ),
                     onRetry: _refreshStats,
                   );
                 }
-                final stats = snapshot.data ?? StatsModel(patients: 0, emergencies: 0, messages: 0);
+                final home = snapshot.data ??
+                    DoctorHomeSnapshot(
+                      stats: StatsModel(patients: 0, emergencies: 0, messages: 0),
+                      patients: [],
+                      appointments: [],
+                      reports: [],
+                      onboardingComplete: false,
+                    );
+                final stats = home.stats;
                 return Column(
                   children: [
                     AppSectionHeader(
@@ -3621,7 +3797,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    _doctorOnboardingCard(home),
+                    const SizedBox(height: 16),
                     _doctorPulsePanel(stats),
+                    const SizedBox(height: 16),
+                    _doctorRecentStrip(home),
                   ],
                 );
               },
@@ -3639,9 +3819,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: Column(children: [_doctorAnalysisCard(), const SizedBox(height: 14), _doctorUploadCard(), const SizedBox(height: 14), _doctorReportsCard()])),
+                  Expanded(child: Column(children: [_doctorAnalysisCard(), const SizedBox(height: 14), _doctorUploadCard(), const SizedBox(height: 14), _doctorReportsCard(), const SizedBox(height: 14), _doctorRecentReportsCard()])),
                   const SizedBox(width: 14),
-                  Expanded(child: Column(children: [_doctorCareCard(), const SizedBox(height: 14), _doctorMessagesCard(context), const SizedBox(height: 14), _doctorPatientsCard(), const SizedBox(height: 14), _doctorPriorityPanel()])),
+                  Expanded(child: Column(children: [_doctorCareCard(), const SizedBox(height: 14), _doctorMessagesCard(context), const SizedBox(height: 14), _doctorPatientsCard(), const SizedBox(height: 14), _doctorPriorityPanel(), const SizedBox(height: 14), _doctorAppointmentsCard()])),
                 ],
               )
             else
@@ -3653,6 +3833,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   const SizedBox(height: 14),
                   _doctorReportsCard(),
                   const SizedBox(height: 14),
+                  _doctorRecentReportsCard(),
+                  const SizedBox(height: 14),
                   _doctorCareCard(),
                   const SizedBox(height: 14),
                   _doctorMessagesCard(context),
@@ -3660,6 +3842,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   _doctorPatientsCard(),
                   const SizedBox(height: 14),
                   _doctorPriorityPanel(),
+                  const SizedBox(height: 14),
+                  _doctorAppointmentsCard(),
                 ],
               ),
           ],
@@ -3802,6 +3986,76 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     );
   }
 
+  Widget _doctorRecentReportsCard() {
+    return FutureBuilder<DoctorHomeSnapshot>(
+      future: _snapshotFuture,
+      builder: (context, snapshot) {
+        final reports = snapshot.data?.reports ?? const <ReportLibraryEntry>[];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.soft,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppSectionHeader(
+                title: _t('Recent reports', 'أحدث التقارير'),
+                subtitle: _t(
+                  'Latest report outputs generated from connected patient files.',
+                  'أحدث التقارير الناتجة من ملفات المرضى المتصلة.',
+                ),
+                action: TextButton(
+                  onPressed: () => Navigator.push(context, _scaleRoute(const DoctorReportsPage())),
+                  child: Text(_t('Open center', 'فتح المركز')),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (reports.isEmpty)
+                _emptyState(_t('No reports generated yet.', 'لا توجد تقارير مولدة بعد.'))
+              else
+                ...reports.take(3).map(
+                  (entry) => Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _riskColor(entry.latestRisk).withAlpha(12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _riskColor(entry.latestRisk).withAlpha(38)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: _riskColor(entry.latestRisk).withAlpha(24),
+                          child: Icon(Icons.description_outlined, color: _riskColor(entry.latestRisk)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(entry.patient.name, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
+                              const SizedBox(height: 3),
+                              Text('${entry.latestRisk} • ${entry.latestBpm}', style: const TextStyle(color: AppColors.textSecondary)),
+                              const SizedBox(height: 2),
+                              Text(entry.latestDate, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _doctorCareCard() {
     return _dashboardCard(
       title: _t('Care Coordination', 'تنسيق المتابعة'),
@@ -3852,6 +4106,104 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         context,
         _scaleRoute(DoctorPatientsPage(api: api)),
       ),
+    );
+  }
+
+  Widget _doctorAppointmentsCard() {
+    return _dashboardCard(
+      title: _t('Appointments', 'المواعيد'),
+      subtitle: _t('Open the scheduling queue and follow-up calendar', 'افتح قائمة المواعيد وجدول المتابعة'),
+      icon: Icons.event_note_outlined,
+      color: AppColors.secondary,
+      onTap: () => Navigator.push(
+        context,
+        _scaleRoute(const DoctorAppointmentsPage()),
+      ),
+    );
+  }
+
+  Widget _doctorOnboardingCard(DoctorHomeSnapshot home) {
+    final profile = AppState.currentDoctorProfile;
+    final completed = home.onboardingComplete;
+    final missing = <String>[
+      if ((profile?.phone ?? '').trim().isEmpty) _t('Phone', 'الهاتف'),
+      if ((profile?.specialty ?? '').trim().isEmpty) _t('Specialty', 'التخصص'),
+      if ((profile?.clinic ?? '').trim().isEmpty) _t('Clinic', 'العيادة'),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: completed ? AppColors.success.withAlpha(10) : AppColors.warning.withAlpha(10),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(
+          color: completed ? AppColors.success.withAlpha(40) : AppColors.warning.withAlpha(50),
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: completed ? AppColors.success.withAlpha(18) : AppColors.warning.withAlpha(20),
+            child: Icon(
+              completed ? Icons.verified_user_outlined : Icons.assignment_ind_outlined,
+              color: completed ? AppColors.success : AppColors.warning,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  completed ? _t('Doctor onboarding complete', 'تم إكمال إعداد الطبيب') : _t('Finish doctor setup', 'أكمل إعداد الطبيب'),
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  completed
+                      ? _t('Your workspace is ready for patient assignment, messaging, and reporting.', 'مساحة العمل جاهزة لإسناد المرضى والمراسلة والتقارير.')
+                      : _t('Add the missing professional fields so reports and follow-up screens look complete: ${missing.join(", ")}.', 'أضف الحقول المهنية الناقصة ليظهر التقرير والمتابعة بشكل مكتمل: ${missing.join("، ")}.'),
+                  style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.push(
+              context,
+              _fadeRoute(DoctorProfileSetupPage(initialName: profile?.name ?? widget.username)),
+            ),
+            child: Text(completed ? _t('Edit', 'تعديل') : _t('Complete', 'إكمال')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _doctorRecentStrip(DoctorHomeSnapshot home) {
+    final nextAppointment = home.appointments.isNotEmpty ? home.appointments.first : null;
+    final latestReport = home.reports.isNotEmpty ? home.reports.first : null;
+    return Row(
+      children: [
+        Expanded(
+          child: AppMetricTile(
+            label: _t('Next visit', 'أقرب موعد'),
+            value: nextAppointment?.when ?? _t('No schedule', 'لا يوجد'),
+            caption: _t('Upcoming follow-up slot', 'موعد المتابعة القادم'),
+            accent: AppColors.secondary,
+            icon: Icons.event_available_rounded,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: AppMetricTile(
+            label: _t('Latest report', 'آخر تقرير'),
+            value: latestReport?.patient.name ?? _t('No reports', 'لا يوجد'),
+            caption: latestReport?.latestRisk ?? _t('No generated files yet', 'لا توجد ملفات مولدة بعد'),
+            accent: latestReport == null ? AppColors.accent : _riskColor(latestReport.latestRisk),
+            icon: Icons.description_rounded,
+          ),
+        ),
+      ],
     );
   }
 
@@ -4209,64 +4561,142 @@ class GlassNavBar extends StatelessWidget {
   }
 }
 
-class DoctorReportsPage extends StatelessWidget {
+class DoctorReportsPage extends StatefulWidget {
   const DoctorReportsPage({super.key});
 
   @override
+  State<DoctorReportsPage> createState() => _DoctorReportsPageState();
+}
+
+class _DoctorReportsPageState extends State<DoctorReportsPage> {
+  final ApiService _api = ApiService(baseUrl: _apiBaseUrl());
+  late Future<List<ReportLibraryEntry>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<ReportLibraryEntry>> _load() async {
+    final patients = await _api.listPatients();
+    final entries = <ReportLibraryEntry>[];
+    for (final patient in patients) {
+      if (patient.id == null) continue;
+      try {
+        final report = await _api.getReport(patient.id!);
+        entries.add(
+          ReportLibraryEntry(
+            patient: patient,
+            report: report,
+            latestRisk: report.riskLevels.isNotEmpty ? report.riskLevels.last : 'No risk',
+            latestBpm: report.bpm.isNotEmpty ? '${report.bpm.last} bpm' : 'Unavailable',
+            latestLabel: report.labels.isNotEmpty ? report.labels.last : 'No label',
+            latestDate: _safeDateLabel(report.createdAt ?? patient.createdAt),
+          ),
+        );
+      } catch (_) {}
+    }
+    entries.sort((a, b) => b.latestDate.compareTo(a.latestDate));
+    return entries;
+  }
+
+  void _refresh() {
+    setState(() => _future = _load());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final items = _mockAlerts();
     return Scaffold(
       appBar: AppBar(title: Text(_t('Doctor Reports', 'تقارير الطبيب'))),
-      body: SecondaryPageShell(
-        title: _t('Doctor Reports', 'تقارير الطبيب'),
-        subtitle: _t('Clinical summaries, flagged cases, and physician review packages', 'ملخصات سريرية وحالات مميزة وحزم مراجعة للطبيب'),
-        icon: Icons.analytics_outlined,
-        children: [
-          Row(
-            children: [
-              Expanded(child: _metricCard('Active Patients', '42', Icons.groups)),
-              const SizedBox(width: 12),
-              Expanded(child: _metricCard('Critical', '3', Icons.warning_amber)),
-              const SizedBox(width: 12),
-              Expanded(child: _metricCard('Avg BPM', '78', Icons.favorite)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          glassListCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: () async => _refresh(),
+        child: FutureBuilder<List<ReportLibraryEntry>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  _retryCard(
+                    message: _t(
+                      'Report center could not load. Check patient/report connectivity and retry.',
+                      'تعذر تحميل مركز التقارير. تحقّق من اتصال المرضى والتقارير ثم أعد المحاولة.',
+                    ),
+                    onRetry: _refresh,
+                  ),
+                ],
+              );
+            }
+            final items = snapshot.data ?? const <ReportLibraryEntry>[];
+            final criticalCount = items.where((e) => e.latestRisk.toLowerCase().contains('high')).length;
+            final avgBpm = items.isEmpty
+                ? '--'
+                : (items
+                            .map((e) => int.tryParse(e.latestBpm.split(' ').first) ?? 0)
+                            .reduce((a, b) => a + b) ~/
+                        items.length)
+                    .toString();
+            return SecondaryPageShell(
+              title: _t('Doctor Reports', 'تقارير الطبيب'),
+              subtitle: _t('Clinical summaries, flagged cases, and physician review packages', 'ملخصات سريرية وحالات مميزة وحزم مراجعة للطبيب'),
+              icon: Icons.analytics_outlined,
               children: [
-                AppSectionHeader(
-                  title: _t('Priority alerts', 'تنبيهات مهمة'),
-                  subtitle: _t('Latest flags requiring review', 'أحدث التنبيهات للمراجعة'),
-                ),
-                const SizedBox(height: 12),
-                Table(
-                  columnWidths: const {
-                    0: FlexColumnWidth(1.2),
-                    1: FlexColumnWidth(2.2),
-                    2: FlexColumnWidth(0.9),
-                  },
+                Row(
                   children: [
-                    AnalysisResultPage._tableHeader('Patient', 'Finding', 'Time'),
-                    ...List.generate(items.length, (i) {
-                      final e = items[i];
-                      return AnalysisResultPage._tableRow(
-                        e.patient,
-                        e.message,
-                        e.time,
-                        i.isEven,
-                        e.color,
-                      );
-                    }),
+                    Expanded(child: _metricCard(_t('Reports', 'التقارير'), '${items.length}', Icons.description_outlined)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _metricCard(_t('Critical', 'الحالات الحرجة'), '$criticalCount', Icons.warning_amber)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _metricCard(_t('Avg BPM', 'متوسط النبض'), avgBpm == '--' ? '--' : '$avgBpm bpm', Icons.favorite)),
                   ],
                 ),
+                const SizedBox(height: 16),
+                glassListCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSectionHeader(
+                        title: _t('Report queue', 'قائمة التقارير'),
+                        subtitle: _t('Latest generated report summaries across patient profiles', 'أحدث ملخصات التقارير المولدة عبر ملفات المرضى'),
+                      ),
+                      const SizedBox(height: 12),
+                      if (items.isEmpty)
+                        _emptyState(_t('No reports available yet.', 'لا توجد تقارير متاحة بعد.'))
+                      else
+                        Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(1.2),
+                            1: FlexColumnWidth(1.2),
+                            2: FlexColumnWidth(1.0),
+                            3: FlexColumnWidth(0.9),
+                          },
+                          children: [
+                            AnalysisResultPage._tableHeader('Patient', 'Latest finding', 'Risk / Date'),
+                            ...List.generate(items.length.clamp(0, 6), (i) {
+                              final e = items[i];
+                              return AnalysisResultPage._tableRow(
+                                e.patient.name,
+                                e.latestLabel,
+                                '${e.latestRisk} • ${e.latestDate}',
+                                i.isEven,
+                                _riskColor(e.latestRisk),
+                              );
+                            }),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...items.map((e) => _reportCard(e)),
               ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...items.map((e) => _alertCard(e)),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -4295,15 +4725,16 @@ class DoctorReportsPage extends StatelessWidget {
     );
   }
 
-  Widget _alertCard(DoctorAlert alert) {
+  Widget _reportCard(ReportLibraryEntry entry) {
+    final color = _riskColor(entry.latestRisk);
     return glassListCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: alert.color.withAlpha(38),
-            child: Icon(Icons.warning, color: alert.color),
+            backgroundColor: color.withAlpha(38),
+            child: Icon(Icons.description_outlined, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -4311,20 +4742,38 @@ class DoctorReportsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  alert.patient,
+                  entry.patient.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(alert.message, style: const TextStyle(color: Colors.grey)),
+                Text(
+                  '${entry.latestRisk} • ${entry.latestBpm} • ${entry.latestLabel}',
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
-          Text(
-            alert.time,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                entry.latestDate,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  _fadeRoute(
+                    PatientReportsPage(patient: entry.patient),
+                  ),
+                ),
+                child: Text(_t('Open', 'فتح')),
+              ),
+            ],
           ),
         ],
       ),
@@ -4345,6 +4794,49 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
   XFile? _selectedImage;
   bool _isAnalyzing = false;
   String? _error;
+  int _analysisStage = 0;
+  String _analysisLabel = '';
+
+  void _setAnalysisStage(int stage, String label) {
+    if (!mounted) return;
+    setState(() {
+      _analysisStage = stage;
+      _analysisLabel = label;
+    });
+  }
+
+  List<PipelineStage> get _imageStages => [
+        PipelineStage(
+          title: _t('Image acquired', 'تم التقاط الصورة'),
+          subtitle: _t('ECG image is attached to the session.', 'تم إرفاق صورة ECG بالجلسة.'),
+          done: _analysisStage > 0,
+          active: _analysisStage == 1,
+        ),
+        PipelineStage(
+          title: _t('Upload package', 'رفع الحزمة'),
+          subtitle: _t('Sending image input to the backend.', 'إرسال الصورة إلى الخادم.'),
+          done: _analysisStage > 1,
+          active: _analysisStage == 2,
+        ),
+        PipelineStage(
+          title: _t('Signal preparation', 'تجهيز الإشارة'),
+          subtitle: _t('Preparing image-derived ECG traces.', 'تجهيز آثار ECG المشتقة من الصورة.'),
+          done: _analysisStage > 2,
+          active: _analysisStage == 3,
+        ),
+        PipelineStage(
+          title: _t('AI inference', 'استدلال النموذج'),
+          subtitle: _t('Running the ECG decision pipeline.', 'تشغيل مسار قرار ECG الذكي.'),
+          done: _analysisStage > 3,
+          active: _analysisStage == 4,
+        ),
+        PipelineStage(
+          title: _t('Result assembly', 'تجهيز النتيجة'),
+          subtitle: _t('Building the physician-ready output.', 'تجهيز النتيجة الجاهزة للمراجعة.'),
+          done: _analysisStage > 4,
+          active: _analysisStage == 5,
+        ),
+      ];
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -4354,12 +4846,26 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
           _selectedImage = picked;
           _isAnalyzing = true;
           _error = null;
+          _analysisStage = 1;
+          _analysisLabel = _t('ECG image captured successfully.', 'تم التقاط صورة ECG بنجاح.');
         });
 
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        _setAnalysisStage(2, _t('Uploading ECG image to the backend...', 'جارٍ رفع صورة ECG إلى الخادم...'));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        _setAnalysisStage(3, _t('Preparing image-based signal traces...', 'جارٍ تجهيز الإشارات المشتقة من الصورة...'));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        _setAnalysisStage(4, _t('Running AI inference and clinical scoring...', 'جارٍ تشغيل النموذج وحساب الدرجة السريرية...'));
         final result = await widget.api.analyzeImage(picked);
+        _setAnalysisStage(5, _t('Assembling the final ECG report view...', 'جارٍ تجهيز عرض تقرير ECG النهائي...'));
+        await Future<void>.delayed(const Duration(milliseconds: 160));
 
         if (!mounted) return;
-        setState(() => _isAnalyzing = false);
+        setState(() {
+          _isAnalyzing = false;
+          _analysisStage = 0;
+          _analysisLabel = '';
+        });
         Navigator.push(
           context,
           _fadeRoute(AnalysisResultPage(result: result, draft: widget.draft)),
@@ -4369,6 +4875,8 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
       setState(() {
         _isAnalyzing = false;
         _error = e.toString();
+        _analysisStage = 0;
+        _analysisLabel = '';
       });
     }
   }
@@ -4445,11 +4953,11 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                 ),
                 if (_isAnalyzing) ...[
                   const SizedBox(height: 16),
-                  const CircularProgressIndicator(color: AppColors.accent),
-                  const SizedBox(height: 10),
-                  Text(
-                    _t('Processing...', 'جارٍ المعالجة...'),
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  _pipelineProgressCard(
+                    context,
+                    headline: _t('Live analysis pipeline', 'مسار التحليل اللحظي'),
+                    status: _analysisLabel,
+                    stages: _imageStages,
                   ),
                 ],
                 if (_error != null) ...[
@@ -4475,6 +4983,139 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pipelineProgressCard(
+    BuildContext context, {
+    required String headline,
+    required String status,
+    required List<PipelineStage> stages,
+  }) {
+    final progress = stages.isEmpty ? 0.0 : (_analysisStage / stages.length).clamp(0, 1).toDouble();
+    return GlassPanel(
+      padding: const EdgeInsets.all(18),
+      radius: BorderRadius.circular(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.accentSoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.memory_rounded, color: AppColors.accentDeep),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      headline,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      status,
+                      style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.accent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 9,
+              value: progress,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...stages.map(
+            (stage) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: stage.done
+                          ? AppColors.success.withAlpha(30)
+                          : stage.active
+                              ? AppColors.accentSoft
+                              : AppColors.background,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: stage.done
+                            ? AppColors.success
+                            : stage.active
+                                ? AppColors.accent
+                                : AppColors.border,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      stage.done
+                          ? Icons.check_rounded
+                          : stage.active
+                              ? Icons.more_horiz_rounded
+                              : Icons.circle_outlined,
+                      size: 14,
+                      color: stage.done
+                          ? AppColors.success
+                          : stage.active
+                              ? AppColors.accentDeep
+                              : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          stage.title,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          stage.subtitle,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -5157,6 +5798,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
   String? _pairError;
   Map<String, List<PlatformFile>> _groups = {};
   WFDBConversionResult? _conversionResult;
+  int _analysisStage = 0;
+  String _analysisLabel = '';
 
   bool _isImageFile(String name) {
     final lower = name.toLowerCase();
@@ -5282,24 +5925,49 @@ class _FileUploadPageState extends State<FileUploadPage> {
       loading = true;
       err = null;
       _conversionResult = null;
+      _analysisStage = 1;
+      _analysisLabel = _t('Validating the selected ECG package...', 'جارٍ التحقق من حزمة ECG المحددة...');
     });
 
     try {
+      await Future<void>.delayed(const Duration(milliseconds: 140));
+      _setUploadStage(2, _t('Matching related WFDB files and metadata...', 'جارٍ مطابقة ملفات WFDB والبيانات المرتبطة...'));
       final preparedFiles = await _expandWithMatchingFiles(selected);
       final imageFiles = preparedFiles.where((f) => _isImageFile(f.name)).toList();
-       final signalFiles = preparedFiles.where((f) => _isSignalFile(f.name)).toList();
+      final signalFiles = preparedFiles.where((f) => _isSignalFile(f.name)).toList();
       late final AnalysisResult result;
       if (imageFiles.isNotEmpty && signalFiles.isEmpty && imageFiles.length == 1) {
+        _setUploadStage(3, _t('Uploading ECG image for analysis...', 'جارٍ رفع صورة ECG للتحليل...'));
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        _setUploadStage(4, _t('Preparing image-derived ECG signal...', 'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzePlatformFile(imageFiles.first);
       } else if (signalFiles.isNotEmpty) {
+        _setUploadStage(3, _t('Uploading signal package to the ECG backend...', 'جارٍ رفع حزمة الإشارة إلى الخادم...'));
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        _setUploadStage(4, _t('Extracting waveform features and quality metrics...', 'جارٍ استخراج خصائص الموجة ومؤشرات الجودة...'));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzeFiles(signalFiles);
       } else if (imageFiles.isNotEmpty) {
+        _setUploadStage(3, _t('Uploading ECG image package...', 'جارٍ رفع حزمة صورة ECG...'));
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        _setUploadStage(4, _t('Preparing image-derived ECG signal...', 'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzePlatformFile(imageFiles.first);
       } else {
         throw Exception('No supported ECG file was selected');
       }
+      _setUploadStage(6, _t('Building the final report-ready package...', 'جارٍ تجهيز الحزمة النهائية الجاهزة للتقرير...'));
+      await Future<void>.delayed(const Duration(milliseconds: 160));
       if (!mounted) return;
-      setState(() => loading = false);
+      setState(() {
+        loading = false;
+        _analysisStage = 0;
+        _analysisLabel = '';
+      });
       Navigator.push(
         context,
         _fadeRoute(AnalysisResultPage(result: result, draft: widget.draft)),
@@ -5309,9 +5977,58 @@ class _FileUploadPageState extends State<FileUploadPage> {
       setState(() {
         loading = false;
         err = e.toString();
+        _analysisStage = 0;
+        _analysisLabel = '';
       });
     }
   }
+
+  void _setUploadStage(int stage, String label) {
+    if (!mounted) return;
+    setState(() {
+      _analysisStage = stage;
+      _analysisLabel = label;
+    });
+  }
+
+  List<PipelineStage> get _uploadStages => [
+        PipelineStage(
+          title: _t('Validation', 'التحقق'),
+          subtitle: _t('Checking supported ECG formats.', 'التحقق من صيغ ECG المدعومة.'),
+          done: _analysisStage > 1,
+          active: _analysisStage == 1,
+        ),
+        PipelineStage(
+          title: _t('Pairing check', 'فحص الاقتران'),
+          subtitle: _t('Matching sibling WFDB files when available.', 'مطابقة ملفات WFDB الشقيقة عند توفرها.'),
+          done: _analysisStage > 2,
+          active: _analysisStage == 2,
+        ),
+        PipelineStage(
+          title: _t('Upload', 'الرفع'),
+          subtitle: _t('Sending the ECG package to the backend.', 'إرسال الحزمة إلى الخادم.'),
+          done: _analysisStage > 3,
+          active: _analysisStage == 3,
+        ),
+        PipelineStage(
+          title: _t('Feature prep', 'تجهيز الخصائص'),
+          subtitle: _t('Preparing traces, quality, and derived metrics.', 'تجهيز الإشارات والجودة والقياسات المشتقة.'),
+          done: _analysisStage > 4,
+          active: _analysisStage == 4,
+        ),
+        PipelineStage(
+          title: _t('AI inference', 'استدلال النموذج'),
+          subtitle: _t('Running ECG screening decision logic.', 'تشغيل منطق القرار الخاص بفحص ECG.'),
+          done: _analysisStage > 5,
+          active: _analysisStage == 5,
+        ),
+        PipelineStage(
+          title: _t('Result package', 'الحزمة النهائية'),
+          subtitle: _t('Preparing the analysis result screen.', 'تجهيز شاشة نتيجة التحليل.'),
+          done: _analysisStage > 6,
+          active: _analysisStage == 6,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -5520,6 +6237,10 @@ class _FileUploadPageState extends State<FileUploadPage> {
                 if (err != null) ...[
                   const SizedBox(height: 10),
                   _statusLine(_t('Server', 'الخادم'), err!, AppColors.danger),
+                ],
+                if (loading) ...[
+                  const SizedBox(height: 14),
+                  _pipelineProgressCard(context),
                 ],
               ],
             ),
@@ -5776,6 +6497,109 @@ class _FileUploadPageState extends State<FileUploadPage> {
           ),
           const SizedBox(width: 10),
           Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _pipelineProgressCard(BuildContext context) {
+    final progress = _uploadStages.isEmpty ? 0.0 : (_analysisStage / _uploadStages.length).clamp(0, 1).toDouble();
+    return GlassPanel(
+      padding: const EdgeInsets.all(18),
+      radius: BorderRadius.circular(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.accentSoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.alt_route_rounded, color: AppColors.accentDeep),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _t('ECG processing pipeline', 'مسار معالجة ECG'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _analysisLabel,
+                      style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 9,
+              value: progress,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+            ),
+          ),
+          const SizedBox(height: 14),
+          ..._uploadStages.map(
+            (stage) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    stage.done
+                        ? Icons.check_circle_rounded
+                        : stage.active
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                    size: 18,
+                    color: stage.done
+                        ? AppColors.success
+                        : stage.active
+                            ? AppColors.accent
+                            : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          stage.title,
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          stage.subtitle,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -7180,8 +8004,13 @@ class _PatientHomeState extends State<PatientHome> {
 class PatientDashboardSnapshot {
   final PatientModel? patient;
   final ReportModel? report;
+  final List<AppointmentModel> appointments;
 
-  const PatientDashboardSnapshot({required this.patient, required this.report});
+  const PatientDashboardSnapshot({
+    required this.patient,
+    required this.report,
+    required this.appointments,
+  });
 }
 
 class PatientDashboardPage extends StatefulWidget {
@@ -7218,12 +8047,20 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
       }
     }
     ReportModel? report;
+    List<AppointmentModel> appointments = const [];
     if (patient?.id != null) {
       try {
         report = await _api.getReport(patient!.id!);
       } catch (_) {}
+      try {
+        appointments = await _api.listAppointments(patientId: patient!.id!);
+      } catch (_) {}
     }
-    return PatientDashboardSnapshot(patient: patient, report: report);
+    return PatientDashboardSnapshot(
+      patient: patient,
+      report: report,
+      appointments: appointments,
+    );
   }
 
   void _refresh() {
@@ -7259,13 +8096,15 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                 ],
               );
             }
-            final data = snapshot.data ?? const PatientDashboardSnapshot(patient: null, report: null);
+            final data = snapshot.data ?? const PatientDashboardSnapshot(patient: null, report: null, appointments: []);
             final report = data.report;
             final patient = data.patient;
+            final appointments = data.appointments;
             final latestRisk = report?.riskLevels.isNotEmpty == true ? report!.riskLevels.last : 'No analysis';
             final latestBpm = report?.bpm.isNotEmpty == true ? '${report!.bpm.last} bpm' : 'Unavailable';
             final trendValues = (report?.bpm ?? const <int>[]).map((e) => e.toDouble()).toList();
             final latestDate = report?.createdAt?.split('T').first ?? 'No date';
+            final nextAppointment = appointments.isNotEmpty ? appointments.first.when : _t('No visit scheduled', 'لا توجد زيارة مجدولة');
 
             return ListView(
               padding: const EdgeInsets.all(18),
@@ -7318,6 +8157,11 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${_t('Next follow-up', 'المتابعة القادمة')}: $nextAppointment',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
@@ -7362,6 +8206,13 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                       caption: _t('Recent stored report samples', 'عينات التقارير الأخيرة'),
                       accent: AppColors.success,
                       icon: Icons.insights_rounded,
+                    ),
+                    AppMetricTile(
+                      label: _t('Appointments', 'المواعيد'),
+                      value: '${appointments.length}',
+                      caption: _t('Linked follow-up visits', 'زيارات المتابعة المرتبطة'),
+                      accent: AppColors.secondary,
+                      icon: Icons.event_available_rounded,
                     ),
                     AppMetricTile(
                       label: _t('Assigned Doctor', 'الطبيب'),
@@ -7437,6 +8288,14 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                     Expanded(child: _quickActionCard(_t('Monitor', 'المراقبة'), Icons.monitor_heart_rounded, AppColors.accent, () => widget.onNavigate(3))),
                     const SizedBox(width: 12),
                     Expanded(child: _quickActionCard(_t('Reports', 'التقارير'), Icons.description_rounded, AppColors.success, () => Navigator.push(context, _fadeRoute(PatientReportsPage(patient: patient ?? PatientModel(name: widget.username)))))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _quickActionCard(_t('Appointments', 'المواعيد'), Icons.event_note_rounded, AppColors.secondary, () => Navigator.push(context, _fadeRoute(PatientAppointmentsPage(patient: patient ?? PatientModel(name: widget.username)))))),
+                    const SizedBox(width: 12),
+                    Expanded(child: _quickActionCard(_t('Profile & Doctor', 'الملف والطبيب'), Icons.person_pin_circle_outlined, AppColors.primary, () => widget.onNavigate(4))),
                   ],
                 ),
               ],
@@ -8426,63 +9285,173 @@ class PatientInsightsPage extends StatelessWidget {
     );
   }
 }
-class PatientHistoryPage extends StatelessWidget {
+class PatientHistoryPage extends StatefulWidget {
   const PatientHistoryPage({super.key});
 
   @override
+  State<PatientHistoryPage> createState() => _PatientHistoryPageState();
+}
+
+class _PatientHistoryPageState extends State<PatientHistoryPage> {
+  final ApiService _api = ApiService(baseUrl: _apiBaseUrl());
+  late Future<PatientHistorySnapshot> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<PatientHistorySnapshot> _load() async {
+    final username = ApiService.currentUsername ?? '';
+    final patients = await _api.listPatients();
+    PatientModel? patient;
+    for (final item in patients) {
+      if (item.name.trim().toLowerCase() == username.trim().toLowerCase()) {
+        patient = item;
+        break;
+      }
+    }
+    ReportModel? report;
+    List<AppointmentModel> appointments = const [];
+    if (patient?.id != null) {
+      try {
+        report = await _api.getReport(patient!.id!);
+      } catch (_) {}
+      try {
+        appointments = await _api.listAppointments(patientId: patient!.id!);
+      } catch (_) {}
+    }
+    return PatientHistorySnapshot(patient: patient, report: report, appointments: appointments);
+  }
+
+  void _refresh() {
+    setState(() => _future = _load());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final items = _mockHistory();
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('History', 'السجل')),
         actions: [_settingsAction(context)],
       ),
-      body: SecondaryPageShell(
-        title: _t('Analysis History', 'سجل التحليل'),
-        subtitle: _t('Timeline of prior screenings, uploads, and review sessions', 'الخط الزمني للفحوصات والرفع والجلسات السابقة'),
-        icon: Icons.timeline_rounded,
-        children: [
-          glassListCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppSectionHeader(
-                  title: _t('Medical timeline', 'الخط الزمني الطبي'),
-                  subtitle: _t(
-                    'A structured view of previous ECG-related sessions.',
-                    'عرض منظم للجلسات السابقة المتعلقة بتحليل ECG.',
+      body: RefreshIndicator(
+        onRefresh: () async => _refresh(),
+        child: FutureBuilder<PatientHistorySnapshot>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  _retryCard(
+                    message: _t(
+                      'History is unavailable right now. Retry after checking backend connectivity.',
+                      'السجل غير متاح الآن. أعد المحاولة بعد التحقق من اتصال الخادم.',
+                    ),
+                    onRetry: _refresh,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Table(
-                  columnWidths: const {
-                    0: FlexColumnWidth(1.25),
-                    1: FlexColumnWidth(1.0),
-                    2: FlexColumnWidth(1.7),
-                  },
+                ],
+              );
+            }
+            final data = snapshot.data ?? const PatientHistorySnapshot(patient: null, report: null, appointments: []);
+            final report = data.report;
+            final appointments = data.appointments;
+            final rows = <(String, String, String, Color)>[];
+            if (report != null) {
+              for (var i = 0; i < report.labels.length; i++) {
+                rows.add((
+                  _safeDateLabel(report.createdAt),
+                  i < report.bpm.length ? '${report.bpm[i]} bpm' : '--',
+                  i < report.riskLevels.length ? report.riskLevels[i] : report.labels[i],
+                  _riskColor(i < report.riskLevels.length ? report.riskLevels[i] : 'Low'),
+                ));
+              }
+            }
+            for (final appointment in appointments) {
+              rows.add((
+                _safeDateLabel(appointment.when),
+                _safeTimeLabel(appointment.when),
+                '${_t("Visit", "زيارة")} • ${appointment.status}',
+                appointment.status == 'Confirmed' ? AppColors.success : AppColors.warning,
+              ));
+            }
+            return SecondaryPageShell(
+              title: _t('Analysis History', 'سجل التحليل'),
+              subtitle: _t('Timeline of prior screenings, uploads, reports, and follow-up sessions', 'الخط الزمني للفحوصات والرفع والتقارير وجلسات المتابعة'),
+              icon: Icons.timeline_rounded,
+              children: [
+                Row(
                   children: [
-                    AnalysisResultPage._tableHeader('Date', 'Time', 'Session'),
-                    ...List.generate(items.length, (i) {
-                      final item = items[i];
-                      return AnalysisResultPage._tableRow(
-                        item.subtitle,
-                        item.time,
-                        item.title,
-                        i.isEven,
-                        item.color,
-                      );
-                    }),
+                    Expanded(child: AppMetricTile(label: _t('Entries', 'العناصر'), value: '${rows.length}', caption: _t('Stored history records', 'السجلات المحفوظة'), accent: AppColors.accent, icon: Icons.history_rounded)),
+                    const SizedBox(width: 12),
+                    Expanded(child: AppMetricTile(label: _t('Reports', 'التقارير'), value: '${report?.labels.length ?? 0}', caption: _t('Saved report points', 'نقاط التقارير المحفوظة'), accent: AppColors.success, icon: Icons.description_outlined)),
+                    const SizedBox(width: 12),
+                    Expanded(child: AppMetricTile(label: _t('Visits', 'الزيارات'), value: '${appointments.length}', caption: _t('Follow-up appointments', 'مواعيد المتابعة'), accent: AppColors.secondary, icon: Icons.event_note_rounded)),
                   ],
                 ),
+                const SizedBox(height: 16),
+                glassListCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSectionHeader(
+                        title: _t('Medical timeline', 'الخط الزمني الطبي'),
+                        subtitle: _t(
+                          'A structured view of previous ECG analysis sessions and care follow-up.',
+                          'عرض منظم لجلسات تحليل ECG السابقة ومتابعات الرعاية.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (rows.isEmpty)
+                        _emptyState(_t('No history has been stored yet.', 'لا يوجد سجل محفوظ حتى الآن.'))
+                      else
+                        Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(1.15),
+                            1: FlexColumnWidth(1.0),
+                            2: FlexColumnWidth(1.8),
+                          },
+                          children: [
+                            AnalysisResultPage._tableHeader('Date', 'Metric', 'Session'),
+                            ...List.generate(rows.length, (i) {
+                              final row = rows[i];
+                              return AnalysisResultPage._tableRow(
+                                row.$1,
+                                row.$2,
+                                row.$3,
+                                i.isEven,
+                                row.$4,
+                              );
+                            }),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (rows.isEmpty)
+                  _emptyState(_t('No patient reports or appointments are available yet.', 'لا توجد تقارير أو مواعيد متاحة للمريض حتى الآن.'))
+                else
+                  ...rows.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _historyCard(
+                          HistoryItem(
+                            title: item.$3,
+                            subtitle: item.$1,
+                            time: item.$2,
+                            color: item.$4,
+                          ),
+                        ),
+                      )),
               ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...List.generate(items.length, (i) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _historyCard(items[i]),
-              )),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -8760,6 +9729,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       return;
     }
 
+    final query = ValueNotifier<String>('');
     final picked = await showModalBottomSheet<AppDoctor>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -8803,61 +9773,110 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                TextField(
+                  style: _inputTextStyle(sheetContext),
+                  decoration: InputDecoration(
+                    hintText: _t('Search by doctor name or specialty', 'ابحث باسم الطبيب أو التخصص'),
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: ValueListenableBuilder<String>(
+                      valueListenable: query,
+                      builder: (_, value, __) {
+                        if (value.isEmpty) return const SizedBox.shrink();
+                        return IconButton(
+                          onPressed: () => query.value = '',
+                          icon: const Icon(Icons.close_rounded),
+                        );
+                      },
+                    ),
+                  ),
+                  onChanged: (value) => query.value = value.trim().toLowerCase(),
+                ),
+                const SizedBox(height: 14),
+                if (AppState.selectedDoctor != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.link_off_rounded),
+                      label: Text(_t('Keep current doctor link', 'الاحتفاظ بالطبيب الحالي')),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 Expanded(
-                  child: ListView.separated(
-                    itemCount: doctors.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final doctor = doctors[index];
-                      final active = AppState.selectedDoctor?.email == doctor.email;
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: () => Navigator.pop(sheetContext, doctor),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.accentSoft : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: active ? AppColors.accent : AppColors.border,
-                            ),
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: query,
+                    builder: (_, search, __) {
+                      final filtered = doctors.where((doctor) {
+                        if (search.isEmpty) return true;
+                        final haystack =
+                            '${doctor.name} ${doctor.specialty} ${doctor.clinic} ${doctor.phone}'.toLowerCase();
+                        return haystack.contains(search);
+                      }).toList();
+                      if (filtered.isEmpty) {
+                        return Center(
+                          child: Text(
+                            _t('No doctors matched this search.', 'لا يوجد أطباء مطابقون لهذا البحث.'),
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: AppColors.accent.withAlpha(24),
-                                child: const Icon(Icons.local_hospital_outlined, color: AppColors.accentDeep),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      doctor.name,
-                                      style: const TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${doctor.specialty} • ${doctor.clinic}',
-                                      style: const TextStyle(color: AppColors.textSecondary),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      doctor.phone,
-                                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                    ),
-                                  ],
+                        );
+                      }
+                      return ListView.separated(
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final doctor = filtered[index];
+                          final active = AppState.selectedDoctor?.email == doctor.email;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () => Navigator.pop(sheetContext, doctor),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: active ? AppColors.accentSoft : Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: active ? AppColors.accent : AppColors.border,
                                 ),
                               ),
-                              if (active)
-                                const Icon(Icons.check_circle_rounded, color: AppColors.success),
-                            ],
-                          ),
-                        ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: AppColors.accent.withAlpha(24),
+                                    child: const Icon(Icons.local_hospital_outlined, color: AppColors.accentDeep),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          doctor.name,
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${doctor.specialty} • ${doctor.clinic}',
+                                          style: const TextStyle(color: AppColors.textSecondary),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          doctor.phone,
+                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (active)
+                                    const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
