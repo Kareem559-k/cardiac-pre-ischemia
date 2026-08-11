@@ -2164,18 +2164,30 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
 def debug_model_probe(
     directory: Optional[str] = None,
     limit: int = 12,
-    user: Optional[Dict[str, Any]] = Depends(_current_user_optional),
+    user: Dict[str, Any] = Depends(_current_user),
 ) -> ModelProbeOut:
+    _ensure_role(user, ["doctor"])
+    allowed_dirs = [
+        Path(r"D:\DATA\100"),
+        Path(r"D:\DATA\500"),
+        BASE_DIR / "generated_wfdb",
+    ]
     candidate_dirs: List[Path] = []
     if directory:
-        candidate_dirs.append(Path(directory))
-    candidate_dirs.extend(
-        [
-            Path(r"D:\DATA\100"),
-            Path(r"D:\DATA\500"),
-            BASE_DIR / "generated_wfdb",
-        ]
-    )
+        requested = Path(directory).resolve()
+        permitted = False
+        for allowed in allowed_dirs:
+            try:
+                requested.relative_to(allowed.resolve())
+                permitted = True
+                break
+            except ValueError:
+                continue
+        if not permitted:
+            raise HTTPException(status_code=403, detail="Requested diagnostic directory is not allowed")
+        candidate_dirs.append(requested)
+    else:
+        candidate_dirs.extend(allowed_dirs)
     record_rows: List[ModelProbeRow] = []
     seen: set[str] = set()
     for base_dir in candidate_dirs:
