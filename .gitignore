@@ -55,6 +55,7 @@ backend/app.db
 backend/generated_reports/
 backend/generated_wfdb/
 backend/*.log
+backend/*log*.txt
 flutter_web_server.log
 chrome_debug_log.txt
 flutter_run_log.txt
