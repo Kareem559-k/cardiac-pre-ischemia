@@ -274,6 +274,26 @@ class ReportOut(BaseModel):
     riskLevels: List[str] = Field(default_factory=list)
 
 
+class ModelProbeRow(BaseModel):
+    recordingId: str
+    heartRate: Optional[float] = None
+    rrIntervalMs: Optional[float] = None
+    qrsDurationMs: Optional[float] = None
+    qtcMs: Optional[float] = None
+    stDeviation: Optional[float] = None
+    rawProbability: Optional[float] = None
+    calibratedProbability: float
+    threshold: float
+    predictedClass: str
+    inferenceMode: str
+    modelVersion: str
+
+
+class ModelProbeOut(BaseModel):
+    total: int
+    rows: List[ModelProbeRow]
+
+
 class HealthOut(BaseModel):
     backend: str
     database: str
@@ -343,14 +363,26 @@ class ModelBundle:
         )
 
     def predict_probability(self, x_scaled: np.ndarray) -> float:
+        return self.predict_details(x_scaled)["calibrated_probability"]
+
+    def predict_details(self, x_scaled: np.ndarray) -> Dict[str, Any]:
         if self.stack_model is None:
             raise ValueError("Model bundle does not contain a stack_model")
         raw_prob = float(self.stack_model.predict_proba(x_scaled)[0, 1])
         if self.platt_scaler is None:
-            return raw_prob
+            return {
+                "raw_probability": raw_prob,
+                "calibrated_probability": raw_prob,
+                "calibration_applied": False,
+            }
         clipped = np.clip(np.asarray([raw_prob], dtype=np.float64), 1e-6, 1.0 - 1e-6)
         logits = np.log(clipped / (1.0 - clipped)).reshape(-1, 1)
-        return float(self.platt_scaler.predict_proba(logits)[0, 1])
+        calibrated = float(self.platt_scaler.predict_proba(logits)[0, 1])
+        return {
+            "raw_probability": raw_prob,
+            "calibrated_probability": calibrated,
+            "calibration_applied": True,
+        }
 
 
 _model_bundle: Optional[ModelBundle] = None
@@ -1627,14 +1659,19 @@ def _run_signal_analysis(
     metadata = _fallback_model_metadata()
     threshold = float(metadata["threshold"])
     model_error: Optional[str] = None
+    raw_probability: Optional[float] = None
+    inference_mode = "heuristic_fallback"
     try:
         model_bundle = _ensure_model()
         features = ecg_pipeline.extract_model_features(processed, fs)
         x_imputed = model_bundle.imputer.transform([features])
         x_scaled = model_bundle.qt.transform(x_imputed)
-        score = model_bundle.predict_probability(x_scaled)
+        probability_details = model_bundle.predict_details(x_scaled)
+        raw_probability = float(probability_details["raw_probability"])
+        score = float(probability_details["calibrated_probability"])
         metadata = model_bundle.metadata
         threshold = float(model_bundle.threshold)
+        inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
     except HTTPException as exc:
         model_error = str(exc.detail)
         score = _heuristic_model_score(
@@ -1654,11 +1691,15 @@ def _run_signal_analysis(
     graph_data["signalSignature"] = signal_signature
     findings = [
         f"AI-assisted screening result: {classification}",
+        f"Inference mode: {inference_mode}",
         f"Model-derived score: {score:.3f}",
         f"Rhythm screening: {rhythm_label}",
         f"Signal quality score: {quality['signal_quality_score']:.2f}",
         f"Noise level: {quality['noise_level']}",
     ]
+    if raw_probability is not None:
+        findings.append(f"Raw probability before calibration: {raw_probability:.3f}")
+        findings.append(f"Calibrated probability: {score:.3f}")
     if signal_signature.get("lead_diversity_index", 0.0) > 0:
         findings.append(
             f"Lead diversity index: {signal_signature['lead_diversity_index']:.3f}"
@@ -1696,6 +1737,9 @@ def _run_signal_analysis(
             "type": "Feature magnitude ranking",
             "topFeatures": ecg_pipeline.explain_top_features(features),
             "fallbackReason": model_error,
+            "inferenceMode": inference_mode,
+            "rawProbability": raw_probability,
+            "calibratedProbability": score,
         },
         measurements=measurements,
         graph_data=graph_data,
@@ -1874,6 +1918,10 @@ def _report_context_from_analysis(analysis: AnalysisResponse) -> Dict[str, Any]:
             "risk_level": analysis.riskLevel,
             "recommended_action": analysis.recommendations[-1] if analysis.recommendations else "Clinical review recommended.",
             "model_name": analysis.modelVersion,
+            "inference_mode": analysis.explainability.get("inferenceMode"),
+            "raw_probability": analysis.explainability.get("rawProbability"),
+            "calibrated_probability": analysis.explainability.get("calibratedProbability"),
+            "fallback_reason": analysis.explainability.get("fallbackReason"),
             "explainable_ai": {"top_features": top_features},
         },
     }
@@ -2013,6 +2061,99 @@ def _store_report(
         filePath=str(report_file),
         createdAt=created_at,
     )
+
+
+def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
+    signal, fs, lead_names = ecg_pipeline.load_wfdb_record(str(record_path))
+    processed = ecg_pipeline.preprocess_signal(signal, fs)
+    rr = ecg_pipeline.compute_rr_hrv(
+        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs), fs
+    )
+    measurements, _ = _derive_measurements(processed, fs)
+    quality = ecg_pipeline.signal_quality_metrics(signal, processed, fs)
+    signal_signature = _signal_signature_metrics(signal, processed, fs, quality, rr)
+
+    metadata = _fallback_model_metadata()
+    threshold = float(metadata["threshold"])
+    raw_probability: Optional[float] = None
+    inference_mode = "heuristic_fallback"
+    model_error: Optional[str] = None
+    try:
+        model_bundle = _ensure_model()
+        features = ecg_pipeline.extract_model_features(processed, fs)
+        x_imputed = model_bundle.imputer.transform([features])
+        x_scaled = model_bundle.qt.transform(x_imputed)
+        probability_details = model_bundle.predict_details(x_scaled)
+        raw_probability = float(probability_details["raw_probability"])
+        calibrated_probability = float(probability_details["calibrated_probability"])
+        threshold = float(model_bundle.threshold)
+        metadata = model_bundle.metadata
+        inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
+    except HTTPException as exc:
+        model_error = str(exc.detail)
+        calibrated_probability = _heuristic_model_score(
+            bpm=int(round(rr["heart_rate_bpm"])) if rr["heart_rate_bpm"] is not None else 0,
+            signal_quality=round(float(quality["signal_quality_score"]) / 100.0, 3),
+            measurements=measurements,
+            signal_signature=signal_signature,
+        )
+
+    predicted_class = _risk_to_classification(ecg_pipeline.risk_band(calibrated_probability, threshold))
+    if model_error:
+        metadata = _fallback_model_metadata()
+
+    return ModelProbeRow(
+        recordingId=record_path.stem,
+        heartRate=measurements.get("heart_rate").value if measurements.get("heart_rate") else None,
+        rrIntervalMs=measurements.get("rr_interval").value if measurements.get("rr_interval") else None,
+        qrsDurationMs=measurements.get("qrs_duration").value if measurements.get("qrs_duration") else None,
+        qtcMs=measurements.get("qtc").value if measurements.get("qtc") else None,
+        stDeviation=measurements.get("st_deviation").value if measurements.get("st_deviation") else None,
+        rawProbability=raw_probability,
+        calibratedProbability=float(calibrated_probability),
+        threshold=float(threshold),
+        predictedClass=predicted_class,
+        inferenceMode=inference_mode,
+        modelVersion=str(metadata["model_version"]),
+    )
+
+
+@app.get("/debug/model-probe", response_model=ModelProbeOut)
+def debug_model_probe(
+    directory: Optional[str] = None,
+    limit: int = 12,
+    user: Optional[Dict[str, Any]] = Depends(_current_user_optional),
+) -> ModelProbeOut:
+    candidate_dirs: List[Path] = []
+    if directory:
+        candidate_dirs.append(Path(directory))
+    candidate_dirs.extend(
+        [
+            Path(r"D:\DATA\100"),
+            Path(r"D:\DATA\500"),
+            BASE_DIR / "generated_wfdb",
+        ]
+    )
+    record_rows: List[ModelProbeRow] = []
+    seen: set[str] = set()
+    for base_dir in candidate_dirs:
+        if not base_dir.is_dir():
+            continue
+        for hea_path in sorted(base_dir.rglob("*.hea")):
+            record_stem = str(hea_path.with_suffix(""))
+            if record_stem in seen:
+                continue
+            dat_path = hea_path.with_suffix(".dat")
+            if not dat_path.is_file():
+                continue
+            seen.add(record_stem)
+            try:
+                record_rows.append(_probe_analysis_from_record(hea_path.with_suffix("")))
+            except Exception:
+                continue
+            if len(record_rows) >= max(1, min(limit, 20)):
+                return ModelProbeOut(total=len(record_rows), rows=record_rows)
+    return ModelProbeOut(total=len(record_rows), rows=record_rows)
 
 
 def _report_trend(patient_id: int) -> Tuple[List[str], List[int], List[str]]:

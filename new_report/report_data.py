@@ -116,10 +116,15 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
         "screening_status": _screening_status(model.get("risk_level")),
         "recommended_action": model.get("recommended_action"),
         "model_name": model.get("model_name"),
+        "inference_mode": model.get("inference_mode"),
+        "raw_probability": model.get("raw_probability"),
+        "calibrated_probability": model.get("calibrated_probability"),
+        "fallback_reason": model.get("fallback_reason"),
     }
 
     clinical_summary = [
         f"Overall result: {_fmt(ai_result['classification'])} ({_fmt(ai_result['model_score_pct'], '%')}).",
+        f"Inference mode: {_fmt(ai_result['inference_mode'])}; raw probability {_fmt(ai_result['raw_probability'])}; calibrated {_fmt(ai_result['calibrated_probability'])}.",
         f"Signal reliability: {recording_information['signal_quality_status']} ({_fmt(signal_quality['score'])}).",
         f"Main findings: HR {_fmt(measurements['heart_rate_bpm'], ' BPM')}, rhythm {_fmt(measurements['heart_rhythm_classification'])}, QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' ms')}.",
         f"Next action: {_fmt(ai_result['recommended_action'])}.",
