@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -187,7 +187,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           elevation: 2,
           minimumSize: const Size(64, 52),
           textStyle:
@@ -199,7 +200,8 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.border),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           minimumSize: const Size(64, 52),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
@@ -228,8 +230,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceAlt,
@@ -263,7 +264,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface.withAlpha(224),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         hintStyle: const TextStyle(color: AppColors.textSecondary),
         labelStyle: const TextStyle(color: AppColors.primary),
         floatingLabelStyle: const TextStyle(color: AppColors.accent),
@@ -350,7 +352,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.info,
           foregroundColor: AppColors.primaryDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           minimumSize: const Size(64, 52),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
@@ -359,7 +362,8 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
           side: const BorderSide(color: AppColors.borderDark),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           minimumSize: const Size(64, 52),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
@@ -367,7 +371,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         hintStyle: const TextStyle(color: AppColors.textSecondary),
         labelStyle: const TextStyle(color: AppColors.primary),
         floatingLabelStyle: const TextStyle(color: AppColors.info),
@@ -398,7 +403,8 @@ class AppTheme {
         contentTextStyle: TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.borderDark, thickness: 1),
+      dividerTheme:
+          const DividerThemeData(color: AppColors.borderDark, thickness: 1),
     );
   }
 }
@@ -627,12 +633,14 @@ class SessionStore {
     await _prefs.setString(_usernameKey, username);
     await _prefs.setString(_workspaceKey, workspace);
     if (currentDoctor != null) {
-      await _prefs.setString(_currentDoctorKey, jsonEncode(currentDoctor.toJson()));
+      await _prefs.setString(
+          _currentDoctorKey, jsonEncode(currentDoctor.toJson()));
     } else {
       await _prefs.remove(_currentDoctorKey);
     }
     if (selectedDoctor != null) {
-      await _prefs.setString(_selectedDoctorKey, jsonEncode(selectedDoctor.toJson()));
+      await _prefs.setString(
+          _selectedDoctorKey, jsonEncode(selectedDoctor.toJson()));
     } else {
       await _prefs.remove(_selectedDoctorKey);
     }
@@ -643,7 +651,10 @@ class SessionStore {
     final role = _prefs.getString(_roleKey);
     final username = _prefs.getString(_usernameKey);
     final workspace = _prefs.getString(_workspaceKey);
-    if (token == null || role == null || username == null || workspace == null) {
+    if (token == null ||
+        role == null ||
+        username == null ||
+        workspace == null) {
       return null;
     }
     AppDoctor? parseDoctor(String key) {
@@ -684,8 +695,7 @@ class AppState {
   static final ValueNotifier<bool> isArabic = ValueNotifier(false);
   static final ValueNotifier<bool> isDarkMode = ValueNotifier(false);
   static final ValueNotifier<bool> developerMode = ValueNotifier(false);
-  static final ValueNotifier<String> apiBaseUrl =
-      ValueNotifier(_apiBaseUrl());
+  static final ValueNotifier<String> apiBaseUrl = ValueNotifier(_apiBaseUrl());
   static const String projectName = 'Cardiac Pre-Ischemia';
   static const String projectTagline =
       'AI-assisted ischemia screening and wearable ECG monitoring';
@@ -793,19 +803,25 @@ String _authIdentityToEmail(String rawMobile) {
 String _friendlyApiError(Object error) {
   final text = error.toString();
   if (text.contains('401')) {
-    return _t('Invalid mobile number or password.', 'رقم الهاتف أو كلمة المرور غير صحيحين.');
+    return _t('Invalid mobile number or password.',
+        'رقم الهاتف أو كلمة المرور غير صحيحين.');
   }
   if (text.contains('409')) {
-    return _t('This mobile number is already registered.', 'رقم الهاتف مسجل بالفعل.');
+    return _t(
+        'This mobile number is already registered.', 'رقم الهاتف مسجل بالفعل.');
   }
   if (text.contains('Network error')) {
-    return _t('Network connection failed. Check Wi-Fi and server status.', 'فشل الاتصال بالشبكة. تأكد من الواي فاي وحالة الخادم.');
+    return _t('Network connection failed. Check Wi-Fi and server status.',
+        'فشل الاتصال بالشبكة. تأكد من الواي فاي وحالة الخادم.');
   }
   if (text.contains('timed out')) {
-    return _t('The request timed out. Please try again.', 'انتهت مهلة الطلب. حاول مرة أخرى.');
+    return _t('The request timed out. Please try again.',
+        'انتهت مهلة الطلب. حاول مرة أخرى.');
   }
-  return _t('Unable to complete the request right now. Please try again.', 'تعذر إكمال الطلب الآن. حاول مرة أخرى.');
+  return _t('Unable to complete the request right now. Please try again.',
+      'تعذر إكمال الطلب الآن. حاول مرة أخرى.');
 }
+
 class AnalysisSessionDraft {
   final String patientName;
   final String patientAge;
@@ -892,6 +908,146 @@ class PipelineStage {
   });
 }
 
+class AiInsightBundle {
+  final String triage;
+  final Color triageColor;
+  final String clinicianSummary;
+  final String patientSummary;
+  final String qualitySummary;
+  final String confidenceSummary;
+  final List<String> watchItems;
+  final List<String> nextSteps;
+
+  const AiInsightBundle({
+    required this.triage,
+    required this.triageColor,
+    required this.clinicianSummary,
+    required this.patientSummary,
+    required this.qualitySummary,
+    required this.confidenceSummary,
+    required this.watchItems,
+    required this.nextSteps,
+  });
+}
+
+class AiTrendComparison {
+  final String headline;
+  final Color color;
+  final String summary;
+  final String bpmDeltaLabel;
+  final String riskShiftLabel;
+  final List<String> bullets;
+
+  const AiTrendComparison({
+    required this.headline,
+    required this.color,
+    required this.summary,
+    required this.bpmDeltaLabel,
+    required this.riskShiftLabel,
+    required this.bullets,
+  });
+}
+
+class DoctorCopilotBrief {
+  final String headline;
+  final String summary;
+  final Color color;
+  final List<String> priorities;
+
+  const DoctorCopilotBrief({
+    required this.headline,
+    required this.summary,
+    required this.color,
+    required this.priorities,
+  });
+}
+
+class ChatAiGuide {
+  final String headline;
+  final String summary;
+  final String statusLabel;
+  final Color color;
+  final List<String> suggestions;
+
+  const ChatAiGuide({
+    required this.headline,
+    required this.summary,
+    required this.statusLabel,
+    required this.color,
+    required this.suggestions,
+  });
+}
+
+class LiveMonitoringAiBrief {
+  final String headline;
+  final String summary;
+  final String urgencyLabel;
+  final String signalLabel;
+  final String recommendedAction;
+  final Color color;
+  final List<String> bullets;
+
+  const LiveMonitoringAiBrief({
+    required this.headline,
+    required this.summary,
+    required this.urgencyLabel,
+    required this.signalLabel,
+    required this.recommendedAction,
+    required this.color,
+    required this.bullets,
+  });
+}
+
+class MessagingOpsBrief {
+  final String headline;
+  final String summary;
+  final String queueLabel;
+  final String responseLabel;
+  final Color color;
+  final List<String> bullets;
+
+  const MessagingOpsBrief({
+    required this.headline,
+    required this.summary,
+    required this.queueLabel,
+    required this.responseLabel,
+    required this.color,
+    required this.bullets,
+  });
+}
+
+class PatientAiCompanionBrief {
+  final String headline;
+  final String summary;
+  final String readinessLabel;
+  final String doctorStateLabel;
+  final Color color;
+  final List<String> bullets;
+
+  const PatientAiCompanionBrief({
+    required this.headline,
+    required this.summary,
+    required this.readinessLabel,
+    required this.doctorStateLabel,
+    required this.color,
+    required this.bullets,
+  });
+}
+
+class LiveAlertEvent {
+  final String timeLabel;
+  final String title;
+  final String detail;
+  final Color color;
+
+  const LiveAlertEvent({
+    required this.timeLabel,
+    required this.title,
+    required this.detail,
+    required this.color,
+  });
+}
+
 String _safeDateLabel(String? raw) {
   if (raw == null || raw.trim().isEmpty) return 'No date';
   final cleaned = raw.trim();
@@ -939,15 +1095,656 @@ Widget _emptyState(String text) {
   );
 }
 
+int _riskRank(String risk) {
+  final lower = risk.toLowerCase();
+  if (lower.contains('high')) return 2;
+  if (lower.contains('medium')) return 1;
+  return 0;
+}
+
+String _displayMeasurement(double? value, String unit, {int digits = 0}) {
+  if (value == null) return 'Unavailable';
+  return '${value.toStringAsFixed(digits)} $unit'.trim();
+}
+
+AiInsightBundle _buildAiInsightBundle(AnalysisResult result) {
+  final qtc = result.measurements['qtc']?.value;
+  final qrs = result.measurements['qrs_duration']?.value;
+  final st = result.measurements['st_deviation']?.value;
+  final sdnn = result.measurements['sdnn']?.value;
+  final quality = result.signalQualityLabel?.toLowerCase() ?? 'unknown';
+  final qualityPct = result.signalQuality == null
+      ? null
+      : (result.signalQuality! <= 1
+          ? result.signalQuality! * 100.0
+          : result.signalQuality!);
+
+  String triage;
+  Color triageColor;
+  if (result.riskLevel == 'High' ||
+      (qtc != null && qtc >= 500) ||
+      (st != null && st.abs() >= 0.20)) {
+    triage = 'Escalate now';
+    triageColor = AppColors.danger;
+  } else if (result.riskLevel == 'Medium' ||
+      quality != 'high' ||
+      (qrs != null && qrs >= 120)) {
+    triage = 'Review soon';
+    triageColor = AppColors.warning;
+  } else {
+    triage = 'Routine review';
+    triageColor = AppColors.success;
+  }
+
+  final watchItems = <String>[
+    if (qtc != null && qtc >= 500)
+      'QTc appears prolonged at ${qtc.toStringAsFixed(0)} ms.',
+    if (qrs != null && qrs >= 120)
+      'QRS duration is widened at ${qrs.toStringAsFixed(0)} ms.',
+    if (st != null && st.abs() >= 0.20)
+      'ST deviation estimate is ${st.toStringAsFixed(2)}.',
+    if (sdnn != null && sdnn >= 140)
+      'Heart-rate variability is elevated (SDNN ${sdnn.toStringAsFixed(0)} ms).',
+    if (quality != 'high')
+      'Signal quality is not high, so repeat acquisition may be useful.',
+    if (result.bpm >= 120 || result.bpm <= 50)
+      'Heart rate is outside a typical resting range at ${result.bpm} bpm.',
+  ];
+
+  final nextSteps = <String>[
+    if (triage == 'Escalate now')
+      'Prioritize physician review before relying on a single screening output.',
+    if (triage != 'Escalate now')
+      'Compare this ECG with symptoms, history, and previous reports.',
+    if (quality != 'high')
+      'Repeat the acquisition with better lead or image quality if possible.',
+    if (watchItems.isEmpty)
+      'Continue longitudinal monitoring and keep the next screening for comparison.',
+  ];
+
+  final clinicianSummary =
+      'Risk ${result.riskLevel} with ${result.classification.isEmpty ? 'AI screening output available' : result.classification}. '
+      'Heart rate ${result.bpm} bpm, signal quality ${result.signalQualityLabel ?? 'unavailable'}, '
+      'confidence ${(result.confidence * 100).toStringAsFixed(1)}%.';
+
+  final patientSummary = triage == 'Escalate now'
+      ? 'Your result needs medical review soon. This does not confirm a diagnosis, but it should not be ignored.'
+      : triage == 'Review soon'
+          ? 'Your result shows changes that should be reviewed and compared with your recent ECG history.'
+          : 'Your current screening result looks lower priority, but it should still be tracked over time.';
+
+  final qualitySummary = qualityPct == null
+      ? 'Signal quality score is unavailable in this session.'
+      : 'Signal quality is ${qualityPct.toStringAsFixed(0)}% and labeled ${result.signalQualityLabel ?? quality}.';
+
+  final confidenceSummary =
+      'Model confidence is ${(result.confidence * 100).toStringAsFixed(1)}% with threshold ${result.threshold.toStringAsFixed(3)}.';
+
+  return AiInsightBundle(
+    triage: triage,
+    triageColor: triageColor,
+    clinicianSummary: clinicianSummary,
+    patientSummary: patientSummary,
+    qualitySummary: qualitySummary,
+    confidenceSummary: confidenceSummary,
+    watchItems: watchItems.isEmpty
+        ? [
+            'No major watch item was flagged from the currently available computed metrics.'
+          ]
+        : watchItems,
+    nextSteps: nextSteps,
+  );
+}
+
+AiTrendComparison _buildTrendComparison(ReportModel? report) {
+  if (report == null || report.bpm.length < 2 || report.riskLevels.length < 2) {
+    return const AiTrendComparison(
+      headline: 'Trend baseline pending',
+      color: AppColors.primary,
+      summary:
+          'At least two stored ECG results are needed before the app can compare change over time.',
+      bpmDeltaLabel: 'Insufficient data',
+      riskShiftLabel: 'Insufficient data',
+      bullets: [
+        'Store another analyzed ECG to activate AI comparison.',
+        'Use future sessions to detect whether risk and heart-rate patterns are changing.'
+      ],
+    );
+  }
+
+  final lastBpm = report.bpm.last;
+  final previousBpm = report.bpm[report.bpm.length - 2];
+  final bpmDelta = lastBpm - previousBpm;
+  final lastRisk = report.riskLevels.last;
+  final previousRisk = report.riskLevels[report.riskLevels.length - 2];
+  final riskShift = _riskRank(lastRisk) - _riskRank(previousRisk);
+
+  String headline;
+  Color color;
+  String summary;
+  if (riskShift > 0 || bpmDelta.abs() >= 20) {
+    headline = 'Meaningful change detected';
+    color = AppColors.warning;
+    summary =
+        'The most recent stored ECG looks meaningfully different from the previous one and deserves comparison review.';
+  } else if (riskShift < 0) {
+    headline = 'Lower recent screening concern';
+    color = AppColors.success;
+    summary =
+        'The latest stored ECG appears less concerning than the previous saved session.';
+  } else {
+    headline = 'Pattern appears relatively stable';
+    color = AppColors.primary;
+    summary =
+        'The last two stored ECG summaries look broadly similar in risk band and heart-rate behavior.';
+  }
+
+  final bullets = <String>[
+    'Latest risk: $lastRisk. Previous risk: $previousRisk.',
+    'Latest BPM: $lastBpm. Previous BPM: $previousBpm.',
+    if (riskShift > 0)
+      'Risk band increased across the last two stored reports.',
+    if (riskShift < 0)
+      'Risk band decreased across the last two stored reports.',
+    if (bpmDelta.abs() >= 20)
+      'Heart rate changed by ${bpmDelta.abs()} bpm between the two most recent reports.',
+  ];
+
+  return AiTrendComparison(
+    headline: headline,
+    color: color,
+    summary: summary,
+    bpmDeltaLabel: bpmDelta == 0
+        ? 'No BPM change'
+        : '${bpmDelta > 0 ? '+' : ''}$bpmDelta bpm',
+    riskShiftLabel: riskShift == 0
+        ? 'Risk unchanged'
+        : riskShift > 0
+            ? 'Risk increased'
+            : 'Risk decreased',
+    bullets: bullets,
+  );
+}
+
+DoctorCopilotBrief _buildDoctorCopilotBrief(DoctorHomeSnapshot home) {
+  final highRiskCount =
+      home.reports.where((r) => _riskRank(r.latestRisk) >= 2).length;
+  final mediumRiskCount =
+      home.reports.where((r) => _riskRank(r.latestRisk) == 1).length;
+  final nextVisit = home.appointments.isEmpty ? null : home.appointments.first;
+
+  String headline;
+  Color color;
+  if (highRiskCount > 0) {
+    headline = 'High-priority review queue active';
+    color = AppColors.danger;
+  } else if (mediumRiskCount > 0 || home.appointments.isNotEmpty) {
+    headline = 'Follow-up review recommended';
+    color = AppColors.warning;
+  } else {
+    headline = 'Clinical queue looks stable';
+    color = AppColors.success;
+  }
+
+  final priorities = <String>[
+    if (highRiskCount > 0)
+      '$highRiskCount patient report(s) are currently in the highest risk band.',
+    if (mediumRiskCount > 0)
+      '$mediumRiskCount patient report(s) are in a medium-priority review band.',
+    if (nextVisit != null)
+      'Next scheduled appointment: ${nextVisit.when} with ${nextVisit.doctorName}.',
+    if (!home.onboardingComplete)
+      'Complete doctor profile fields to improve patient-facing report context.',
+    if (home.reports.isEmpty)
+      'No stored reports are available yet; run a new ECG analysis to populate the review center.',
+  ];
+
+  return DoctorCopilotBrief(
+    headline: headline,
+    summary:
+        'AI copilot reviewed ${home.patients.length} patient profiles, ${home.reports.length} stored report bundles, and ${home.appointments.length} scheduled follow-up items.',
+    color: color,
+    priorities: priorities,
+  );
+}
+
+bool _containsUrgencyKeywords(String text) {
+  final lower = text.toLowerCase();
+  const keywords = [
+    'pain',
+    'chest',
+    'pressure',
+    'faint',
+    'dizzy',
+    'blackout',
+    'emergency',
+    'urgent',
+    'palpitation',
+    'shortness of breath',
+    'stroke',
+    'weakness',
+  ];
+  return keywords.any(lower.contains);
+}
+
+ChatAiGuide _buildChatAiGuide(
+  List<MessageModel> messages, {
+  required bool doctorView,
+}) {
+  if (messages.isEmpty) {
+    return ChatAiGuide(
+      headline: doctorView ? 'AI conversation starter' : 'AI message starter',
+      summary: doctorView
+          ? 'No messages are stored yet. Start with a structured clinical check-in.'
+          : 'No messages are stored yet. Start with a concise symptom update.',
+      statusLabel: 'New thread',
+      color: AppColors.primary,
+      suggestions: doctorView
+          ? const [
+              'Please tell me when the symptoms started and whether they are improving or worsening.',
+              'Have you uploaded a recent ECG or repeated the measurement today?',
+              'If chest pain, fainting, or severe shortness of breath are present, seek urgent care now.',
+            ]
+          : const [
+              'Hello doctor, I want to share my latest ECG and current symptoms.',
+              'My symptoms started today and I would like guidance on what to do next.',
+              'I repeated the ECG and can upload another file if needed.',
+            ],
+    );
+  }
+
+  final lastMessage = messages.last;
+  final urgent = messages.any((m) => _containsUrgencyKeywords(m.text));
+  final patientCount = messages.where((m) => m.senderRole == 'patient').length;
+  final doctorCount = messages.where((m) => m.senderRole == 'doctor').length;
+
+  if (doctorView) {
+    return ChatAiGuide(
+      headline: urgent
+          ? 'Urgent symptom language detected'
+          : 'Doctor AI copilot ready',
+      summary: urgent
+          ? 'The thread includes urgency-related symptom language. Confirm severity and direct escalation if symptoms are active.'
+          : 'The chat looks stable. Use the next message to sharpen timing, symptom burden, and follow-up actions.',
+      statusLabel: urgent ? 'Escalation watch' : 'Routine follow-up',
+      color: urgent ? AppColors.danger : AppColors.accent,
+      suggestions: [
+        if (urgent)
+          'Your message mentions urgent symptoms. If they are still active, go to emergency care immediately and do not wait for chat review.',
+        'Please confirm symptom timing, duration, and whether the ECG was captured during symptoms.',
+        'Repeat the ECG upload if the tracing quality was low or if symptoms have changed since the last recording.',
+        if (patientCount > doctorCount)
+          'I reviewed your updates. I will summarize the next clinical steps after one more ECG comparison.',
+      ],
+    );
+  }
+
+  return ChatAiGuide(
+    headline:
+        urgent ? 'AI safety reminder active' : 'Patient AI messaging guide',
+    summary: urgent
+        ? 'Your recent messages include urgent symptom words. Use the chat, but do not rely on messaging alone if symptoms are severe now.'
+        : 'Use one clear message that includes symptoms, timing, and whether a new ECG file is available.',
+    statusLabel: urgent ? 'Safety warning' : 'Ready to message',
+    color: urgent ? AppColors.danger : AppColors.success,
+    suggestions: [
+      if (urgent)
+        'My symptoms are active right now. Please advise whether I should seek emergency care immediately.',
+      'I uploaded my latest ECG. My current symptoms started at [time] and feel [better/same/worse].',
+      'I do not have severe symptoms right now, but I want to know whether I should repeat the ECG today.',
+      if (lastMessage.senderRole == 'doctor')
+        'Thank you doctor. I will follow the plan and send another ECG if my symptoms change.',
+    ],
+  );
+}
+
+LiveMonitoringAiBrief _buildLiveMonitoringAiBrief({
+  required double riskLevel,
+  required String connectionMode,
+  required String connectionStatus,
+  required String region,
+  required List<String> activeCoils,
+  required List<double> ecgPoints,
+}) {
+  final lowerStatus = connectionStatus.toLowerCase();
+  final degraded = lowerStatus.contains('error') ||
+      lowerStatus.contains('failed') ||
+      lowerStatus.contains('not');
+  final connected =
+      lowerStatus.contains('connected') || lowerStatus.contains('demo');
+  final recent = ecgPoints.length > 32
+      ? ecgPoints.sublist(ecgPoints.length - 32)
+      : ecgPoints;
+
+  double amplitudeRange = 0;
+  double meanAbs = 0;
+  if (recent.isNotEmpty) {
+    var minV = recent.first;
+    var maxV = recent.first;
+    var totalAbs = 0.0;
+    for (final value in recent) {
+      if (value < minV) minV = value;
+      if (value > maxV) maxV = value;
+      totalAbs += value.abs();
+    }
+    amplitudeRange = maxV - minV;
+    meanAbs = totalAbs / recent.length;
+  }
+
+  final dynamicSignal = amplitudeRange >= 1.6 || meanAbs >= 0.45;
+  final moderateSignal = amplitudeRange >= 0.9 || meanAbs >= 0.25;
+
+  String headline;
+  String urgencyLabel;
+  String signalLabel;
+  String recommendedAction;
+  String summary;
+  Color color;
+
+  if (degraded) {
+    headline = 'Monitoring reliability degraded';
+    urgencyLabel = 'Reconnect now';
+    signalLabel = 'Acquisition unstable';
+    recommendedAction =
+        'Reacquire the stream before interpreting risk changes.';
+    summary =
+        'The live feed is not in a reliable state, so current ECG-driven alerts should be treated cautiously.';
+    color = AppColors.danger;
+  } else if (riskLevel >= 0.62) {
+    headline = 'Elevated live screening pattern';
+    urgencyLabel = 'Review immediately';
+    signalLabel = dynamicSignal
+        ? 'High waveform activity'
+        : 'High risk, low-amplitude window';
+    recommendedAction =
+        'Keep the stream active, compare symptoms, and prepare escalation if the pattern persists.';
+    summary =
+        'The rolling ECG window is in the highest monitoring band, so the app is maintaining a higher-alert posture.';
+    color = AppColors.danger;
+  } else if (riskLevel >= 0.35) {
+    headline = 'Intermediate monitoring watch';
+    urgencyLabel = 'Watch closely';
+    signalLabel = moderateSignal
+        ? 'Moderate waveform variation'
+        : 'Moderate screening shift';
+    recommendedAction =
+        'Continue live observation and save a physician-ready report if symptoms are present.';
+    summary =
+        'The live ECG window shows enough change to justify closer observation, but not the highest alert state.';
+    color = AppColors.warning;
+  } else {
+    headline = 'Live session appears stable';
+    urgencyLabel = 'Routine monitoring';
+    signalLabel = connected ? 'Connected baseline' : 'Baseline pending';
+    recommendedAction =
+        'Continue monitoring and preserve the session if the patient develops new symptoms.';
+    summary =
+        'The current ECG window remains in a lower screening band with no dominant live alert trigger.';
+    color = AppColors.success;
+  }
+
+  return LiveMonitoringAiBrief(
+    headline: headline,
+    summary: summary,
+    urgencyLabel: urgencyLabel,
+    signalLabel: signalLabel,
+    recommendedAction: recommendedAction,
+    color: color,
+    bullets: [
+      'Stream mode: $connectionMode. Connection state: $connectionStatus.',
+      'Recent waveform range: ${amplitudeRange.toStringAsFixed(2)} with mean absolute amplitude ${meanAbs.toStringAsFixed(2)}.',
+      'Detected region: ${region == 'Low' ? 'No dominant alert region' : region}.',
+      'Active coil targets: ${activeCoils.isEmpty ? 'none' : activeCoils.join(', ')}.',
+    ],
+  );
+}
+
+MessagingOpsBrief _buildMessagingOpsBrief(DoctorHomeSnapshot home) {
+  final unread = home.stats.messages;
+  final flagged = home.stats.emergencies;
+  final highRiskCount =
+      home.reports.where((r) => _riskRank(r.latestRisk) >= 2).length;
+
+  String headline;
+  String summary;
+  String queueLabel;
+  String responseLabel;
+  Color color;
+
+  if (flagged > 0 || highRiskCount > 0) {
+    headline = 'Escalation-sensitive inbox';
+    summary =
+        'The communication queue should be handled with priority because flagged cases and high-risk reports are present.';
+    queueLabel = 'Priority queue active';
+    responseLabel = unread > 0 ? 'Respond now' : 'Watch for updates';
+    color = AppColors.danger;
+  } else if (unread > 0) {
+    headline = 'Patient communication pending';
+    summary =
+        'New or unresolved messaging items are present even though the overall risk queue is not in the highest band.';
+    queueLabel = '$unread message item(s)';
+    responseLabel = 'Reply soon';
+    color = AppColors.warning;
+  } else {
+    headline = 'Messaging workload stable';
+    summary =
+        'No urgent communication pressure is visible from the current dashboard snapshot.';
+    queueLabel = 'Inbox clear';
+    responseLabel = 'Routine follow-up';
+    color = AppColors.success;
+  }
+
+  return MessagingOpsBrief(
+    headline: headline,
+    summary: summary,
+    queueLabel: queueLabel,
+    responseLabel: responseLabel,
+    color: color,
+    bullets: [
+      '${home.patients.length} patient profile(s) are currently visible in the doctor workspace.',
+      if (highRiskCount > 0)
+        '$highRiskCount recent report(s) are in the highest risk band and may justify proactive outreach.',
+      if (flagged > 0)
+        '$flagged emergency or flagged workflow item(s) should be reviewed before routine chat follow-up.',
+      if (unread == 0)
+        'No unread message pressure is currently reflected in the doctor dashboard stats.',
+      if (unread > 0)
+        'Use the patient chat helper to send structured follow-up requests instead of short unstructured replies.',
+    ],
+  );
+}
+
+PatientAiCompanionBrief _buildPatientAiCompanionBrief({
+  required AppDoctor? doctor,
+}) {
+  if (doctor == null) {
+    return const PatientAiCompanionBrief(
+      headline: 'Independent monitoring mode',
+      summary:
+          'The patient profile can analyze ECGs and monitor sessions without linking a doctor first, but clinical follow-up is still easier once a physician is added.',
+      readinessLabel: 'Analysis ready',
+      doctorStateLabel: 'Doctor optional',
+      color: AppColors.warning,
+      bullets: [
+        'You can open analysis, live monitoring, and report generation without a doctor link.',
+        'Add a doctor later when you want direct messaging and follow-up coordination.',
+        'Use messaging only after a patient record and communication context are available.',
+      ],
+    );
+  }
+
+  return PatientAiCompanionBrief(
+    headline: 'Connected care companion ready',
+    summary:
+        'The patient profile is linked to ${doctor.name}, so AI analysis, reporting, and doctor messaging can work together in one care flow.',
+    readinessLabel: 'Connected workflow',
+    doctorStateLabel: doctor.specialty,
+    color: AppColors.success,
+    bullets: [
+      'Use live monitoring for immediate session review, then store a report if symptoms change.',
+      'Use messages to send a structured update after uploading a new ECG.',
+      'Keep the doctor link updated so reports and follow-up context stay aligned.',
+    ],
+  );
+}
+
+String _timeStampLabel() {
+  final now = DateTime.now();
+  final h = now.hour.toString().padLeft(2, '0');
+  final m = now.minute.toString().padLeft(2, '0');
+  final s = now.second.toString().padLeft(2, '0');
+  return '$h:$m:$s';
+}
+
+Widget _chatAiGuideCard(
+  BuildContext context, {
+  required ChatAiGuide guide,
+  required ValueChanged<String> onSuggestionTap,
+}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      border: Border.all(color: guide.color.withAlpha(60)),
+      boxShadow: AppShadows.soft,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: guide.color.withAlpha(18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.auto_awesome, color: guide.color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    guide.headline,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    guide.statusLabel,
+                    style: TextStyle(
+                      color: guide.color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          guide.summary,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: guide.suggestions
+              .map(
+                (suggestion) => ActionChip(
+                  avatar:
+                      Icon(Icons.bolt_rounded, size: 16, color: guide.color),
+                  side: BorderSide(color: guide.color.withAlpha(50)),
+                  backgroundColor: guide.color.withAlpha(12),
+                  label: Text(
+                    suggestion,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed: () => onSuggestionTap(suggestion),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _topActionShell({
+  required BuildContext context,
+  required IconData icon,
+  required VoidCallback onTap,
+  required String tooltip,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withAlpha(236),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+              boxShadow: AppShadows.soft,
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _workspaceAction(BuildContext context) {
+  return _topActionShell(
+    context: context,
+    icon: Icons.grid_view_rounded,
+    tooltip: _t('Quick access', 'وصول سريع'),
+    onTap: () => _showSplashTools(context, ApiService(baseUrl: _apiBaseUrl())),
+  );
+}
+
 Widget _settingsAction(BuildContext context) {
-  return IconButton(
-    onPressed: () => Navigator.push(
+  return _topActionShell(
+    context: context,
+    icon: Icons.settings_outlined,
+    tooltip: _t('Settings', 'الإعدادات'),
+    onTap: () => Navigator.push(
       context,
       _fadeRoute(const SettingsPage()),
     ),
-    icon: const Icon(Icons.settings, size: 20),
-    tooltip: 'Settings',
   );
+}
+
+List<Widget> _topBarActions(BuildContext context) {
+  return [
+    _workspaceAction(context),
+    _settingsAction(context),
+  ];
 }
 
 String _t(String en, String ar) {
@@ -1072,7 +1869,8 @@ class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
 
       switch (snapshot.workspace) {
         case 'doctor_dashboard':
-          final doctorName = AppState.currentDoctorProfile?.name ?? resolvedName;
+          final doctorName =
+              AppState.currentDoctorProfile?.name ?? resolvedName;
           return DoctorDashboard(username: doctorName);
         case 'patient_home':
           return PatientHome(username: resolvedName);
@@ -1084,7 +1882,8 @@ class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
               : RoleSelectionPage(username: resolvedName);
       }
     } catch (_) {
-      final fallbackName = snapshot.username.trim().isEmpty ? 'User' : snapshot.username.trim();
+      final fallbackName =
+          snapshot.username.trim().isEmpty ? 'User' : snapshot.username.trim();
       ApiService.restoreAuth(
         token: snapshot.token,
         role: snapshot.role,
@@ -1092,7 +1891,8 @@ class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
       );
       switch (snapshot.workspace) {
         case 'doctor_dashboard':
-          final doctorName = AppState.currentDoctorProfile?.name ?? fallbackName;
+          final doctorName =
+              AppState.currentDoctorProfile?.name ?? fallbackName;
           return DoctorDashboard(username: doctorName);
         case 'patient_home':
           return PatientHome(username: fallbackName);
@@ -1144,7 +1944,9 @@ String _patientLoadMessage(Object? error) {
       'انتهت الجلسة. سجّل الدخول مرة أخرى لتحميل سجلات المرضى.',
     );
   }
-  if (raw.contains('network') || raw.contains('socket') || raw.contains('timeout')) {
+  if (raw.contains('network') ||
+      raw.contains('socket') ||
+      raw.contains('timeout')) {
     return _t(
       'Connection problem while loading patients. Check the network or backend and retry.',
       'مشكلة اتصال أثناء تحميل المرضى. تحقّق من الشبكة أو الخادم ثم أعد المحاولة.',
@@ -1231,14 +2033,16 @@ class SplashScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 22),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: AppColors.accentSoft,
                                     borderRadius: BorderRadius.circular(999),
                                     border: Border.all(color: AppColors.border),
                                   ),
                                   child: Text(
-                                    _t('AI-Assisted ECG Analysis', 'تحليل ECG بالذكاء الاصطناعي'),
+                                    _t('AI-Assisted ECG Analysis',
+                                        'تحليل ECG بالذكاء الاصطناعي'),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       color: AppColors.accentDeep,
@@ -1252,7 +2056,10 @@ class SplashScreen extends StatelessWidget {
                                 Text(
                                   AppState.projectName.toUpperCase(),
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .displaySmall
+                                      ?.copyWith(
                                         height: 1.0,
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w900,
@@ -1260,7 +2067,8 @@ class SplashScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 14),
                                 ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 520),
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 520),
                                   child: Text(
                                     _t(
                                       'Premium ECG intelligence for screening, monitoring, and physician-ready reporting.',
@@ -1283,15 +2091,18 @@ class SplashScreen extends StatelessWidget {
                                   children: [
                                     _heroMetricChip(
                                       icon: Icons.bolt_rounded,
-                                      label: _t('Fast ECG Intake', 'استقبال سريع للإشارات'),
+                                      label: _t('Fast ECG Intake',
+                                          'استقبال سريع للإشارات'),
                                     ),
                                     _heroMetricChip(
                                       icon: Icons.analytics_rounded,
-                                      label: _t('Clinical Metrics', 'مؤشرات سريرية'),
+                                      label: _t(
+                                          'Clinical Metrics', 'مؤشرات سريرية'),
                                     ),
                                     _heroMetricChip(
                                       icon: Icons.picture_as_pdf_rounded,
-                                      label: _t('Shareable PDF Reports', 'تقارير PDF قابلة للمشاركة'),
+                                      label: _t('Shareable PDF Reports',
+                                          'تقارير PDF قابلة للمشاركة'),
                                     ),
                                   ],
                                 ),
@@ -1307,7 +2118,8 @@ class SplashScreen extends StatelessWidget {
                                             context,
                                             _fadeRoute(const LoginPage()),
                                           ),
-                                          child: Text(_t('Enter Platform', 'دخول المنصة')),
+                                          child: Text(_t(
+                                              'Enter Platform', 'دخول المنصة')),
                                         ),
                                       ),
                                       SizedBox(
@@ -1315,9 +2127,11 @@ class SplashScreen extends StatelessWidget {
                                         child: OutlinedButton(
                                           onPressed: () => Navigator.push(
                                             context,
-                                            _fadeRoute(const RoleSelectionPage(username: 'Demo User')),
+                                            _fadeRoute(const RoleSelectionPage(
+                                                username: 'Demo User')),
                                           ),
-                                          child: Text(_t('Explore Demo', 'استكشاف العرض')),
+                                          child: Text(_t(
+                                              'Explore Demo', 'استكشاف العرض')),
                                         ),
                                       ),
                                     ];
@@ -1331,7 +2145,8 @@ class SplashScreen extends StatelessWidget {
                                       );
                                     }
                                     return Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         buttons[0],
                                         const SizedBox(width: 12),
@@ -1459,12 +2274,36 @@ Widget _splashShortcutCard({
 
 void _showSplashTools(BuildContext context, ApiService api) {
   final actions = [
-    (_t('Doctor Reports', 'تقارير الطبيب'), Icons.analytics_outlined, () => Navigator.push(context, _fadeRoute(const DoctorReportsPage()))),
-    (_t('Patient History', 'سجل المريض'), Icons.history_rounded, () => Navigator.push(context, _fadeRoute(const PatientHistoryPage()))),
-    (_t('Session Logs', 'سجل الجلسات'), Icons.timeline_rounded, () => Navigator.push(context, _fadeRoute(const SessionLogPage()))),
-    (_t('Patient Management', 'إدارة المرضى'), Icons.people_alt_outlined, () => Navigator.push(context, _fadeRoute(DoctorPatientsPage(api: api)))),
-    (_t('Help Center', 'مركز المساعدة'), Icons.help_outline_rounded, () => Navigator.push(context, _fadeRoute(const HelpCenterPage()))),
-    (_t('Settings', 'الإعدادات'), Icons.settings_outlined, () => Navigator.push(context, _fadeRoute(const SettingsPage()))),
+    (
+      _t('Doctor Reports', 'تقارير الطبيب'),
+      Icons.analytics_outlined,
+      () => Navigator.push(context, _fadeRoute(const DoctorReportsPage()))
+    ),
+    (
+      _t('Patient History', 'سجل المريض'),
+      Icons.history_rounded,
+      () => Navigator.push(context, _fadeRoute(const PatientHistoryPage()))
+    ),
+    (
+      _t('Session Logs', 'سجل الجلسات'),
+      Icons.timeline_rounded,
+      () => Navigator.push(context, _fadeRoute(const SessionLogPage()))
+    ),
+    (
+      _t('Patient Management', 'إدارة المرضى'),
+      Icons.people_alt_outlined,
+      () => Navigator.push(context, _fadeRoute(DoctorPatientsPage(api: api)))
+    ),
+    (
+      _t('Help Center', 'مركز المساعدة'),
+      Icons.help_outline_rounded,
+      () => Navigator.push(context, _fadeRoute(const HelpCenterPage()))
+    ),
+    (
+      _t('Settings', 'الإعدادات'),
+      Icons.settings_outlined,
+      () => Navigator.push(context, _fadeRoute(const SettingsPage()))
+    ),
   ];
 
   showModalBottomSheet<void>(
@@ -1500,9 +2339,11 @@ void _showSplashTools(BuildContext context, ApiService api) {
               const SizedBox(height: 14),
               ...actions.map(
                 (item) => ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   tileColor: AppColors.surfaceAlt,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                   leading: Icon(item.$2, color: AppColors.primary),
                   title: Text(
                     item.$1,
@@ -1511,7 +2352,8 @@ void _showSplashTools(BuildContext context, ApiService api) {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                  trailing: const Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textSecondary),
                   onTap: () {
                     Navigator.pop(sheetContext);
                     item.$3();
@@ -1544,8 +2386,8 @@ class _LoginPageState extends State<LoginPage> {
     final mobile = _mobile.text.trim();
     final password = _password.text;
     if (mobile.isEmpty || password.isEmpty) {
-      setState(() => _error =
-          _t('Enter mobile number and password.', 'أدخل رقم الهاتف وكلمة المرور.'));
+      setState(() => _error = _t('Enter mobile number and password.',
+          'أدخل رقم الهاتف وكلمة المرور.'));
       return;
     }
     setState(() {
@@ -1561,11 +2403,14 @@ class _LoginPageState extends State<LoginPage> {
       ApiService.restoreAuth(
         token: user.token,
         role: user.role,
-        username: (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim(),
+        username: (user.name ?? mobile).trim().isEmpty
+            ? mobile
+            : (user.name ?? mobile).trim(),
       );
       AppState.currentWorkspace = 'role_selection';
-      final resolvedName =
-          (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim();
+      final resolvedName = (user.name ?? mobile).trim().isEmpty
+          ? mobile
+          : (user.name ?? mobile).trim();
       final isPatient = user.role == 'patient';
       AppState.currentWorkspace = isPatient ? 'patient_home' : 'role_selection';
       await AppState.persistSession(
@@ -1618,7 +2463,8 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GlassPanel(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           radius: BorderRadius.circular(999),
                           child: Text(
                             _t('SECURE CLINICAL ACCESS', 'دخول سريري آمن'),
@@ -1633,7 +2479,10 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 22),
                         Text(
                           AppState.projectName,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
                                 color: dark ? Colors.white : AppColors.primary,
                                 height: 1.05,
                               ),
@@ -1645,7 +2494,8 @@ class _LoginPageState extends State<LoginPage> {
                             'دخول موثوق للمرضى والأطباء ومسارات الفحص الخاضعة للإشراف.',
                           ),
                           style: TextStyle(
-                            color: dark ? Colors.white70 : AppColors.textSecondary,
+                            color:
+                                dark ? Colors.white70 : AppColors.textSecondary,
                             fontSize: 15,
                             height: 1.6,
                           ),
@@ -1655,9 +2505,12 @@ class _LoginPageState extends State<LoginPage> {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            _signalChip(Icons.auto_graph_rounded, _t('Real ECG analysis', 'تحليل ECG حقيقي')),
-                            _signalChip(Icons.shield_outlined, _t('Protected access', 'وصول محمي')),
-                            _signalChip(Icons.description_outlined, _t('Medical reporting', 'تقارير طبية')),
+                            _signalChip(Icons.auto_graph_rounded,
+                                _t('Real ECG analysis', 'تحليل ECG حقيقي')),
+                            _signalChip(Icons.shield_outlined,
+                                _t('Protected access', 'وصول محمي')),
+                            _signalChip(Icons.description_outlined,
+                                _t('Medical reporting', 'تقارير طبية')),
                           ],
                         ),
                       ],
@@ -1667,7 +2520,8 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_t('Sign in', 'تسجيل الدخول'), style: Theme.of(context).textTheme.titleLarge),
+                          Text(_t('Sign in', 'تسجيل الدخول'),
+                              style: Theme.of(context).textTheme.titleLarge),
                           const SizedBox(height: 8),
                           Text(
                             _t(
@@ -1675,7 +2529,9 @@ class _LoginPageState extends State<LoginPage> {
                               'استخدم حسابك للمتابعة داخل المسار الطبي المناسب.',
                             ),
                             style: TextStyle(
-                              color: dark ? Colors.white60 : AppColors.textSecondary,
+                              color: dark
+                                  ? Colors.white60
+                                  : AppColors.textSecondary,
                               height: 1.5,
                             ),
                           ),
@@ -1686,7 +2542,8 @@ class _LoginPageState extends State<LoginPage> {
                             style: _inputTextStyle(context),
                             decoration: InputDecoration(
                               labelText: _t('Mobile Number', 'رقم الهاتف'),
-                              prefixIcon: const Icon(Icons.phone_iphone_outlined),
+                              prefixIcon:
+                                  const Icon(Icons.phone_iphone_outlined),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -1696,7 +2553,8 @@ class _LoginPageState extends State<LoginPage> {
                             style: _inputTextStyle(context),
                             decoration: InputDecoration(
                               labelText: _t('Password', 'كلمة المرور'),
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1713,12 +2571,15 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 );
                               },
-                              child: Text(_t('Forgot password', 'نسيت كلمة المرور')),
+                              child: Text(
+                                  _t('Forgot password', 'نسيت كلمة المرور')),
                             ),
                           ),
                           if (_error != null) ...[
                             const SizedBox(height: 8),
-                            Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                            Text(_error!,
+                                style:
+                                    const TextStyle(color: AppColors.danger)),
                           ],
                           const SizedBox(height: 12),
                           SizedBox(
@@ -1728,7 +2589,8 @@ class _LoginPageState extends State<LoginPage> {
                               child: Text(
                                 _loading
                                     ? _t('Signing in...', 'جارٍ الدخول...')
-                                    : _t('Continue to platform', 'الدخول إلى المنصة'),
+                                    : _t('Continue to platform',
+                                        'الدخول إلى المنصة'),
                               ),
                             ),
                           ),
@@ -1736,8 +2598,10 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
-                              onPressed: () => Navigator.push(context, _fadeRoute(const RegisterPage())),
-                              child: Text(_t('Create new account', 'إنشاء حساب جديد')),
+                              onPressed: () => Navigator.push(
+                                  context, _fadeRoute(const RegisterPage())),
+                              child: Text(
+                                  _t('Create new account', 'إنشاء حساب جديد')),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -1748,8 +2612,10 @@ class _LoginPageState extends State<LoginPage> {
                                 context,
                                 _fadeRoute(const GuidedDemoPage()),
                               ),
-                              icon: const Icon(Icons.play_circle_outline_rounded),
-                              label: Text(_t('Watch full demo', 'مشاهدة الديمو الكامل')),
+                              icon:
+                                  const Icon(Icons.play_circle_outline_rounded),
+                              label: Text(_t(
+                                  'Watch full demo', 'مشاهدة الديمو الكامل')),
                             ),
                           ),
                         ],
@@ -1758,7 +2624,10 @@ class _LoginPageState extends State<LoginPage> {
                     return wide
                         ? Row(
                             children: [
-                              Expanded(child: Padding(padding: const EdgeInsets.only(right: 24), child: intro)),
+                              Expanded(
+                                  child: Padding(
+                                      padding: const EdgeInsets.only(right: 24),
+                                      child: intro)),
                               Expanded(child: form),
                             ],
                           )
@@ -1809,23 +2678,23 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     if (!RegExp(r'^[0-9+\-\s]{8,20}$').hasMatch(mobile)) {
-      setState(() => _error = _t('Enter a valid mobile number.', 'أدخل رقم هاتف صحيح.'));
+      setState(() =>
+          _error = _t('Enter a valid mobile number.', 'أدخل رقم هاتف صحيح.'));
       return;
     }
     if (password.length < 6) {
-      setState(() => _error = _t(
-          'Password must be at least 6 characters.',
+      setState(() => _error = _t('Password must be at least 6 characters.',
           'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'));
       return;
     }
     if (password != confirm) {
-      setState(() => _error = _t(
-          'Password confirmation does not match.',
+      setState(() => _error = _t('Password confirmation does not match.',
           'تأكيد كلمة المرور غير مطابق.'));
       return;
     }
     if (_role == 'doctor' && _specialty.text.trim().isEmpty) {
-      setState(() => _error = _t('Enter medical specialty.', 'أدخل التخصص الطبي.'));
+      setState(
+          () => _error = _t('Enter medical specialty.', 'أدخل التخصص الطبي.'));
       return;
     }
 
@@ -1939,12 +2808,20 @@ class _RegisterPageState extends State<RegisterPage> {
               _signalChip(Icons.verified_user_outlined,
                   _t('Secure onboarding', 'دخول آمن')),
               _signalChip(
-                isDoctor ? Icons.dashboard_customize_outlined : Icons.monitor_heart_outlined,
-                isDoctor ? _t('Doctor dashboard', 'لوحة الطبيب') : _t('Personal ECG', 'ECG شخصي'),
+                isDoctor
+                    ? Icons.dashboard_customize_outlined
+                    : Icons.monitor_heart_outlined,
+                isDoctor
+                    ? _t('Doctor dashboard', 'لوحة الطبيب')
+                    : _t('Personal ECG', 'ECG شخصي'),
               ),
               _signalChip(
-                isDoctor ? Icons.assignment_outlined : Icons.insert_chart_outlined_rounded,
-                isDoctor ? _t('Clinical reports', 'تقارير سريرية') : _t('Health tracking', 'متابعة صحية'),
+                isDoctor
+                    ? Icons.assignment_outlined
+                    : Icons.insert_chart_outlined_rounded,
+                isDoctor
+                    ? _t('Clinical reports', 'تقارير سريرية')
+                    : _t('Health tracking', 'متابعة صحية'),
               ),
             ],
           ),
@@ -2131,6 +3008,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
+
 class GuidedDemoPage extends StatefulWidget {
   const GuidedDemoPage({super.key});
 
@@ -2139,16 +3017,17 @@ class GuidedDemoPage extends StatefulWidget {
 }
 
 class _GuidedDemoPageState extends State<GuidedDemoPage> {
-  static const List<({
-    String title,
-    String titleAr,
-    String description,
-    String descriptionAr,
-    IconData icon,
-    Color color,
-    List<String> points,
-    List<String> pointsAr,
-  })> _scenes = [
+  static const List<
+      ({
+        String title,
+        String titleAr,
+        String description,
+        String descriptionAr,
+        IconData icon,
+        Color color,
+        List<String> points,
+        List<String> pointsAr,
+      })> _scenes = [
     (
       title: 'Secure Clinical Sign-In',
       titleAr: 'تسجيل دخول سريري آمن',
@@ -2277,7 +3156,9 @@ class _GuidedDemoPageState extends State<GuidedDemoPage> {
                             ),
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: dark ? Colors.white70 : AppColors.textSecondary,
+                              color: dark
+                                  ? Colors.white70
+                                  : AppColors.textSecondary,
                               fontSize: 12.5,
                             ),
                           ),
@@ -2328,7 +3209,9 @@ class _GuidedDemoPageState extends State<GuidedDemoPage> {
                                 'هذا الديمو يعرض تسجيل الدخول ومراجعة الطبيب وECG الحي والتحليل الذكي والتقرير النهائي.',
                               ),
                               style: TextStyle(
-                                color: dark ? Colors.white70 : AppColors.textSecondary,
+                                color: dark
+                                    ? Colors.white70
+                                    : AppColors.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -2343,17 +3226,21 @@ class _GuidedDemoPageState extends State<GuidedDemoPage> {
                   child: PageView.builder(
                     controller: _controller,
                     itemCount: _scenes.length,
-                    onPageChanged: (value) => setState(() => _currentIndex = value),
+                    onPageChanged: (value) =>
+                        setState(() => _currentIndex = value),
                     itemBuilder: (context, index) {
                       final scene = _scenes[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: _DemoSceneCard(
                           title: _t(scene.title, scene.titleAr),
-                          description: _t(scene.description, scene.descriptionAr),
+                          description:
+                              _t(scene.description, scene.descriptionAr),
                           icon: scene.icon,
                           color: scene.color,
-                          points: AppState.isArabic.value ? scene.pointsAr : scene.points,
+                          points: AppState.isArabic.value
+                              ? scene.pointsAr
+                              : scene.points,
                           active: index == _currentIndex,
                         ),
                       );
@@ -2371,7 +3258,9 @@ class _GuidedDemoPageState extends State<GuidedDemoPage> {
                       width: _currentIndex == index ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _currentIndex == index ? AppColors.accent : AppColors.border,
+                        color: _currentIndex == index
+                            ? AppColors.accent
+                            : AppColors.border,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
@@ -2392,10 +3281,12 @@ class _GuidedDemoPageState extends State<GuidedDemoPage> {
                       child: ElevatedButton.icon(
                         onPressed: () => Navigator.pushReplacement(
                           context,
-                          _fadeRoute(const RoleSelectionPage(username: 'Demo User')),
+                          _fadeRoute(
+                              const RoleSelectionPage(username: 'Demo User')),
                         ),
                         icon: const Icon(Icons.rocket_launch_outlined),
-                        label: Text(_t('Open demo flow', 'فتح الديمو التفاعلي')),
+                        label:
+                            Text(_t('Open demo flow', 'فتح الديمو التفاعلي')),
                       ),
                     ),
                   ],
@@ -2487,7 +3378,9 @@ class _DemoSceneCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       color.withAlpha(22),
-                      dark ? AppColors.surfaceDark.withAlpha(180) : Colors.white,
+                      dark
+                          ? AppColors.surfaceDark.withAlpha(180)
+                          : Colors.white,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
@@ -2505,7 +3398,8 @@ class _DemoSceneCard extends StatelessWidget {
                         _demoStatusDot(AppColors.success),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: color.withAlpha(26),
                             borderRadius: BorderRadius.circular(999),
@@ -2533,7 +3427,9 @@ class _DemoSceneCard extends StatelessWidget {
                                 Text(
                                   description,
                                   style: TextStyle(
-                                    color: dark ? Colors.white70 : AppColors.textSecondary,
+                                    color: dark
+                                        ? Colors.white70
+                                        : AppColors.textSecondary,
                                     fontSize: 14.5,
                                     height: 1.55,
                                   ),
@@ -2544,13 +3440,16 @@ class _DemoSceneCard extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 10),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.check_circle_rounded, color: color, size: 18),
+                                        Icon(Icons.check_circle_rounded,
+                                            color: color, size: 18),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             point,
                                             style: TextStyle(
-                                              color: dark ? Colors.white : AppColors.primary,
+                                              color: dark
+                                                  ? Colors.white
+                                                  : AppColors.primary,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -2575,7 +3474,9 @@ class _DemoSceneCard extends StatelessWidget {
                                 const SizedBox(height: 10),
                                 _demoMetricCard(
                                   label: _t('AI Status', 'حالة الذكاء'),
-                                  value: active ? _t('Active', 'نشط') : _t('Ready', 'جاهز'),
+                                  value: active
+                                      ? _t('Active', 'نشط')
+                                      : _t('Ready', 'جاهز'),
                                   color: AppColors.success,
                                 ),
                                 const SizedBox(height: 10),
@@ -2587,32 +3488,58 @@ class _DemoSceneCard extends StatelessWidget {
                                 const Spacer(),
                                 Container(
                                   height: 88,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: dark ? AppColors.primaryDark.withAlpha(150) : Colors.white,
+                                    color: dark
+                                        ? AppColors.primaryDark.withAlpha(150)
+                                        : Colors.white,
                                     borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(color: AppColors.border.withAlpha(120)),
+                                    border: Border.all(
+                                        color: AppColors.border.withAlpha(120)),
                                   ),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: List.generate(18, (bar) {
                                       const values = [
-                                        0.20, 0.34, 0.40, 0.54, 0.48, 0.72, 0.26, 0.18, 0.29,
-                                        0.44, 0.60, 0.86, 0.50, 0.33, 0.24, 0.28, 0.46, 0.58,
+                                        0.20,
+                                        0.34,
+                                        0.40,
+                                        0.54,
+                                        0.48,
+                                        0.72,
+                                        0.26,
+                                        0.18,
+                                        0.29,
+                                        0.44,
+                                        0.60,
+                                        0.86,
+                                        0.50,
+                                        0.33,
+                                        0.24,
+                                        0.28,
+                                        0.46,
+                                        0.58,
                                       ];
                                       return Expanded(
                                         child: Align(
                                           alignment: Alignment.bottomCenter,
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 420),
-                                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                                            duration: const Duration(
+                                                milliseconds: 420),
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 2),
                                             height: 56 * values[bar] + 8,
                                             decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(999),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
                                               gradient: LinearGradient(
                                                 begin: Alignment.topCenter,
                                                 end: Alignment.bottomCenter,
-                                                colors: [color, color.withAlpha(90)],
+                                                colors: [
+                                                  color,
+                                                  color.withAlpha(90)
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -2719,14 +3646,20 @@ class RoleSelectionPage extends StatelessWidget {
               _roleCard(
                 icon: Icons.medical_services_outlined,
                 title: _t('Doctor workspace', 'مساحة الطبيب'),
-                sub: _t('Command center for patients, analyses, reports, and clinical review', 'مركز قيادة للمرضى والتحليلات والتقارير والمراجعة السريرية'),
+                sub: _t(
+                    'Command center for patients, analyses, reports, and clinical review',
+                    'مركز قيادة للمرضى والتحليلات والتقارير والمراجعة السريرية'),
                 color: AppColors.accent,
                 onTap: () {
                   final doctor = AppState.currentDoctorProfile;
                   if (doctor == null) {
                     AppState.currentWorkspace = 'role_selection';
-                    unawaited(AppState.persistSession(workspace: 'role_selection'));
-                    Navigator.push(context, _fadeRoute(const DoctorProfileSetupPage(initialName: '')));
+                    unawaited(
+                        AppState.persistSession(workspace: 'role_selection'));
+                    Navigator.push(
+                        context,
+                        _fadeRoute(
+                            const DoctorProfileSetupPage(initialName: '')));
                   } else {
                     ApiService.currentUsername = doctor.name;
                     AppState.currentWorkspace = 'doctor_dashboard';
@@ -2734,7 +3667,8 @@ class RoleSelectionPage extends StatelessWidget {
                       username: doctor.name,
                       workspace: 'doctor_dashboard',
                     ));
-                    Navigator.push(context, _fadeRoute(DoctorDashboard(username: doctor.name)));
+                    Navigator.push(context,
+                        _fadeRoute(DoctorDashboard(username: doctor.name)));
                   }
                 },
               ),
@@ -2742,7 +3676,9 @@ class RoleSelectionPage extends StatelessWidget {
               _roleCard(
                 icon: Icons.favorite_outline,
                 title: _t('Patient workspace', 'مساحة المريض'),
-                sub: _t('Personal monitoring, ECG upload, reports, and independent health tracking', 'مراقبة شخصية ورفع ECG والتقارير والمتابعة الصحية المستقلة'),
+                sub: _t(
+                    'Personal monitoring, ECG upload, reports, and independent health tracking',
+                    'مراقبة شخصية ورفع ECG والتقارير والمتابعة الصحية المستقلة'),
                 color: AppColors.success,
                 onTap: () {
                   ApiService.currentUsername = username;
@@ -2751,14 +3687,17 @@ class RoleSelectionPage extends StatelessWidget {
                     username: username,
                     workspace: 'patient_home',
                   ));
-                  Navigator.push(context, _fadeRoute(PatientHome(username: username)));
+                  Navigator.push(
+                      context, _fadeRoute(PatientHome(username: username)));
                 },
               ),
               const SizedBox(height: 14),
               _roleCard(
                 icon: Icons.auto_awesome_outlined,
                 title: _t('Guest / demo', 'ضيف / عرض'),
-                sub: _t('Explore the analysis workflow and result experience with real ECG processing', 'استكشف مسار التحليل وتجربة النتائج مع معالجة ECG حقيقية'),
+                sub: _t(
+                    'Explore the analysis workflow and result experience with real ECG processing',
+                    'استكشف مسار التحليل وتجربة النتائج مع معالجة ECG حقيقية'),
                 color: AppColors.accentDeep,
                 onTap: () {
                   Navigator.push(
@@ -2857,24 +3796,27 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
       _workflowStage(
         index: '01',
         title: _t('Select source', 'اختيار المصدر'),
-        subtitle: _t('Image, upload, or live wearable session.', 'صورة أو رفع ملفات أو جلسة مباشرة.'),
+        subtitle: _t('Image, upload, or live wearable session.',
+            'صورة أو رفع ملفات أو جلسة مباشرة.'),
       ),
       _workflowStage(
         index: '02',
         title: _t('Attach identity', 'إرفاق الهوية'),
-        subtitle: _t('Patient and doctor fields travel with the report.', 'بيانات المريض والطبيب تنتقل مع التقرير.'),
+        subtitle: _t('Patient and doctor fields travel with the report.',
+            'بيانات المريض والطبيب تنتقل مع التقرير.'),
       ),
       _workflowStage(
         index: '03',
         title: _t('Analyze and report', 'التحليل والتقرير'),
-        subtitle: _t('Open the AI result and export the PDF.', 'افتح النتيجة ثم صدّر التقرير PDF.'),
+        subtitle: _t('Open the AI result and export the PDF.',
+            'افتح النتيجة ثم صدّر التقرير PDF.'),
       ),
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.roleTitle),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: AppBackdrop(
         dark: Theme.of(context).brightness == Brightness.dark,
@@ -2884,7 +3826,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
             AppHeroBanner(
               title: widget.roleTitle,
               subtitle: widget.roleSubtitle,
-              icon: isDemo ? Icons.play_circle_outline_rounded : Icons.auto_graph,
+              icon:
+                  isDemo ? Icons.play_circle_outline_rounded : Icons.auto_graph,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -2956,7 +3899,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                       children: [
                         for (int i = 0; i < workflow.length; i++) ...[
                           Expanded(child: workflow[i]),
-                          if (i != workflow.length - 1) const SizedBox(width: 12),
+                          if (i != workflow.length - 1)
+                            const SizedBox(width: 12),
                         ],
                       ],
                     )
@@ -2964,7 +3908,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                       children: [
                         for (int i = 0; i < workflow.length; i++) ...[
                           workflow[i],
-                          if (i != workflow.length - 1) const SizedBox(height: 10),
+                          if (i != workflow.length - 1)
+                            const SizedBox(height: 10),
                         ],
                       ],
                     ),
@@ -2978,25 +3923,31 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
               ),
               child: Column(
                 children: [
-                  _formField(_name, _t('Patient name', 'اسم المريض'), Icons.badge_outlined),
+                  _formField(_name, _t('Patient name', 'اسم المريض'),
+                      Icons.badge_outlined),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: _formField(_age, _t('Age', 'العمر'), Icons.cake_outlined),
+                        child: _formField(
+                            _age, _t('Age', 'العمر'), Icons.cake_outlined),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                      child: DropdownButtonFormField<String>(
+                        child: DropdownButtonFormField<String>(
                           initialValue: _sex,
                           decoration: InputDecoration(
                             labelText: _t('Sex', 'النوع'),
                             prefixIcon: const Icon(Icons.wc_outlined),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Not specified', child: Text('Not specified')),
-                            DropdownMenuItem(value: 'Male', child: Text('Male')),
-                            DropdownMenuItem(value: 'Female', child: Text('Female')),
+                            DropdownMenuItem(
+                                value: 'Not specified',
+                                child: Text('Not specified')),
+                            DropdownMenuItem(
+                                value: 'Male', child: Text('Male')),
+                            DropdownMenuItem(
+                                value: 'Female', child: Text('Female')),
                           ],
                           onChanged: (value) {
                             if (value != null) {
@@ -3008,7 +3959,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _formField(_doctor, _t('Doctor name', 'اسم الطبيب'), Icons.local_hospital_outlined),
+                  _formField(_doctor, _t('Doctor name', 'اسم الطبيب'),
+                      Icons.local_hospital_outlined),
                   const SizedBox(height: 12),
                   _formField(
                     _notes,
@@ -3028,47 +3980,51 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
               ),
               child: Column(
                 children: [
-                    _analysisActionTile(
-                      title: _t('ECG image', 'صورة ECG'),
+                  _analysisActionTile(
+                    title: _t('ECG image', 'صورة ECG'),
                     subtitle: _t(
                       'Use camera or gallery with patient context attached.',
                       'استخدم الكاميرا أو المعرض مع إرفاق بيانات المريض.',
                     ),
                     icon: Icons.photo_camera_back_outlined,
-                      color: isDemo ? AppColors.accentDeep : AppColors.accent,
+                    color: isDemo ? AppColors.accentDeep : AppColors.accent,
                     onTap: () => Navigator.push(
                       context,
-                      _fadeRoute(ECGAnalysisPage(api: widget.api, draft: _draft('ECG image'))),
+                      _fadeRoute(ECGAnalysisPage(
+                          api: widget.api, draft: _draft('ECG image'))),
                     ),
                   ),
                   const SizedBox(height: 12),
-                    _analysisActionTile(
-                      title: _t('WFDB file upload', 'رفع ملفات WFDB'),
+                  _analysisActionTile(
+                    title: _t('WFDB file upload', 'رفع ملفات WFDB'),
                     subtitle: _t(
                       'Upload `.hea`, `.dat`, or the full pair. Automatic sibling matching is attempted when possible.',
                       'ارفع `.hea` أو `.dat` أو الزوج كاملًا، مع محاولة مطابقة الملف الشقيق تلقائيًا.',
                     ),
                     icon: Icons.file_present_outlined,
-                      color: isDemo ? AppColors.secondary : AppColors.success,
+                    color: isDemo ? AppColors.secondary : AppColors.success,
                     onTap: () => Navigator.push(
                       context,
-                      _fadeRoute(FileUploadPage(api: widget.api, draft: _draft('WFDB upload'))),
+                      _fadeRoute(FileUploadPage(
+                          api: widget.api, draft: _draft('WFDB upload'))),
                     ),
                   ),
                   const SizedBox(height: 12),
-                    _analysisActionTile(
-                      title: _t('Live wearable session', 'جلسة جهاز مباشر'),
+                  _analysisActionTile(
+                    title: _t('Live wearable session', 'جلسة جهاز مباشر'),
                     subtitle: _t(
                       'Open the monitoring workstation for ESP32 one-lead streaming.',
                       'افتح منصة المراقبة لجلسات ESP32 أحادية القناة.',
                     ),
                     icon: Icons.monitor_heart_outlined,
-                      color: isDemo ? AppColors.primary : AppColors.warning,
+                    color: isDemo ? AppColors.primary : AppColors.warning,
                     onTap: () => Navigator.push(
                       context,
                       _fadeRoute(
                         PatientLiveScreen(
-                          username: _name.text.trim().isEmpty ? widget.sourceLabel : _name.text.trim(),
+                          username: _name.text.trim().isEmpty
+                              ? widget.sourceLabel
+                              : _name.text.trim(),
                         ),
                       ),
                     ),
@@ -3087,7 +4043,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                 children: const [
                   _BulletLine(text: 'Patient-linked analysis context'),
                   _BulletLine(text: 'Real AI-assisted screening result'),
-                  _BulletLine(text: 'Waveform preview and computed measurements'),
+                  _BulletLine(
+                      text: 'Waveform preview and computed measurements'),
                   _BulletLine(text: 'PDF export and shareable report output'),
                 ],
               ),
@@ -3143,7 +4100,10 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: dark ? Colors.white60 : AppColors.textSecondary, fontSize: 12, height: 1.35),
+                  style: TextStyle(
+                      color: dark ? Colors.white60 : AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.35),
                 ),
               ],
             ),
@@ -3174,7 +4134,10 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: dark ? Colors.white60 : AppColors.textSecondary, fontSize: 12)),
+          Text(subtitle,
+              style: TextStyle(
+                  color: dark ? Colors.white60 : AppColors.textSecondary,
+                  fontSize: 12)),
           const SizedBox(height: 14),
           child,
         ],
@@ -3309,8 +4272,10 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   final TextEditingController _phone = TextEditingController();
-  final TextEditingController _specialty = TextEditingController(text: 'Cardiology');
-  final TextEditingController _clinic = TextEditingController(text: 'Heart Clinic');
+  final TextEditingController _specialty =
+      TextEditingController(text: 'Cardiology');
+  final TextEditingController _clinic =
+      TextEditingController(text: 'Heart Clinic');
 
   @override
   void initState() {
@@ -3395,10 +4360,12 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        _t('Finalize your clinician profile', 'أكمل ملفك كطبيب'),
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                        _t('Finalize your clinician profile',
+                            'أكمل ملفك كطبيب'),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -3557,9 +4524,10 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                     children: [
                       Text(
                         _t('Create the patient profile', 'أنشئ ملف المريض'),
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -3573,16 +4541,16 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                             ),
                       ),
                       const SizedBox(height: 18),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            _signalChip(Icons.favorite_outline,
-                                _t('Patient identity', 'هوية المريض')),
-                            _signalChip(Icons.arrow_forward_rounded,
-                                _t('Direct access', 'دخول مباشر')),
-                          ],
-                        ),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _signalChip(Icons.favorite_outline,
+                              _t('Patient identity', 'هوية المريض')),
+                          _signalChip(Icons.arrow_forward_rounded,
+                              _t('Direct access', 'دخول مباشر')),
+                        ],
+                      ),
                       const SizedBox(height: 24),
                       _formField(
                         _name,
@@ -3604,7 +4572,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                         child: ElevatedButton.icon(
                           onPressed: _submit,
                           icon: const Icon(Icons.arrow_forward_rounded),
-                          label: Text(_t('Continue to Patient Workspace', 'المتابعة إلى مساحة المريض')),
+                          label: Text(_t('Continue to Patient Workspace',
+                              'المتابعة إلى مساحة المريض')),
                         ),
                       ),
                     ],
@@ -3676,9 +4645,12 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (patientId == null) continue;
       try {
         final report = await api.getReport(patientId);
-        final latestRisk = report.riskLevels.isNotEmpty ? report.riskLevels.last : 'No risk';
-        final latestBpm = report.bpm.isNotEmpty ? '${report.bpm.last} bpm' : 'Unavailable';
-        final latestLabel = report.labels.isNotEmpty ? report.labels.last : 'No timeline label';
+        final latestRisk =
+            report.riskLevels.isNotEmpty ? report.riskLevels.last : 'No risk';
+        final latestBpm =
+            report.bpm.isNotEmpty ? '${report.bpm.last} bpm' : 'Unavailable';
+        final latestLabel =
+            report.labels.isNotEmpty ? report.labels.last : 'No timeline label';
         reports.add(
           ReportLibraryEntry(
             patient: patient,
@@ -3712,7 +4684,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('Clinical Command Center', 'مركز المتابعة السريري')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: AppBackdrop(
         dark: Theme.of(context).brightness == Brightness.dark,
@@ -3741,7 +4713,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 }
                 final home = snapshot.data ??
                     DoctorHomeSnapshot(
-                      stats: StatsModel(patients: 0, emergencies: 0, messages: 0),
+                      stats:
+                          StatsModel(patients: 0, emergencies: 0, messages: 0),
                       patients: [],
                       appointments: [],
                       reports: [],
@@ -3769,28 +4742,32 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         AppMetricTile(
                           label: _t('Patients', 'المرضى'),
                           value: stats.patients.toString(),
-                          caption: _t('Tracked patient profiles', 'ملفات المرضى المتابعة'),
+                          caption: _t('Tracked patient profiles',
+                              'ملفات المرضى المتابعة'),
                           accent: AppColors.accent,
                           icon: Icons.people_rounded,
                         ),
                         AppMetricTile(
                           label: _t('Flagged', 'الحالات الحرجة'),
                           value: stats.emergencies.toString(),
-                          caption: _t('Priority review queue', 'قائمة المراجعة العاجلة'),
+                          caption: _t('Priority review queue',
+                              'قائمة المراجعة العاجلة'),
                           accent: AppColors.danger,
                           icon: Icons.priority_high_rounded,
                         ),
                         AppMetricTile(
                           label: _t('Messages', 'الرسائل'),
                           value: stats.messages.toString(),
-                          caption: _t('Unread communication items', 'عناصر التواصل غير المقروءة'),
+                          caption: _t('Unread communication items',
+                              'عناصر التواصل غير المقروءة'),
                           accent: AppColors.success,
                           icon: Icons.chat_bubble_rounded,
                         ),
                         AppMetricTile(
                           label: _t('Workflow', 'العمل السريري'),
                           value: _t('Active', 'نشط'),
-                          caption: _t('Analysis and review services online', 'خدمات التحليل والمراجعة متاحة'),
+                          caption: _t('Analysis and review services online',
+                              'خدمات التحليل والمراجعة متاحة'),
                           accent: AppColors.primary,
                           icon: Icons.monitor_heart_rounded,
                         ),
@@ -3802,6 +4779,10 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     _doctorPulsePanel(stats),
                     const SizedBox(height: 16),
                     _doctorRecentStrip(home),
+                    const SizedBox(height: 16),
+                    _doctorMessagingAiCard(home),
+                    const SizedBox(height: 16),
+                    _doctorCopilotCard(home),
                   ],
                 );
               },
@@ -3819,9 +4800,29 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: Column(children: [_doctorAnalysisCard(), const SizedBox(height: 14), _doctorUploadCard(), const SizedBox(height: 14), _doctorReportsCard(), const SizedBox(height: 14), _doctorRecentReportsCard()])),
+                  Expanded(
+                      child: Column(children: [
+                    _doctorAnalysisCard(),
+                    const SizedBox(height: 14),
+                    _doctorUploadCard(),
+                    const SizedBox(height: 14),
+                    _doctorReportsCard(),
+                    const SizedBox(height: 14),
+                    _doctorRecentReportsCard()
+                  ])),
                   const SizedBox(width: 14),
-                  Expanded(child: Column(children: [_doctorCareCard(), const SizedBox(height: 14), _doctorMessagesCard(context), const SizedBox(height: 14), _doctorPatientsCard(), const SizedBox(height: 14), _doctorPriorityPanel(), const SizedBox(height: 14), _doctorAppointmentsCard()])),
+                  Expanded(
+                      child: Column(children: [
+                    _doctorCareCard(),
+                    const SizedBox(height: 14),
+                    _doctorMessagesCard(context),
+                    const SizedBox(height: 14),
+                    _doctorPatientsCard(),
+                    const SizedBox(height: 14),
+                    _doctorPriorityPanel(),
+                    const SizedBox(height: 14),
+                    _doctorAppointmentsCard()
+                  ])),
                 ],
               )
             else
@@ -3886,12 +4887,15 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 const SizedBox(height: 4),
                 Text(
                   specialty,
-                  style: TextStyle(color: dark ? Colors.white70 : AppColors.textSecondary),
+                  style: TextStyle(
+                      color: dark ? Colors.white70 : AppColors.textSecondary),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   clinic,
-                  style: TextStyle(color: dark ? Colors.white54 : AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                      color: dark ? Colors.white54 : AppColors.textSecondary,
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -3919,7 +4923,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   Widget _doctorAnalysisCard() {
     return _dashboardCard(
       title: _t('Unified Analysis Hub', 'بوابة التحليل الموحدة'),
-      subtitle: _t('Patient context + image + files + live routing', 'بيانات المريض مع الصورة والملفات والبث المباشر'),
+      subtitle: _t('Patient context + image + files + live routing',
+          'بيانات المريض مع الصورة والملفات والبث المباشر'),
       icon: Icons.auto_graph,
       color: AppColors.accent,
       onTap: () => Navigator.push(
@@ -3951,7 +4956,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   Widget _doctorUploadCard() {
     return _dashboardCard(
       title: _t('Signal Upload (.hea/.dat)', 'رفع الإشارة (.hea/.dat)'),
-      subtitle: _t('Direct WFDB upload shortcut', 'اختصار مباشر لرفع سجلات WFDB'),
+      subtitle:
+          _t('Direct WFDB upload shortcut', 'اختصار مباشر لرفع سجلات WFDB'),
       icon: Icons.upload_file,
       color: AppColors.success,
       onTap: () => Navigator.push(
@@ -3976,7 +4982,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   Widget _doctorReportsCard() {
     return _dashboardCard(
       title: _t('Report Center', 'مركز التقارير'),
-      subtitle: _t('Clinical summaries, PDF exports, and review packages', 'ملخصات سريرية وتصدير PDF وحزم مراجعة'),
+      subtitle: _t('Clinical summaries, PDF exports, and review packages',
+          'ملخصات سريرية وتصدير PDF وحزم مراجعة'),
       icon: Icons.analytics_outlined,
       color: AppColors.warning,
       onTap: () => Navigator.push(
@@ -4009,46 +5016,61 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   'أحدث التقارير الناتجة من ملفات المرضى المتصلة.',
                 ),
                 action: TextButton(
-                  onPressed: () => Navigator.push(context, _scaleRoute(const DoctorReportsPage())),
+                  onPressed: () => Navigator.push(
+                      context, _scaleRoute(const DoctorReportsPage())),
                   child: Text(_t('Open center', 'فتح المركز')),
                 ),
               ),
               const SizedBox(height: 10),
               if (reports.isEmpty)
-                _emptyState(_t('No reports generated yet.', 'لا توجد تقارير مولدة بعد.'))
+                _emptyState(_t(
+                    'No reports generated yet.', 'لا توجد تقارير مولدة بعد.'))
               else
                 ...reports.take(3).map(
-                  (entry) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _riskColor(entry.latestRisk).withAlpha(12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _riskColor(entry.latestRisk).withAlpha(38)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: _riskColor(entry.latestRisk).withAlpha(24),
-                          child: Icon(Icons.description_outlined, color: _riskColor(entry.latestRisk)),
+                      (entry) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _riskColor(entry.latestRisk).withAlpha(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color:
+                                  _riskColor(entry.latestRisk).withAlpha(38)),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(entry.patient.name, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
-                              const SizedBox(height: 3),
-                              Text('${entry.latestRisk} • ${entry.latestBpm}', style: const TextStyle(color: AppColors.textSecondary)),
-                              const SizedBox(height: 2),
-                              Text(entry.latestDate, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                            ],
-                          ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor:
+                                  _riskColor(entry.latestRisk).withAlpha(24),
+                              child: Icon(Icons.description_outlined,
+                                  color: _riskColor(entry.latestRisk)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(entry.patient.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primary)),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                      '${entry.latestRisk} • ${entry.latestBpm}',
+                                      style: const TextStyle(
+                                          color: AppColors.textSecondary)),
+                                  const SizedBox(height: 2),
+                                  Text(entry.latestDate,
+                                      style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
             ],
           ),
         );
@@ -4056,10 +5078,193 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     );
   }
 
+  Widget _doctorCopilotCard(DoctorHomeSnapshot home) {
+    final brief = _buildDoctorCopilotBrief(home);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(
+            title: _t('AI Doctor Copilot', 'المساعد الذكي للطبيب'),
+            subtitle: _t(
+              'A quick AI-generated briefing from the currently loaded reports, patients, and appointments.',
+              'ملخص ذكي سريع مبني على التقارير والمرضى والمواعيد المحمّلة حاليًا.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: brief.color.withAlpha(12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: brief.color.withAlpha(40)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  brief.headline,
+                  style: GoogleFonts.sora(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brief.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  brief.summary,
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...brief.priorities.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(Icons.circle, size: 10, color: brief.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _doctorMessagingAiCard(DoctorHomeSnapshot home) {
+    final brief = _buildMessagingOpsBrief(home);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(
+            title: _t('AI Messaging Summary', 'ملخص المراسلة الذكي'),
+            subtitle: _t(
+              'AI reads the current dashboard workload to suggest the right communication pace.',
+              'يلخّص الذكاء الاصطناعي ضغط المراسلات الحالي لاقتراح وتيرة المتابعة المناسبة.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: brief.color.withAlpha(12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: brief.color.withAlpha(35)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  brief.headline,
+                  style: GoogleFonts.sora(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brief.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  brief.summary,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: AppMetricTile(
+                  label: 'Queue',
+                  value: brief.queueLabel,
+                  caption: _t('Communication pressure', 'ضغط المراسلات'),
+                  accent: brief.color,
+                  icon: Icons.mark_unread_chat_alt_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: AppMetricTile(
+                  label: 'Response',
+                  value: brief.responseLabel,
+                  caption: _t('Suggested pace', 'الوتيرة المقترحة'),
+                  accent: AppColors.primary,
+                  icon: Icons.reply_all_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...brief.bullets.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(Icons.circle, size: 10, color: brief.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _doctorCareCard() {
     return _dashboardCard(
       title: _t('Care Coordination', 'تنسيق المتابعة'),
-      subtitle: _t('Visits, follow-up planning, and patient coordination', 'الزيارات وخطة المتابعة وتنسيق الرعاية'),
+      subtitle: _t('Visits, follow-up planning, and patient coordination',
+          'الزيارات وخطة المتابعة وتنسيق الرعاية'),
       icon: Icons.event_available,
       color: AppColors.accent,
       onTap: () => Navigator.push(
@@ -4099,7 +5304,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   Widget _doctorPatientsCard() {
     return _dashboardCard(
       title: _t('Patients', 'المرضى'),
-      subtitle: _t('Registry, assignment, and review access', 'السجل والتعيين والوصول للمراجعة'),
+      subtitle: _t('Registry, assignment, and review access',
+          'السجل والتعيين والوصول للمراجعة'),
       icon: Icons.people_alt_outlined,
       color: AppColors.primary,
       onTap: () => Navigator.push(
@@ -4112,7 +5318,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   Widget _doctorAppointmentsCard() {
     return _dashboardCard(
       title: _t('Appointments', 'المواعيد'),
-      subtitle: _t('Open the scheduling queue and follow-up calendar', 'افتح قائمة المواعيد وجدول المتابعة'),
+      subtitle: _t('Open the scheduling queue and follow-up calendar',
+          'افتح قائمة المواعيد وجدول المتابعة'),
       icon: Icons.event_note_outlined,
       color: AppColors.secondary,
       onTap: () => Navigator.push(
@@ -4133,18 +5340,26 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: completed ? AppColors.success.withAlpha(10) : AppColors.warning.withAlpha(10),
+        color: completed
+            ? AppColors.success.withAlpha(10)
+            : AppColors.warning.withAlpha(10),
         borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
-          color: completed ? AppColors.success.withAlpha(40) : AppColors.warning.withAlpha(50),
+          color: completed
+              ? AppColors.success.withAlpha(40)
+              : AppColors.warning.withAlpha(50),
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: completed ? AppColors.success.withAlpha(18) : AppColors.warning.withAlpha(20),
+            backgroundColor: completed
+                ? AppColors.success.withAlpha(18)
+                : AppColors.warning.withAlpha(20),
             child: Icon(
-              completed ? Icons.verified_user_outlined : Icons.assignment_ind_outlined,
+              completed
+                  ? Icons.verified_user_outlined
+                  : Icons.assignment_ind_outlined,
               color: completed ? AppColors.success : AppColors.warning,
             ),
           ),
@@ -4154,15 +5369,24 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  completed ? _t('Doctor onboarding complete', 'تم إكمال إعداد الطبيب') : _t('Finish doctor setup', 'أكمل إعداد الطبيب'),
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
+                  completed
+                      ? _t(
+                          'Doctor onboarding complete', 'تم إكمال إعداد الطبيب')
+                      : _t('Finish doctor setup', 'أكمل إعداد الطبيب'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, color: AppColors.primary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   completed
-                      ? _t('Your workspace is ready for patient assignment, messaging, and reporting.', 'مساحة العمل جاهزة لإسناد المرضى والمراسلة والتقارير.')
-                      : _t('Add the missing professional fields so reports and follow-up screens look complete: ${missing.join(", ")}.', 'أضف الحقول المهنية الناقصة ليظهر التقرير والمتابعة بشكل مكتمل: ${missing.join("، ")}.'),
-                  style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                      ? _t(
+                          'Your workspace is ready for patient assignment, messaging, and reporting.',
+                          'مساحة العمل جاهزة لإسناد المرضى والمراسلة والتقارير.')
+                      : _t(
+                          'Add the missing professional fields so reports and follow-up screens look complete: ${missing.join(", ")}.',
+                          'أضف الحقول المهنية الناقصة ليظهر التقرير والمتابعة بشكل مكتمل: ${missing.join("، ")}.'),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, height: 1.45),
                 ),
               ],
             ),
@@ -4170,9 +5394,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           TextButton(
             onPressed: () => Navigator.push(
               context,
-              _fadeRoute(DoctorProfileSetupPage(initialName: profile?.name ?? widget.username)),
+              _fadeRoute(DoctorProfileSetupPage(
+                  initialName: profile?.name ?? widget.username)),
             ),
-            child: Text(completed ? _t('Edit', 'تعديل') : _t('Complete', 'إكمال')),
+            child:
+                Text(completed ? _t('Edit', 'تعديل') : _t('Complete', 'إكمال')),
           ),
         ],
       ),
@@ -4180,7 +5406,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 
   Widget _doctorRecentStrip(DoctorHomeSnapshot home) {
-    final nextAppointment = home.appointments.isNotEmpty ? home.appointments.first : null;
+    final nextAppointment =
+        home.appointments.isNotEmpty ? home.appointments.first : null;
     final latestReport = home.reports.isNotEmpty ? home.reports.first : null;
     return Row(
       children: [
@@ -4198,8 +5425,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           child: AppMetricTile(
             label: _t('Latest report', 'آخر تقرير'),
             value: latestReport?.patient.name ?? _t('No reports', 'لا يوجد'),
-            caption: latestReport?.latestRisk ?? _t('No generated files yet', 'لا توجد ملفات مولدة بعد'),
-            accent: latestReport == null ? AppColors.accent : _riskColor(latestReport.latestRisk),
+            caption: latestReport?.latestRisk ??
+                _t('No generated files yet', 'لا توجد ملفات مولدة بعد'),
+            accent: latestReport == null
+                ? AppColors.accent
+                : _riskColor(latestReport.latestRisk),
             icon: Icons.description_rounded,
           ),
         ),
@@ -4233,7 +5463,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(height: 150, child: CustomPaint(painter: TrendPainter(trend))),
+          SizedBox(
+              height: 150, child: CustomPaint(painter: TrendPainter(trend))),
         ],
       ),
     );
@@ -4241,9 +5472,21 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
   Widget _doctorPriorityPanel() {
     final rows = [
-      (_t('Flagged screenings', 'الفحوصات المعلّمة'), _t('Review today', 'راجِع اليوم'), AppColors.danger),
-      (_t('New reports', 'التقارير الجديدة'), _t('Export ready', 'جاهزة للتصدير'), AppColors.success),
-      (_t('Patient follow-up', 'متابعة المرضى'), _t('Pending scheduling', 'بانتظار الجدولة'), AppColors.accent),
+      (
+        _t('Flagged screenings', 'الفحوصات المعلّمة'),
+        _t('Review today', 'راجِع اليوم'),
+        AppColors.danger
+      ),
+      (
+        _t('New reports', 'التقارير الجديدة'),
+        _t('Export ready', 'جاهزة للتصدير'),
+        AppColors.success
+      ),
+      (
+        _t('Patient follow-up', 'متابعة المرضى'),
+        _t('Pending scheduling', 'بانتظار الجدولة'),
+        AppColors.accent
+      ),
     ];
     return Container(
       padding: const EdgeInsets.all(16),
@@ -4279,18 +5522,22 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: BoxDecoration(color: row.$3, shape: BoxShape.circle),
+                      decoration:
+                          BoxDecoration(color: row.$3, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         row.$1,
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                     Text(
                       row.$2,
-                      style: TextStyle(color: row.$3, fontWeight: FontWeight.w700),
+                      style:
+                          TextStyle(color: row.$3, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -4340,7 +5587,8 @@ class AppBackdrop extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(
               painter: _GridPainter(
-                lineColor: (dark ? Colors.white : AppColors.primary).withAlpha(18),
+                lineColor:
+                    (dark ? Colors.white : AppColors.primary).withAlpha(18),
               ),
             ),
           ),
@@ -4417,7 +5665,8 @@ class GlassPanel extends StatelessWidget {
             color: dark ? AppColors.glassDark : AppColors.glass,
             borderRadius: radius ?? BorderRadius.circular(24),
             border: Border.all(
-              color: dark ? AppColors.borderDark : AppColors.border.withAlpha(210),
+              color:
+                  dark ? AppColors.borderDark : AppColors.border.withAlpha(210),
             ),
             boxShadow: AppShadows.soft,
           ),
@@ -4482,14 +5731,20 @@ class SecondaryPageShell extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             subtitle,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   color: AppColors.textSecondary,
                                   height: 1.5,
                                 ),
@@ -4589,9 +5844,14 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
           ReportLibraryEntry(
             patient: patient,
             report: report,
-            latestRisk: report.riskLevels.isNotEmpty ? report.riskLevels.last : 'No risk',
-            latestBpm: report.bpm.isNotEmpty ? '${report.bpm.last} bpm' : 'Unavailable',
-            latestLabel: report.labels.isNotEmpty ? report.labels.last : 'No label',
+            latestRisk: report.riskLevels.isNotEmpty
+                ? report.riskLevels.last
+                : 'No risk',
+            latestBpm: report.bpm.isNotEmpty
+                ? '${report.bpm.last} bpm'
+                : 'Unavailable',
+            latestLabel:
+                report.labels.isNotEmpty ? report.labels.last : 'No label',
             latestDate: _safeDateLabel(report.createdAt ?? patient.createdAt),
           ),
         );
@@ -4608,7 +5868,10 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Doctor Reports', 'تقارير الطبيب'))),
+      appBar: AppBar(
+        title: Text(_t('Doctor Reports', 'تقارير الطبيب')),
+        actions: _topBarActions(context),
+      ),
       body: RefreshIndicator(
         onRefresh: () async => _refresh(),
         child: FutureBuilder<List<ReportLibraryEntry>>(
@@ -4632,26 +5895,42 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
               );
             }
             final items = snapshot.data ?? const <ReportLibraryEntry>[];
-            final criticalCount = items.where((e) => e.latestRisk.toLowerCase().contains('high')).length;
+            final criticalCount = items
+                .where((e) => e.latestRisk.toLowerCase().contains('high'))
+                .length;
+            final mediumCount = items
+                .where((e) => e.latestRisk.toLowerCase().contains('medium'))
+                .length;
             final avgBpm = items.isEmpty
                 ? '--'
                 : (items
-                            .map((e) => int.tryParse(e.latestBpm.split(' ').first) ?? 0)
+                            .map((e) =>
+                                int.tryParse(e.latestBpm.split(' ').first) ?? 0)
                             .reduce((a, b) => a + b) ~/
                         items.length)
                     .toString();
             return SecondaryPageShell(
               title: _t('Doctor Reports', 'تقارير الطبيب'),
-              subtitle: _t('Clinical summaries, flagged cases, and physician review packages', 'ملخصات سريرية وحالات مميزة وحزم مراجعة للطبيب'),
+              subtitle: _t(
+                  'Clinical summaries, flagged cases, and physician review packages',
+                  'ملخصات سريرية وحالات مميزة وحزم مراجعة للطبيب'),
               icon: Icons.analytics_outlined,
               children: [
                 Row(
                   children: [
-                    Expanded(child: _metricCard(_t('Reports', 'التقارير'), '${items.length}', Icons.description_outlined)),
+                    Expanded(
+                        child: _metricCard(_t('Reports', 'التقارير'),
+                            '${items.length}', Icons.description_outlined)),
                     const SizedBox(width: 12),
-                    Expanded(child: _metricCard(_t('Critical', 'الحالات الحرجة'), '$criticalCount', Icons.warning_amber)),
+                    Expanded(
+                        child: _metricCard(_t('Critical', 'الحالات الحرجة'),
+                            '$criticalCount', Icons.warning_amber)),
                     const SizedBox(width: 12),
-                    Expanded(child: _metricCard(_t('Avg BPM', 'متوسط النبض'), avgBpm == '--' ? '--' : '$avgBpm bpm', Icons.favorite)),
+                    Expanded(
+                        child: _metricCard(
+                            _t('Avg BPM', 'متوسط النبض'),
+                            avgBpm == '--' ? '--' : '$avgBpm bpm',
+                            Icons.favorite)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -4660,12 +5939,94 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppSectionHeader(
+                        title: _t('AI Queue Summary', 'ملخص الطابور الذكي'),
+                        subtitle: _t(
+                          'Automatic prioritization from the currently stored report library.',
+                          'ترتيب أولوية تلقائي من مكتبة التقارير المحفوظة حاليًا.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: criticalCount > 0
+                              ? AppColors.danger.withAlpha(12)
+                              : mediumCount > 0
+                                  ? AppColors.warning.withAlpha(12)
+                                  : AppColors.success.withAlpha(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: criticalCount > 0
+                                ? AppColors.danger.withAlpha(38)
+                                : mediumCount > 0
+                                    ? AppColors.warning.withAlpha(38)
+                                    : AppColors.success.withAlpha(38),
+                          ),
+                        ),
+                        child: Text(
+                          criticalCount > 0
+                              ? 'AI copilot flagged $criticalCount high-risk report(s) for immediate review.'
+                              : mediumCount > 0
+                                  ? 'AI copilot found $mediumCount medium-priority report(s) that should be compared next.'
+                                  : 'AI copilot did not detect a high-priority report queue in the stored summaries.',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...[
+                        'Stored reports: ${items.length}',
+                        'High-risk queue: $criticalCount',
+                        'Medium-risk queue: $mediumCount',
+                        if (avgBpm != '--')
+                          'Average stored BPM across latest reports: $avgBpm bpm',
+                      ].map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Icon(Icons.circle,
+                                    size: 10, color: AppColors.accent),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  item,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                glassListCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSectionHeader(
                         title: _t('Report queue', 'قائمة التقارير'),
-                        subtitle: _t('Latest generated report summaries across patient profiles', 'أحدث ملخصات التقارير المولدة عبر ملفات المرضى'),
+                        subtitle: _t(
+                            'Latest generated report summaries across patient profiles',
+                            'أحدث ملخصات التقارير المولدة عبر ملفات المرضى'),
                       ),
                       const SizedBox(height: 12),
                       if (items.isEmpty)
-                        _emptyState(_t('No reports available yet.', 'لا توجد تقارير متاحة بعد.'))
+                        _emptyState(_t('No reports available yet.',
+                            'لا توجد تقارير متاحة بعد.'))
                       else
                         Table(
                           columnWidths: const {
@@ -4675,7 +6036,8 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
                             3: FlexColumnWidth(0.9),
                           },
                           children: [
-                            AnalysisResultPage._tableHeader('Patient', 'Latest finding', 'Risk / Date'),
+                            AnalysisResultPage._tableHeader(
+                                'Patient', 'Latest finding', 'Risk / Date'),
                             ...List.generate(items.length.clamp(0, 6), (i) {
                               final e = items[i];
                               return AnalysisResultPage._tableRow(
@@ -4780,6 +6142,7 @@ class _DoctorReportsPageState extends State<DoctorReportsPage> {
     );
   }
 }
+
 class ECGAnalysisPage extends StatefulWidget {
   final ApiService api;
   final AnalysisSessionDraft? draft;
@@ -4808,31 +6171,36 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
   List<PipelineStage> get _imageStages => [
         PipelineStage(
           title: _t('Image acquired', 'تم التقاط الصورة'),
-          subtitle: _t('ECG image is attached to the session.', 'تم إرفاق صورة ECG بالجلسة.'),
+          subtitle: _t('ECG image is attached to the session.',
+              'تم إرفاق صورة ECG بالجلسة.'),
           done: _analysisStage > 0,
           active: _analysisStage == 1,
         ),
         PipelineStage(
           title: _t('Upload package', 'رفع الحزمة'),
-          subtitle: _t('Sending image input to the backend.', 'إرسال الصورة إلى الخادم.'),
+          subtitle: _t('Sending image input to the backend.',
+              'إرسال الصورة إلى الخادم.'),
           done: _analysisStage > 1,
           active: _analysisStage == 2,
         ),
         PipelineStage(
           title: _t('Signal preparation', 'تجهيز الإشارة'),
-          subtitle: _t('Preparing image-derived ECG traces.', 'تجهيز آثار ECG المشتقة من الصورة.'),
+          subtitle: _t('Preparing image-derived ECG traces.',
+              'تجهيز آثار ECG المشتقة من الصورة.'),
           done: _analysisStage > 2,
           active: _analysisStage == 3,
         ),
         PipelineStage(
           title: _t('AI inference', 'استدلال النموذج'),
-          subtitle: _t('Running the ECG decision pipeline.', 'تشغيل مسار قرار ECG الذكي.'),
+          subtitle: _t('Running the ECG decision pipeline.',
+              'تشغيل مسار قرار ECG الذكي.'),
           done: _analysisStage > 3,
           active: _analysisStage == 4,
         ),
         PipelineStage(
           title: _t('Result assembly', 'تجهيز النتيجة'),
-          subtitle: _t('Building the physician-ready output.', 'تجهيز النتيجة الجاهزة للمراجعة.'),
+          subtitle: _t('Building the physician-ready output.',
+              'تجهيز النتيجة الجاهزة للمراجعة.'),
           done: _analysisStage > 4,
           active: _analysisStage == 5,
         ),
@@ -4847,17 +6215,30 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
           _isAnalyzing = true;
           _error = null;
           _analysisStage = 1;
-          _analysisLabel = _t('ECG image captured successfully.', 'تم التقاط صورة ECG بنجاح.');
+          _analysisLabel = _t(
+              'ECG image captured successfully.', 'تم التقاط صورة ECG بنجاح.');
         });
 
         await Future<void>.delayed(const Duration(milliseconds: 180));
-        _setAnalysisStage(2, _t('Uploading ECG image to the backend...', 'جارٍ رفع صورة ECG إلى الخادم...'));
+        _setAnalysisStage(
+            2,
+            _t('Uploading ECG image to the backend...',
+                'جارٍ رفع صورة ECG إلى الخادم...'));
         await Future<void>.delayed(const Duration(milliseconds: 220));
-        _setAnalysisStage(3, _t('Preparing image-based signal traces...', 'جارٍ تجهيز الإشارات المشتقة من الصورة...'));
+        _setAnalysisStage(
+            3,
+            _t('Preparing image-based signal traces...',
+                'جارٍ تجهيز الإشارات المشتقة من الصورة...'));
         await Future<void>.delayed(const Duration(milliseconds: 220));
-        _setAnalysisStage(4, _t('Running AI inference and clinical scoring...', 'جارٍ تشغيل النموذج وحساب الدرجة السريرية...'));
+        _setAnalysisStage(
+            4,
+            _t('Running AI inference and clinical scoring...',
+                'جارٍ تشغيل النموذج وحساب الدرجة السريرية...'));
         final result = await widget.api.analyzeImage(picked);
-        _setAnalysisStage(5, _t('Assembling the final ECG report view...', 'جارٍ تجهيز عرض تقرير ECG النهائي...'));
+        _setAnalysisStage(
+            5,
+            _t('Assembling the final ECG report view...',
+                'جارٍ تجهيز عرض تقرير ECG النهائي...'));
         await Future<void>.delayed(const Duration(milliseconds: 160));
 
         if (!mounted) return;
@@ -4887,11 +6268,13 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('ECG Image Analysis', 'تحليل صورة رسم القلب')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: SecondaryPageShell(
         title: _t('ECG Image Workstation', 'منصة صورة ECG'),
-        subtitle: _t('Capture or upload a clear ECG image, then send it to the AI analysis pipeline', 'التقط أو ارفع صورة ECG واضحة ثم أرسلها إلى مسار التحليل الذكي'),
+        subtitle: _t(
+            'Capture or upload a clear ECG image, then send it to the AI analysis pipeline',
+            'التقط أو ارفع صورة ECG واضحة ثم أرسلها إلى مسار التحليل الذكي'),
         icon: Icons.photo_camera_back_outlined,
         children: [
           glassListCard(
@@ -4900,7 +6283,9 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                 Container(
                   height: 320,
                   decoration: BoxDecoration(
-                    color: dark ? AppColors.surfaceDark.withAlpha(160) : AppColors.background,
+                    color: dark
+                        ? AppColors.surfaceDark.withAlpha(160)
+                        : AppColors.background,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: AppColors.border),
                   ),
@@ -4908,8 +6293,10 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: kIsWeb
-                              ? Image.network(_selectedImage!.path, fit: BoxFit.cover)
-                              : Image.file(File(_selectedImage!.path), fit: BoxFit.cover),
+                              ? Image.network(_selectedImage!.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(_selectedImage!.path),
+                                  fit: BoxFit.cover),
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -4933,8 +6320,11 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                     Expanded(
                       child: AppMetricTile(
                         label: _t('Source', 'المصدر'),
-                        value: _selectedImage == null ? _t('Pending', 'بانتظار') : _t('Loaded', 'تم التحميل'),
-                        caption: _t('Current image input state', 'حالة الصورة الحالية'),
+                        value: _selectedImage == null
+                            ? _t('Pending', 'بانتظار')
+                            : _t('Loaded', 'تم التحميل'),
+                        caption: _t(
+                            'Current image input state', 'حالة الصورة الحالية'),
                         accent: AppColors.accent,
                         icon: Icons.image_outlined,
                       ),
@@ -4943,9 +6333,14 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                     Expanded(
                       child: AppMetricTile(
                         label: _t('Pipeline', 'المسار'),
-                        value: _isAnalyzing ? _t('Processing', 'جاري التحليل') : _t('Ready', 'جاهز'),
-                        caption: _t('Image AI analysis readiness', 'جاهزية تحليل الصورة'),
-                        accent: _isAnalyzing ? AppColors.warning : AppColors.success,
+                        value: _isAnalyzing
+                            ? _t('Processing', 'جاري التحليل')
+                            : _t('Ready', 'جاهز'),
+                        caption: _t('Image AI analysis readiness',
+                            'جاهزية تحليل الصورة'),
+                        accent: _isAnalyzing
+                            ? AppColors.warning
+                            : AppColors.success,
                         icon: Icons.auto_graph_rounded,
                       ),
                     ),
@@ -4955,14 +6350,16 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                   const SizedBox(height: 16),
                   _pipelineProgressCard(
                     context,
-                    headline: _t('Live analysis pipeline', 'مسار التحليل اللحظي'),
+                    headline:
+                        _t('Live analysis pipeline', 'مسار التحليل اللحظي'),
                     status: _analysisLabel,
                     stages: _imageStages,
                   ),
                 ],
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text('Error: $_error', style: const TextStyle(color: AppColors.danger)),
+                  Text('Error: $_error',
+                      style: const TextStyle(color: AppColors.danger)),
                 ],
                 const SizedBox(height: 16),
                 SizedBox(
@@ -4996,7 +6393,9 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
     required String status,
     required List<PipelineStage> stages,
   }) {
-    final progress = stages.isEmpty ? 0.0 : (_analysisStage / stages.length).clamp(0, 1).toDouble();
+    final progress = stages.isEmpty
+        ? 0.0
+        : (_analysisStage / stages.length).clamp(0, 1).toDouble();
     return GlassPanel(
       padding: const EdgeInsets.all(18),
       radius: BorderRadius.circular(22),
@@ -5012,7 +6411,8 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                   color: AppColors.accentSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.memory_rounded, color: AppColors.accentDeep),
+                child: const Icon(Icons.memory_rounded,
+                    color: AppColors.accentDeep),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -5028,7 +6428,8 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
                     const SizedBox(height: 4),
                     Text(
                       status,
-                      style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, height: 1.45),
                     ),
                   ],
                 ),
@@ -5036,7 +6437,8 @@ class _ECGAnalysisPageState extends State<ECGAnalysisPage> {
               const SizedBox(
                 width: 28,
                 height: 28,
-                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.accent),
+                child: CircularProgressIndicator(
+                    strokeWidth: 3, color: AppColors.accent),
               ),
             ],
           ),
@@ -5167,7 +6569,10 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Appointments', 'المواعيد'))),
+      appBar: AppBar(
+        title: Text(_t('Appointments', 'المواعيد')),
+        actions: _topBarActions(context),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _add,
         backgroundColor: AppColors.accent,
@@ -5187,7 +6592,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                 padding: const EdgeInsets.all(18),
                 children: [
                   _retryCard(
-                    message: _t('Failed to load appointments', 'فشل تحميل المواعيد'),
+                    message:
+                        _t('Failed to load appointments', 'فشل تحميل المواعيد'),
                     onRetry: _refresh,
                   ),
                 ],
@@ -5200,7 +6606,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                 children: const [
                   AppHeroBanner(
                     title: 'Appointments',
-                    subtitle: 'Doctor scheduling, follow-up visits, and care coordination',
+                    subtitle:
+                        'Doctor scheduling, follow-up visits, and care coordination',
                     icon: Icons.event_available,
                     gradient: AppGradients.hero,
                   ),
@@ -5214,7 +6621,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
               children: [
                 const AppHeroBanner(
                   title: 'Appointments',
-                  subtitle: 'Doctor scheduling, follow-up visits, and care coordination',
+                  subtitle:
+                      'Doctor scheduling, follow-up visits, and care coordination',
                   icon: Icons.event_available,
                   gradient: AppGradients.hero,
                 ),
@@ -5232,7 +6640,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     children: [
                       AppSectionHeader(
                         title: _t('Scheduling table', 'جدول المواعيد'),
-                        subtitle: _t('Current doctor-side appointment queue', 'قائمة المواعيد الحالية للطبيب'),
+                        subtitle: _t('Current doctor-side appointment queue',
+                            'قائمة المواعيد الحالية للطبيب'),
                       ),
                       const SizedBox(height: 12),
                       Table(
@@ -5242,10 +6651,13 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                           2: FlexColumnWidth(1.0),
                         },
                         children: [
-                          AnalysisResultPage._tableHeader('Doctor', 'When', 'Status'),
+                          AnalysisResultPage._tableHeader(
+                              'Doctor', 'When', 'Status'),
                           ...List.generate(items.length, (i) {
                             final item = items[i];
-                            final color = item.status == 'Confirmed' ? AppColors.success : AppColors.warning;
+                            final color = item.status == 'Confirmed'
+                                ? AppColors.success
+                                : AppColors.warning;
                             return AnalysisResultPage._tableRow(
                               item.doctorName,
                               item.when,
@@ -5262,7 +6674,9 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                 const SizedBox(height: 16),
                 ...items.map((item) {
                   final status = item.status;
-                  final color = status == 'Confirmed' ? AppColors.success : AppColors.warning;
+                  final color = status == 'Confirmed'
+                      ? AppColors.success
+                      : AppColors.warning;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Container(
@@ -5292,19 +6706,24 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(item.when, style: const TextStyle(color: Colors.grey)),
+                                Text(item.when,
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: color.withAlpha(26),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               status,
-                              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+                              style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
                             ),
                           ),
                         ],
@@ -5324,7 +6743,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 class DoctorChatPage extends StatefulWidget {
   final int patientId;
   final String patientName;
-  const DoctorChatPage({super.key, required this.patientId, required this.patientName});
+  const DoctorChatPage(
+      {super.key, required this.patientId, required this.patientName});
 
   @override
   State<DoctorChatPage> createState() => _DoctorChatPageState();
@@ -5334,16 +6754,19 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
   final ApiService _api = ApiService(baseUrl: _apiBaseUrl());
   final TextEditingController _input = TextEditingController();
   late Future<List<MessageModel>> _messagesFuture;
+  late Future<MessageSummaryModel> _summaryFuture;
 
   @override
   void initState() {
     super.initState();
     _messagesFuture = _api.listMessagesForPatient(widget.patientId);
+    _summaryFuture = _api.getMessageSummary(widget.patientId);
   }
 
   Future<void> _refresh() async {
     setState(() {
       _messagesFuture = _api.listMessagesForPatient(widget.patientId);
+      _summaryFuture = _api.getMessageSummary(widget.patientId);
     });
   }
 
@@ -5360,11 +6783,85 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
     await _refresh();
   }
 
+  void _applySuggestion(String suggestion) {
+    setState(() {
+      _input.text = suggestion;
+      _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    });
+  }
+
+  Widget _backendSummaryCard() {
+    return FutureBuilder<MessageSummaryModel>(
+      future: _summaryFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: AppColors.border),
+              boxShadow: AppShadows.soft,
+            ),
+            child: const LinearProgressIndicator(),
+          );
+        }
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final summary = snapshot.data!;
+        final color = summary.urgency == 'high'
+            ? AppColors.danger
+            : summary.urgency == 'medium'
+                ? AppColors.warning
+                : AppColors.success;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: color.withAlpha(40)),
+            boxShadow: AppShadows.soft,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.psychology_alt_outlined, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      summary.headline,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                summary.summary,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('${_t('Messages', 'الرسائل')} - ${widget.patientName}'),
+        actions: _topBarActions(context),
       ),
       body: Column(
         children: [
@@ -5382,7 +6879,8 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: AppColors.accent.withAlpha(20),
-                  child: const Icon(Icons.person_outline, color: AppColors.accent),
+                  child:
+                      const Icon(Icons.person_outline, color: AppColors.accent),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -5398,8 +6896,10 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _t('Doctor-patient secure channel', 'قناة تواصل آمنة بين الطبيب والمريض'),
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        _t('Doctor-patient secure channel',
+                            'قناة تواصل آمنة بين الطبيب والمريض'),
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
@@ -5407,6 +6907,7 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
               ],
             ),
           ),
+          _backendSummaryCard(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refresh,
@@ -5419,31 +6920,49 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
                   if (snapshot.hasError) {
                     return Center(
                       child: _retryCard(
-                        message: _t('Failed to load messages', 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„'),
+                        message: _t('Failed to load messages',
+                            'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„'),
                         onRetry: _refresh,
                       ),
                     );
                   }
                   final items = snapshot.data ?? [];
+                  final guide = _buildChatAiGuide(items, doctorView: true);
                   if (items.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.chat_bubble_outline,
-                              size: 36, color: Colors.grey),
-                          const SizedBox(height: 8),
-                          Text(_t('No messages yet.', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø¨Ø¹Ø¯.')),
-                        ],
-                      ),
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+                      children: [
+                        _chatAiGuideCard(
+                          context,
+                          guide: guide,
+                          onSuggestionTap: _applySuggestion,
+                        ),
+                        const SizedBox(height: 40),
+                        Column(
+                          children: [
+                            const Icon(Icons.chat_bubble_outline,
+                                size: 36, color: Colors.grey),
+                            const SizedBox(height: 8),
+                            Text(_t('No messages yet.',
+                                'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø¨Ø¹Ø¯.')),
+                          ],
+                        ),
+                      ],
                     );
                   }
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-                    itemCount: items.length,
+                    itemCount: items.length + 1,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) {
-                      final item = items[i];
+                      if (i == 0) {
+                        return _chatAiGuideCard(
+                          context,
+                          guide: guide,
+                          onSuggestionTap: _applySuggestion,
+                        );
+                      }
+                      final item = items[i - 1];
                       final fromDoctor = item.senderRole == 'doctor';
                       return Align(
                         alignment: fromDoctor
@@ -5476,7 +6995,10 @@ class _DoctorChatPageState extends State<DoctorChatPage> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Text(
-                                  item.createdAt.split('T').last.substring(0, 5),
+                                  item.createdAt
+                                      .split('T')
+                                      .last
+                                      .substring(0, 5),
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 11,
@@ -5553,6 +7075,7 @@ class _PatientChatPageState extends State<PatientChatPage> {
   final ApiService _api = ApiService(baseUrl: _apiBaseUrl());
   final TextEditingController _input = TextEditingController();
   late Future<List<MessageModel>> _messagesFuture;
+  Future<MessageSummaryModel>? _summaryFuture;
   late int _patientId;
 
   @override
@@ -5565,6 +7088,8 @@ class _PatientChatPageState extends State<PatientChatPage> {
   Future<void> _refresh() async {
     setState(() {
       _messagesFuture = _api.listMessagesForPatient(_patientId);
+      _summaryFuture =
+          _patientId == 0 ? null : _api.getMessageSummary(_patientId);
     });
   }
 
@@ -5587,10 +7112,87 @@ class _PatientChatPageState extends State<PatientChatPage> {
     await _refresh();
   }
 
+  void _applySuggestion(String suggestion) {
+    setState(() {
+      _input.text = suggestion;
+      _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    });
+  }
+
+  Widget _backendSummaryCard() {
+    if (_summaryFuture == null) return const SizedBox.shrink();
+    return FutureBuilder<MessageSummaryModel>(
+      future: _summaryFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: AppColors.border),
+              boxShadow: AppShadows.soft,
+            ),
+            child: const LinearProgressIndicator(),
+          );
+        }
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final summary = snapshot.data!;
+        final color = summary.urgency == 'high'
+            ? AppColors.danger
+            : summary.urgency == 'medium'
+                ? AppColors.warning
+                : AppColors.success;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: color.withAlpha(40)),
+            boxShadow: AppShadows.soft,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      summary.headline,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                summary.summary,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Messages', 'الرسائل'))),
+      appBar: AppBar(
+        title: Text(_t('Messages', 'الرسائل')),
+        actions: _topBarActions(context),
+      ),
       body: Column(
         children: [
           Container(
@@ -5609,14 +7211,17 @@ class _PatientChatPageState extends State<PatientChatPage> {
                     CircleAvatar(
                       radius: 22,
                       backgroundColor: AppColors.accent.withAlpha(20),
-                      child: const Icon(Icons.person_search, color: AppColors.accent),
+                      child: const Icon(Icons.person_search,
+                          color: AppColors.accent),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _patientId == 0
-                            ? _t('No linked patient selected yet', 'لم يتم اختيار مريض بعد')
-                            : _t('Patient linked for messaging', 'تم ربط المريض للمحادثة'),
+                            ? _t('No linked patient selected yet',
+                                'لم يتم اختيار مريض بعد')
+                            : _t('Patient linked for messaging',
+                                'تم ربط المريض للمحادثة'),
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -5639,7 +7244,9 @@ class _PatientChatPageState extends State<PatientChatPage> {
                       if (picked != null) {
                         setState(() {
                           _patientId = picked.id ?? 0;
-                          _messagesFuture = _api.listMessagesForPatient(_patientId);
+                          _messagesFuture =
+                              _api.listMessagesForPatient(_patientId);
+                          _summaryFuture = _api.getMessageSummary(_patientId);
                         });
                       }
                     },
@@ -5648,6 +7255,7 @@ class _PatientChatPageState extends State<PatientChatPage> {
               ],
             ),
           ),
+          _backendSummaryCard(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refresh,
@@ -5660,31 +7268,49 @@ class _PatientChatPageState extends State<PatientChatPage> {
                   if (snapshot.hasError) {
                     return Center(
                       child: _retryCard(
-                        message: _t('Failed to load messages', 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„'),
+                        message: _t('Failed to load messages',
+                            'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„'),
                         onRetry: _refresh,
                       ),
                     );
                   }
                   final items = snapshot.data ?? [];
+                  final guide = _buildChatAiGuide(items, doctorView: false);
                   if (items.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.chat_bubble_outline,
-                              size: 36, color: Colors.grey),
-                          const SizedBox(height: 8),
-                          Text(_t('No messages yet.', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø¨Ø¹Ø¯.')),
-                        ],
-                      ),
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+                      children: [
+                        _chatAiGuideCard(
+                          context,
+                          guide: guide,
+                          onSuggestionTap: _applySuggestion,
+                        ),
+                        const SizedBox(height: 40),
+                        Column(
+                          children: [
+                            const Icon(Icons.chat_bubble_outline,
+                                size: 36, color: Colors.grey),
+                            const SizedBox(height: 8),
+                            Text(_t('No messages yet.',
+                                'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø¨Ø¹Ø¯.')),
+                          ],
+                        ),
+                      ],
                     );
                   }
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-                    itemCount: items.length,
+                    itemCount: items.length + 1,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) {
-                      final item = items[i];
+                      if (i == 0) {
+                        return _chatAiGuideCard(
+                          context,
+                          guide: guide,
+                          onSuggestionTap: _applySuggestion,
+                        );
+                      }
+                      final item = items[i - 1];
                       final fromPatient = item.senderRole == 'patient';
                       return Align(
                         alignment: fromPatient
@@ -5717,7 +7343,10 @@ class _PatientChatPageState extends State<PatientChatPage> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Text(
-                                  item.createdAt.split('T').last.substring(0, 5),
+                                  item.createdAt
+                                      .split('T')
+                                      .last
+                                      .substring(0, 5),
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 11,
@@ -5841,7 +7470,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
       if (!_isWfdbFile(name)) {
         continue;
       }
-      final base = f.name.replaceAll(RegExp(r'\.(hea|dat)$', caseSensitive: false), '');
+      final base =
+          f.name.replaceAll(RegExp(r'\.(hea|dat)$', caseSensitive: false), '');
       groups.putIfAbsent(base, () => []).add(f);
     }
 
@@ -5856,10 +7486,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
     if (kIsWeb) return input;
 
     final expanded = <PlatformFile>[...input];
-    final existingPaths = expanded
-        .map((f) => f.path?.toLowerCase())
-        .whereType<String>()
-        .toSet();
+    final existingPaths =
+        expanded.map((f) => f.path?.toLowerCase()).whereType<String>().toSet();
 
     for (final file in input) {
       final path = file.path;
@@ -5898,7 +7526,9 @@ class _FileUploadPageState extends State<FileUploadPage> {
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: kIsWeb ? FileType.custom : FileType.any,
-        allowedExtensions: kIsWeb ? ['hea', 'dat', 'csv', 'wav', 'png', 'jpg', 'jpeg', 'bmp', 'webp'] : null,
+        allowedExtensions: kIsWeb
+            ? ['hea', 'dat', 'csv', 'wav', 'png', 'jpg', 'jpeg', 'bmp', 'webp']
+            : null,
         withData: true,
       );
       if (result != null) {
@@ -5926,41 +7556,77 @@ class _FileUploadPageState extends State<FileUploadPage> {
       err = null;
       _conversionResult = null;
       _analysisStage = 1;
-      _analysisLabel = _t('Validating the selected ECG package...', 'جارٍ التحقق من حزمة ECG المحددة...');
+      _analysisLabel = _t('Validating the selected ECG package...',
+          'جارٍ التحقق من حزمة ECG المحددة...');
     });
 
     try {
       await Future<void>.delayed(const Duration(milliseconds: 140));
-      _setUploadStage(2, _t('Matching related WFDB files and metadata...', 'جارٍ مطابقة ملفات WFDB والبيانات المرتبطة...'));
+      _setUploadStage(
+          2,
+          _t('Matching related WFDB files and metadata...',
+              'جارٍ مطابقة ملفات WFDB والبيانات المرتبطة...'));
       final preparedFiles = await _expandWithMatchingFiles(selected);
-      final imageFiles = preparedFiles.where((f) => _isImageFile(f.name)).toList();
-      final signalFiles = preparedFiles.where((f) => _isSignalFile(f.name)).toList();
+      final imageFiles =
+          preparedFiles.where((f) => _isImageFile(f.name)).toList();
+      final signalFiles =
+          preparedFiles.where((f) => _isSignalFile(f.name)).toList();
       late final AnalysisResult result;
-      if (imageFiles.isNotEmpty && signalFiles.isEmpty && imageFiles.length == 1) {
-        _setUploadStage(3, _t('Uploading ECG image for analysis...', 'جارٍ رفع صورة ECG للتحليل...'));
+      if (imageFiles.isNotEmpty &&
+          signalFiles.isEmpty &&
+          imageFiles.length == 1) {
+        _setUploadStage(
+            3,
+            _t('Uploading ECG image for analysis...',
+                'جارٍ رفع صورة ECG للتحليل...'));
         await Future<void>.delayed(const Duration(milliseconds: 180));
-        _setUploadStage(4, _t('Preparing image-derived ECG signal...', 'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
+        _setUploadStage(
+            4,
+            _t('Preparing image-derived ECG signal...',
+                'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
         await Future<void>.delayed(const Duration(milliseconds: 220));
-        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
+        _setUploadStage(
+            5,
+            _t('Running AI screening inference...',
+                'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzePlatformFile(imageFiles.first);
       } else if (signalFiles.isNotEmpty) {
-        _setUploadStage(3, _t('Uploading signal package to the ECG backend...', 'جارٍ رفع حزمة الإشارة إلى الخادم...'));
+        _setUploadStage(
+            3,
+            _t('Uploading signal package to the ECG backend...',
+                'جارٍ رفع حزمة الإشارة إلى الخادم...'));
         await Future<void>.delayed(const Duration(milliseconds: 180));
-        _setUploadStage(4, _t('Extracting waveform features and quality metrics...', 'جارٍ استخراج خصائص الموجة ومؤشرات الجودة...'));
+        _setUploadStage(
+            4,
+            _t('Extracting waveform features and quality metrics...',
+                'جارٍ استخراج خصائص الموجة ومؤشرات الجودة...'));
         await Future<void>.delayed(const Duration(milliseconds: 220));
-        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
+        _setUploadStage(
+            5,
+            _t('Running AI screening inference...',
+                'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzeFiles(signalFiles);
       } else if (imageFiles.isNotEmpty) {
-        _setUploadStage(3, _t('Uploading ECG image package...', 'جارٍ رفع حزمة صورة ECG...'));
+        _setUploadStage(3,
+            _t('Uploading ECG image package...', 'جارٍ رفع حزمة صورة ECG...'));
         await Future<void>.delayed(const Duration(milliseconds: 180));
-        _setUploadStage(4, _t('Preparing image-derived ECG signal...', 'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
+        _setUploadStage(
+            4,
+            _t('Preparing image-derived ECG signal...',
+                'جارٍ تجهيز إشارة ECG المشتقة من الصورة...'));
         await Future<void>.delayed(const Duration(milliseconds: 220));
-        _setUploadStage(5, _t('Running AI screening inference...', 'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
+        _setUploadStage(
+            5,
+            _t('Running AI screening inference...',
+                'جارٍ تشغيل استدلال الذكاء الاصطناعي...'));
         result = await widget.api.analyzePlatformFile(imageFiles.first);
       } else {
         throw Exception('No supported ECG file was selected');
       }
-      _setUploadStage(6, _t('Building the final report-ready package...', 'جارٍ تجهيز الحزمة النهائية الجاهزة للتقرير...'));
+      _setUploadStage(
+          6,
+          _t('Building the final report-ready package...',
+              'جارٍ تجهيز الحزمة النهائية الجاهزة للتقرير...'));
       await Future<void>.delayed(const Duration(milliseconds: 160));
       if (!mounted) return;
       setState(() {
@@ -5994,37 +7660,43 @@ class _FileUploadPageState extends State<FileUploadPage> {
   List<PipelineStage> get _uploadStages => [
         PipelineStage(
           title: _t('Validation', 'التحقق'),
-          subtitle: _t('Checking supported ECG formats.', 'التحقق من صيغ ECG المدعومة.'),
+          subtitle: _t(
+              'Checking supported ECG formats.', 'التحقق من صيغ ECG المدعومة.'),
           done: _analysisStage > 1,
           active: _analysisStage == 1,
         ),
         PipelineStage(
           title: _t('Pairing check', 'فحص الاقتران'),
-          subtitle: _t('Matching sibling WFDB files when available.', 'مطابقة ملفات WFDB الشقيقة عند توفرها.'),
+          subtitle: _t('Matching sibling WFDB files when available.',
+              'مطابقة ملفات WFDB الشقيقة عند توفرها.'),
           done: _analysisStage > 2,
           active: _analysisStage == 2,
         ),
         PipelineStage(
           title: _t('Upload', 'الرفع'),
-          subtitle: _t('Sending the ECG package to the backend.', 'إرسال الحزمة إلى الخادم.'),
+          subtitle: _t('Sending the ECG package to the backend.',
+              'إرسال الحزمة إلى الخادم.'),
           done: _analysisStage > 3,
           active: _analysisStage == 3,
         ),
         PipelineStage(
           title: _t('Feature prep', 'تجهيز الخصائص'),
-          subtitle: _t('Preparing traces, quality, and derived metrics.', 'تجهيز الإشارات والجودة والقياسات المشتقة.'),
+          subtitle: _t('Preparing traces, quality, and derived metrics.',
+              'تجهيز الإشارات والجودة والقياسات المشتقة.'),
           done: _analysisStage > 4,
           active: _analysisStage == 4,
         ),
         PipelineStage(
           title: _t('AI inference', 'استدلال النموذج'),
-          subtitle: _t('Running ECG screening decision logic.', 'تشغيل منطق القرار الخاص بفحص ECG.'),
+          subtitle: _t('Running ECG screening decision logic.',
+              'تشغيل منطق القرار الخاص بفحص ECG.'),
           done: _analysisStage > 5,
           active: _analysisStage == 5,
         ),
         PipelineStage(
           title: _t('Result package', 'الحزمة النهائية'),
-          subtitle: _t('Preparing the analysis result screen.', 'تجهيز شاشة نتيجة التحليل.'),
+          subtitle: _t('Preparing the analysis result screen.',
+              'تجهيز شاشة نتيجة التحليل.'),
           done: _analysisStage > 6,
           active: _analysisStage == 6,
         ),
@@ -6032,7 +7704,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
 
   @override
   Widget build(BuildContext context) {
-    final imageSelected = selected.length == 1 && _isImageFile(selected.first.name);
+    final imageSelected =
+        selected.length == 1 && _isImageFile(selected.first.name);
     final signalItems = selected.where((f) => _isSignalFile(f.name)).toList();
     final wfdbItems = selected.where((f) => _isWfdbFile(f.name)).toList();
     final imageItems = selected.where((f) => _isImageFile(f.name)).toList();
@@ -6042,324 +7715,360 @@ class _FileUploadPageState extends State<FileUploadPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('Analyze ECG', 'تحليل ECG')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: AppBackdrop(
         dark: dark,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-          GlassPanel(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _t('ECG Upload Workstation', 'منصة رفع ECG'),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _t(
-                    'Choose an ECG image, a single `.hea` or `.dat`, a full WFDB pair, or a direct `.csv` / `.wav` signal file. The app tries to attach the missing WFDB sibling automatically on desktop.',
-                    'اختر صورة ECG أو ملف `.hea` أو `.dat` منفردًا أو زوج WFDB كاملًا أو ملف إشارة مباشر `.csv` / `.wav`. يحاول التطبيق إرفاق ملف WFDB الشقيق تلقائيًا على سطح المكتب.',
+            GlassPanel(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _t('ECG Upload Workstation', 'منصة رفع ECG'),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                   ),
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.55,
-                        color: AppColors.textSecondary,
+                  const SizedBox(height: 8),
+                  Text(
+                    _t(
+                      'Choose an ECG image, a single `.hea` or `.dat`, a full WFDB pair, or a direct `.csv` / `.wav` signal file. The app tries to attach the missing WFDB sibling automatically on desktop.',
+                      'اختر صورة ECG أو ملف `.hea` أو `.dat` منفردًا أو زوج WFDB كاملًا أو ملف إشارة مباشر `.csv` / `.wav`. يحاول التطبيق إرفاق ملف WFDB الشقيق تلقائيًا على سطح المكتب.',
+                    ),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.55,
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _signalChip(
+                          Icons.image_outlined, _t('Image ECG', 'صورة ECG')),
+                      _signalChip(Icons.multiline_chart_rounded,
+                          _t('WFDB pair', 'زوج WFDB')),
+                      _signalChip(Icons.graphic_eq_rounded,
+                          _t('CSV / WAV', 'CSV / WAV')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _uploadSection(
+              title: _t('Source selection', 'اختيار المصدر'),
+              subtitle: _t(
+                'The application accepts any one supported item and attempts automatic WFDB matching when possible.',
+                'التطبيق يقبل أي عنصر مدعوم منفردًا ويحاول مطابقة WFDB تلقائيًا عند الإمكان.',
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: pickFiles,
+                          icon: const Icon(Icons.folder_open,
+                              color: Colors.white),
+                          label: Text(
+                              _t('Choose from device', 'اختيار من الجهاز')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 15),
+                          ),
+                        ),
                       ),
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _signalChip(Icons.image_outlined, _t('Image ECG', 'صورة ECG')),
-                    _signalChip(Icons.multiline_chart_rounded, _t('WFDB pair', 'زوج WFDB')),
-                    _signalChip(Icons.graphic_eq_rounded, _t('CSV / WAV', 'CSV / WAV')),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _uploadSection(
-            title: _t('Source selection', 'اختيار المصدر'),
-            subtitle: _t(
-              'The application accepts any one supported item and attempts automatic WFDB matching when possible.',
-              'التطبيق يقبل أي عنصر مدعوم منفردًا ويحاول مطابقة WFDB تلقائيًا عند الإمكان.',
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: pickFiles,
-                        icon: const Icon(Icons.folder_open, color: Colors.white),
-                        label: Text(_t('Choose from device', 'اختيار من الجهاز')),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            if (!kIsWeb) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Cloud picker is available on web')),
+                              );
+                              return;
+                            }
+                            pickFiles();
+                          },
+                          icon: const Icon(Icons.cloud_upload_outlined),
+                          label: Text(_t('From cloud', 'من السحابة')),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppMetricTile(
+                          label: _t('Selected', 'المحدد'),
+                          value: '$supportedCount',
+                          caption:
+                              _t('Supported ECG items', 'عدد العناصر المدعومة'),
+                          accent: AppColors.accent,
+                          icon: Icons.inventory_2_rounded,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppMetricTile(
+                          label: _t('WFDB files', 'ملفات WFDB'),
+                          value: '${wfdbItems.length}',
+                          caption: _t('Current paired-record files in queue',
+                              'عدد ملفات WFDB الموجودة بالطابور'),
+                          accent: AppColors.success,
+                          icon: Icons.multiline_chart_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (imageSelected) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: loading
+                            ? null
+                            : () async {
+                                setState(() {
+                                  loading = true;
+                                  err = null;
+                                });
+                                try {
+                                  final converted = await widget.api
+                                      .convertImageToWfdb(selected.first);
+                                  if (!mounted) return;
+                                  final opened = await launchUrlString(
+                                    converted.downloadUrl,
+                                    webOnlyWindowName: '_blank',
+                                  );
+                                  setState(() {
+                                    loading = false;
+                                    _conversionResult = converted;
+                                  });
+                                  if (!mounted) return;
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        opened
+                                            ? 'WFDB bundle created and download opened.'
+                                            : 'WFDB bundle created successfully.',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    loading = false;
+                                    err = e.toString();
+                                  });
+                                }
+                              },
+                        icon: const Icon(Icons.transform_outlined),
+                        label: Text(
+                          loading
+                              ? _t('Converting...', 'جارٍ التحويل...')
+                              : _t('Convert image to HEA/DAT',
+                                  'تحويل الصورة إلى HEA/DAT'),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          if (!kIsWeb) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Cloud picker is available on web')),
-                            );
-                            return;
-                          }
-                          pickFiles();
-                        },
-                        icon: const Icon(Icons.cloud_upload_outlined),
-                        label: Text(_t('From cloud', 'من السحابة')),
-                      ),
-                    ),
                   ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppMetricTile(
-                        label: _t('Selected', 'المحدد'),
-                        value: '$supportedCount',
-                        caption: _t('Supported ECG items', 'عدد العناصر المدعومة'),
-                        accent: AppColors.accent,
-                        icon: Icons.inventory_2_rounded,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppMetricTile(
-                        label: _t('WFDB files', 'ملفات WFDB'),
-                        value: '${wfdbItems.length}',
-                        caption: _t('Current paired-record files in queue', 'عدد ملفات WFDB الموجودة بالطابور'),
-                        accent: AppColors.success,
-                        icon: Icons.multiline_chart_rounded,
-                      ),
-                    ),
-                  ],
-                ),
-                if (imageSelected) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: loading
-                          ? null
-                          : () async {
-                              setState(() {
-                                loading = true;
-                                err = null;
-                              });
-                              try {
-                                final converted = await widget.api.convertImageToWfdb(selected.first);
-                                if (!mounted) return;
-                                final opened = await launchUrlString(
-                                  converted.downloadUrl,
-                                  webOnlyWindowName: '_blank',
-                                );
-                                setState(() {
-                                  loading = false;
-                                  _conversionResult = converted;
-                                });
-                                if (!mounted) return;
-                                final messenger = ScaffoldMessenger.of(context);
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      opened
-                                          ? 'WFDB bundle created and download opened.'
-                                          : 'WFDB bundle created successfully.',
-                                    ),
-                                  ),
-                                );
-                              } catch (e) {
-                                if (!mounted) return;
-                                setState(() {
-                                  loading = false;
-                                  err = e.toString();
-                                });
-                              }
-                            },
-                      icon: const Icon(Icons.transform_outlined),
-                      label: Text(
-                        loading
-                            ? _t('Converting...', 'جارٍ التحويل...')
-                            : _t('Convert image to HEA/DAT', 'تحويل الصورة إلى HEA/DAT'),
-                      ),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _uploadSection(
-            title: _t('Validation and readiness', 'التحقق والجاهزية'),
-            subtitle: _t(
-              'Review the selected package before sending it to the ECG AI pipeline.',
-              'راجع الحزمة المحددة قبل إرسالها إلى نموذج ECG.',
-            ),
-            child: Column(
-              children: [
-                _statusLine(
-                  _t('Image input', 'مدخل الصورة'),
-                  imageItems.isNotEmpty ? _t('Ready', 'جاهز') : _t('Not selected', 'غير محدد'),
-                  imageItems.isNotEmpty ? AppColors.success : Colors.grey,
-                ),
-                const SizedBox(height: 10),
+            const SizedBox(height: 16),
+            _uploadSection(
+              title: _t('Validation and readiness', 'التحقق والجاهزية'),
+              subtitle: _t(
+                'Review the selected package before sending it to the ECG AI pipeline.',
+                'راجع الحزمة المحددة قبل إرسالها إلى نموذج ECG.',
+              ),
+              child: Column(
+                children: [
+                  _statusLine(
+                    _t('Image input', 'مدخل الصورة'),
+                    imageItems.isNotEmpty
+                        ? _t('Ready', 'جاهز')
+                        : _t('Not selected', 'غير محدد'),
+                    imageItems.isNotEmpty ? AppColors.success : Colors.grey,
+                  ),
+                  const SizedBox(height: 10),
                   _statusLine(
                     _t('Signal input', 'مدخل الإشارة'),
-                    signalItems.isNotEmpty ? _t('Ready', 'جاهز') : _t('Not selected', 'غير محدد'),
+                    signalItems.isNotEmpty
+                        ? _t('Ready', 'جاهز')
+                        : _t('Not selected', 'غير محدد'),
                     signalItems.isNotEmpty ? AppColors.success : Colors.grey,
                   ),
-                  if (signalItems.any((f) => f.name.toLowerCase().endsWith('.csv') || f.name.toLowerCase().endsWith('.wav'))) ...[
+                  if (signalItems.any((f) =>
+                      f.name.toLowerCase().endsWith('.csv') ||
+                      f.name.toLowerCase().endsWith('.wav'))) ...[
                     const SizedBox(height: 10),
                     _statusLine(
                       _t('Direct signal mode', 'وضع الإشارة المباشر'),
-                      _t('CSV/WAV can be analyzed without WFDB pairing', 'يمكن تحليل CSV/WAV بدون زوج WFDB'),
+                      _t('CSV/WAV can be analyzed without WFDB pairing',
+                          'يمكن تحليل CSV/WAV بدون زوج WFDB'),
                       AppColors.accent,
                     ),
                   ],
-                if (_pairError != null) ...[
-                  const SizedBox(height: 10),
-                  _statusLine(_t('Validation', 'التحقق'), _pairError!, AppColors.danger),
-                ],
-                if (err != null) ...[
-                  const SizedBox(height: 10),
-                  _statusLine(_t('Server', 'الخادم'), err!, AppColors.danger),
-                ],
-                if (loading) ...[
-                  const SizedBox(height: 14),
-                  _pipelineProgressCard(context),
-                ],
-              ],
-            ),
-          ),
-          if (_conversionResult != null) ...[
-            const SizedBox(height: 16),
-            _uploadSection(
-              title: _t('WFDB conversion package', 'حزمة تحويل WFDB'),
-              subtitle: _t(
-                'The backend generated a downloadable HEA/DAT package from the image input.',
-                'أنشأ الباك إند حزمة HEA/DAT قابلة للتنزيل من الصورة.',
-              ),
-              child: Column(
-                children: [
-                  _dataTableRow('Record ID', _conversionResult!.recordId),
-                  _dataTableRow('HEA File', _conversionResult!.heaFileName),
-                  _dataTableRow('DAT File', _conversionResult!.datFileName),
-                  _dataTableRow('ZIP Bundle', _conversionResult!.zipFileName),
-                  _dataTableRow('Output Folder', _conversionResult!.outputDir),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        await launchUrlString(
-                          _conversionResult!.downloadUrl,
-                          webOnlyWindowName: '_blank',
-                        );
-                      },
-                      icon: const Icon(Icons.download, color: Colors.white),
-                      label: const Text('Download HEA/DAT ZIP'),
-                    ),
-                  ),
+                  if (_pairError != null) ...[
+                    const SizedBox(height: 10),
+                    _statusLine(_t('Validation', 'التحقق'), _pairError!,
+                        AppColors.danger),
+                  ],
+                  if (err != null) ...[
+                    const SizedBox(height: 10),
+                    _statusLine(_t('Server', 'الخادم'), err!, AppColors.danger),
+                  ],
+                  if (loading) ...[
+                    const SizedBox(height: 14),
+                    _pipelineProgressCard(context),
+                  ],
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          if (selected.isNotEmpty)
-            _uploadSection(
-              title: _t('Selected items', 'العناصر المحددة'),
-              subtitle: _t(
-                'Preview the package before running AI analysis.',
-                'راجع الحزمة قبل تشغيل التحليل.',
-              ),
-              child: Column(
-                children: [
-                  if (imageItems.isNotEmpty)
-                    ...imageItems.map(
-                      (file) => _selectedFileCard(
-                        file.name,
-                        _t('ECG image source', 'مصدر صورة ECG'),
-                        AppColors.accent,
-                        Icons.image_outlined,
+            if (_conversionResult != null) ...[
+              const SizedBox(height: 16),
+              _uploadSection(
+                title: _t('WFDB conversion package', 'حزمة تحويل WFDB'),
+                subtitle: _t(
+                  'The backend generated a downloadable HEA/DAT package from the image input.',
+                  'أنشأ الباك إند حزمة HEA/DAT قابلة للتنزيل من الصورة.',
+                ),
+                child: Column(
+                  children: [
+                    _dataTableRow('Record ID', _conversionResult!.recordId),
+                    _dataTableRow('HEA File', _conversionResult!.heaFileName),
+                    _dataTableRow('DAT File', _conversionResult!.datFileName),
+                    _dataTableRow('ZIP Bundle', _conversionResult!.zipFileName),
+                    _dataTableRow(
+                        'Output Folder', _conversionResult!.outputDir),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          await launchUrlString(
+                            _conversionResult!.downloadUrl,
+                            webOnlyWindowName: '_blank',
+                          );
+                        },
+                        icon: const Icon(Icons.download, color: Colors.white),
+                        label: const Text('Download HEA/DAT ZIP'),
                       ),
                     ),
-                  if (_groups.isNotEmpty)
-                    ..._groups.entries.map((entry) {
-                      final files = entry.value;
-                      final hasHea = files.any((f) => f.name.toLowerCase().endsWith('.hea'));
-                      final hasDat = files.any((f) => f.name.toLowerCase().endsWith('.dat'));
-                      final color = (hasHea && hasDat) ? AppColors.success : AppColors.warning;
-                      final subtitle = hasHea && hasDat
-                          ? _t('Complete WFDB pair detected', 'تم اكتشاف زوج WFDB كامل')
-                          : _t('Single file selected, auto-match will be attempted', 'تم اختيار ملف منفرد وسيتم محاولة المطابقة تلقائيًا');
-                      return _selectedFileCard(
-                        entry.key,
-                        subtitle,
-                        color,
-                        Icons.multiline_chart_rounded,
-                        chips: files.map((f) => f.name).toList(),
-                      );
-                    }),
-                  ...signalItems
-                      .where((f) => f.name.toLowerCase().endsWith('.csv') || f.name.toLowerCase().endsWith('.wav'))
-                      .map(
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            if (selected.isNotEmpty)
+              _uploadSection(
+                title: _t('Selected items', 'العناصر المحددة'),
+                subtitle: _t(
+                  'Preview the package before running AI analysis.',
+                  'راجع الحزمة قبل تشغيل التحليل.',
+                ),
+                child: Column(
+                  children: [
+                    if (imageItems.isNotEmpty)
+                      ...imageItems.map(
                         (file) => _selectedFileCard(
                           file.name,
-                          _t('Direct signal file ready for analysis', 'ملف إشارة مباشر جاهز للتحليل'),
+                          _t('ECG image source', 'مصدر صورة ECG'),
                           AppColors.accent,
-                          Icons.graphic_eq_rounded,
+                          Icons.image_outlined,
                         ),
                       ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: loading ? null : analyze,
-                      icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                      label: Text(
-                        loading ? _t('Analyzing...', 'جارٍ التحليل...') : _t('Run AI analysis', 'تشغيل التحليل'),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    if (_groups.isNotEmpty)
+                      ..._groups.entries.map((entry) {
+                        final files = entry.value;
+                        final hasHea = files
+                            .any((f) => f.name.toLowerCase().endsWith('.hea'));
+                        final hasDat = files
+                            .any((f) => f.name.toLowerCase().endsWith('.dat'));
+                        final color = (hasHea && hasDat)
+                            ? AppColors.success
+                            : AppColors.warning;
+                        final subtitle = hasHea && hasDat
+                            ? _t('Complete WFDB pair detected',
+                                'تم اكتشاف زوج WFDB كامل')
+                            : _t(
+                                'Single file selected, auto-match will be attempted',
+                                'تم اختيار ملف منفرد وسيتم محاولة المطابقة تلقائيًا');
+                        return _selectedFileCard(
+                          entry.key,
+                          subtitle,
+                          color,
+                          Icons.multiline_chart_rounded,
+                          chips: files.map((f) => f.name).toList(),
+                        );
+                      }),
+                    ...signalItems
+                        .where((f) =>
+                            f.name.toLowerCase().endsWith('.csv') ||
+                            f.name.toLowerCase().endsWith('.wav'))
+                        .map(
+                          (file) => _selectedFileCard(
+                            file.name,
+                            _t('Direct signal file ready for analysis',
+                                'ملف إشارة مباشر جاهز للتحليل'),
+                            AppColors.accent,
+                            Icons.graphic_eq_rounded,
+                          ),
+                        ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: loading ? null : analyze,
+                        icon:
+                            const Icon(Icons.auto_awesome, color: Colors.white),
+                        label: Text(
+                          loading
+                              ? _t('Analyzing...', 'جارٍ التحليل...')
+                              : _t('Run AI analysis', 'تشغيل التحليل'),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 15),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            )
-          else
-            _uploadSection(
-              title: _t('No ECG selected yet', 'لم يتم اختيار ECG بعد'),
-              subtitle: _t(
-              'Choose a file or image to begin the medical analysis flow.',
-              'اختر ملفًا أو صورة لبدء مسار التحليل.',
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    _t('No files selected', 'لا توجد ملفات محددة'),
-                    style: const TextStyle(color: Colors.grey),
+                  ],
+                ),
+              )
+            else
+              _uploadSection(
+                title: _t('No ECG selected yet', 'لم يتم اختيار ECG بعد'),
+                subtitle: _t(
+                  'Choose a file or image to begin the medical analysis flow.',
+                  'اختر ملفًا أو صورة لبدء مسار التحليل.',
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      _t('No files selected', 'لا توجد ملفات محددة'),
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
         ),
       ),
     );
@@ -6397,7 +8106,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: 12),
@@ -6503,7 +8213,9 @@ class _FileUploadPageState extends State<FileUploadPage> {
   }
 
   Widget _pipelineProgressCard(BuildContext context) {
-    final progress = _uploadStages.isEmpty ? 0.0 : (_analysisStage / _uploadStages.length).clamp(0, 1).toDouble();
+    final progress = _uploadStages.isEmpty
+        ? 0.0
+        : (_analysisStage / _uploadStages.length).clamp(0, 1).toDouble();
     return GlassPanel(
       padding: const EdgeInsets.all(18),
       radius: BorderRadius.circular(20),
@@ -6519,7 +8231,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
                   color: AppColors.accentSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.alt_route_rounded, color: AppColors.accentDeep),
+                child: const Icon(Icons.alt_route_rounded,
+                    color: AppColors.accentDeep),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -6535,7 +8248,8 @@ class _FileUploadPageState extends State<FileUploadPage> {
                     const SizedBox(height: 4),
                     Text(
                       _analysisLabel,
-                      style: const TextStyle(color: AppColors.textSecondary, height: 1.45),
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, height: 1.45),
                     ),
                   ],
                 ),
@@ -6604,7 +8318,6 @@ class _FileUploadPageState extends State<FileUploadPage> {
       ),
     );
   }
-
 }
 
 class AnalysisResultPage extends StatelessWidget {
@@ -6615,6 +8328,7 @@ class AnalysisResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = ApiService(baseUrl: _apiBaseUrl());
+    final aiBundle = _buildAiInsightBundle(result);
     final confidencePct = (result.confidence * 100).toStringAsFixed(1);
     final qrs = result.measurements['qrs_duration']?.value;
     final qtc = result.measurements['qtc']?.value;
@@ -6634,9 +8348,9 @@ class AnalysisResultPage extends StatelessWidget {
     final identity = draft?.patientIdentityLabel ?? 'Session only';
     final reviewLabel = result.riskLevel == 'High'
         ? 'Priority review'
-            : result.riskLevel == 'Medium'
-                ? 'Monitor closely'
-                : 'Routine review';
+        : result.riskLevel == 'Medium'
+            ? 'Monitor closely'
+            : 'Routine review';
     final measurementRows = result.measurements.values
         .where((m) => m.value != null)
         .map(
@@ -6649,30 +8363,68 @@ class AnalysisResultPage extends StatelessWidget {
         .toList();
 
     final primaryRows = [
-      _ReportRow('Analysis ID', result.analysisId.isEmpty ? 'Unavailable' : result.analysisId, 'Stored backend record'),
-      _ReportRow('Recording ID', result.recordingId.isEmpty ? 'Unavailable' : result.recordingId, 'Input record identifier'),
-      _ReportRow('Classification', result.classification.isEmpty ? 'Not available' : result.classification, 'AI-assisted output'),
+      _ReportRow(
+          'Analysis ID',
+          result.analysisId.isEmpty ? 'Unavailable' : result.analysisId,
+          'Stored backend record'),
+      _ReportRow(
+          'Recording ID',
+          result.recordingId.isEmpty ? 'Unavailable' : result.recordingId,
+          'Input record identifier'),
+      _ReportRow(
+          'Classification',
+          result.classification.isEmpty
+              ? 'Not available'
+              : result.classification,
+          'AI-assisted output'),
       _ReportRow('AI Risk Level', result.riskLevel, 'Screening priority'),
       _ReportRow('Model Confidence', '$confidencePct%', 'Probability output'),
-      _ReportRow('Estimated Heart Rate', '${result.bpm} bpm', 'Derived display metric'),
+      _ReportRow('Estimated Heart Rate', '${result.bpm} bpm',
+          'Derived display metric'),
       _ReportRow('Regional Pattern', result.region, 'Localization output'),
-      _ReportRow('Signal Quality', result.signalQualityLabel ?? 'Unavailable', 'Backend quality estimate'),
-      _ReportRow('Model Version', result.modelVersion.isEmpty ? 'Unavailable' : result.modelVersion, 'Loaded bundle'),
-      _ReportRow('Threshold', result.threshold.toStringAsFixed(3), 'Decision threshold'),
+      _ReportRow('Signal Quality', result.signalQualityLabel ?? 'Unavailable',
+          'Backend quality estimate'),
+      _ReportRow(
+          'Model Version',
+          result.modelVersion.isEmpty ? 'Unavailable' : result.modelVersion,
+          'Loaded bundle'),
+      _ReportRow('Threshold', result.threshold.toStringAsFixed(3),
+          'Decision threshold'),
     ];
 
     final operationalRows = [
       _ReportRow('Signal Source', source, 'Image / file / live stream'),
       _ReportRow('Patient Identifier', identity, 'Attached session context'),
       _ReportRow('Assigned Doctor', doctorName, 'Care owner'),
-      _ReportRow('Recommendation Count', '${result.recommendations.length}', 'Generated action prompts'),
-      _ReportRow('Active Coil Targets', result.activeCoils.isEmpty ? '0' : result.activeCoils.join(', '), 'Prototype actuation map'),
+      _ReportRow('Recommendation Count', '${result.recommendations.length}',
+          'Generated action prompts'),
+      _ReportRow(
+          'Active Coil Targets',
+          result.activeCoils.isEmpty ? '0' : result.activeCoils.join(', '),
+          'Prototype actuation map'),
     ];
     final snapshotRows = [
-      _ReportRow('Screening Status', result.classification.isEmpty ? 'AI-assisted screening complete' : result.classification, 'Primary AI summary'),
+      _ReportRow(
+          'Screening Status',
+          result.classification.isEmpty
+              ? 'AI-assisted screening complete'
+              : result.classification,
+          'Primary AI summary'),
       _ReportRow('Review Priority', reviewLabel, 'Presentation posture'),
-      _ReportRow('Heart Rhythm Signal', result.riskLevel == 'High' ? 'Needs urgent physician review' : result.riskLevel == 'Medium' ? 'Monitor and compare with context' : 'Lower screening concern', 'Risk-linked review cue'),
-      _ReportRow('Report Readiness', result.analysisId.isEmpty ? 'Session summary only' : 'PDF-ready analysis record', 'Export capability'),
+      _ReportRow(
+          'Heart Rhythm Signal',
+          result.riskLevel == 'High'
+              ? 'Needs urgent physician review'
+              : result.riskLevel == 'Medium'
+                  ? 'Monitor and compare with context'
+                  : 'Lower screening concern',
+          'Risk-linked review cue'),
+      _ReportRow(
+          'Report Readiness',
+          result.analysisId.isEmpty
+              ? 'Session summary only'
+              : 'PDF-ready analysis record',
+          'Export capability'),
     ];
     final summaryTiles = <AppMetricTile>[
       AppMetricTile(
@@ -6706,12 +8458,15 @@ class AnalysisResultPage extends StatelessWidget {
     ];
     final dynamicTiles = <AppMetricTile>[];
     if (qtc != null) {
-      final qtcAccent = qtc >= 470 || qtc <= 330 ? AppColors.danger : AppColors.accent;
+      final qtcAccent =
+          qtc >= 470 || qtc <= 330 ? AppColors.danger : AppColors.accent;
       dynamicTiles.add(
         AppMetricTile(
           label: 'QTc',
           value: '${qtc.toStringAsFixed(0)} ms',
-          caption: qtcAccent == AppColors.danger ? 'Outlying repolarization estimate' : 'Corrected QT estimate',
+          caption: qtcAccent == AppColors.danger
+              ? 'Outlying repolarization estimate'
+              : 'Corrected QT estimate',
           accent: qtcAccent,
           icon: Icons.timelapse_rounded,
         ),
@@ -6723,7 +8478,9 @@ class AnalysisResultPage extends StatelessWidget {
         AppMetricTile(
           label: 'ST Shift',
           value: st.toStringAsFixed(2),
-          caption: stAccent == AppColors.danger ? 'Noticeable ST deviation estimate' : 'Minimal ST deviation',
+          caption: stAccent == AppColors.danger
+              ? 'Noticeable ST deviation estimate'
+              : 'Minimal ST deviation',
           accent: stAccent,
           icon: Icons.show_chart_rounded,
         ),
@@ -6735,7 +8492,9 @@ class AnalysisResultPage extends StatelessWidget {
         AppMetricTile(
           label: 'QRS',
           value: '${qrs.toStringAsFixed(0)} ms',
-          caption: qrsAccent == AppColors.warning ? 'Widened depolarization window' : 'Depolarization duration estimate',
+          caption: qrsAccent == AppColors.warning
+              ? 'Widened depolarization window'
+              : 'Depolarization duration estimate',
           accent: qrsAccent,
           icon: Icons.square_foot_rounded,
         ),
@@ -6758,7 +8517,9 @@ class AnalysisResultPage extends StatelessWidget {
         AppMetricTile(
           label: 'SDNN',
           value: '${sdnn.toStringAsFixed(0)} ms',
-          caption: accent == AppColors.warning ? 'Higher rhythm variability' : 'Short-term rhythm variability',
+          caption: accent == AppColors.warning
+              ? 'Higher rhythm variability'
+              : 'Short-term rhythm variability',
           accent: accent,
           icon: Icons.multiline_chart_rounded,
         ),
@@ -6806,10 +8567,14 @@ class AnalysisResultPage extends StatelessWidget {
       _headlineMetric('Confidence', '$confidencePct%', Colors.white),
       _headlineMetric('Estimated BPM', '${result.bpm}', Colors.white),
       _headlineMetric('Review', reviewLabel, Colors.white),
-      if (qtc != null) _headlineMetric('QTc', '${qtc.toStringAsFixed(0)} ms', Colors.white),
-      if (st != null) _headlineMetric('ST Shift', st.toStringAsFixed(2), Colors.white),
-      if (qrs != null) _headlineMetric('QRS', '${qrs.toStringAsFixed(0)} ms', Colors.white),
-      if (sdnn != null) _headlineMetric('SDNN', '${sdnn.toStringAsFixed(0)} ms', Colors.white),
+      if (qtc != null)
+        _headlineMetric('QTc', '${qtc.toStringAsFixed(0)} ms', Colors.white),
+      if (st != null)
+        _headlineMetric('ST Shift', st.toStringAsFixed(2), Colors.white),
+      if (qrs != null)
+        _headlineMetric('QRS', '${qrs.toStringAsFixed(0)} ms', Colors.white),
+      if (sdnn != null)
+        _headlineMetric('SDNN', '${sdnn.toStringAsFixed(0)} ms', Colors.white),
     ];
     final caseFingerprint = [
       if (qtc != null) 'QTc ${qtc.toStringAsFixed(0)}',
@@ -6820,204 +8585,219 @@ class AnalysisResultPage extends StatelessWidget {
     ].join(' • ');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ECG Screening Report')),
+      appBar: AppBar(
+        title: const Text('ECG Screening Report'),
+        actions: _topBarActions(context),
+      ),
       body: AppBackdrop(
         dark: Theme.of(context).brightness == Brightness.dark,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.accentDeep],
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.accentDeep],
+                ),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                boxShadow: AppShadows.lift,
               ),
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-              boxShadow: AppShadows.lift,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppState.projectName.toUpperCase(),
-                  style: GoogleFonts.sora(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppState.projectName.toUpperCase(),
+                    style: GoogleFonts.sora(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  patientName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                  const SizedBox(height: 6),
+                  Text(
+                    patientName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Source: $source',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                if (caseFingerprint.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    caseFingerprint,
+                    'Source: $source',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
+                  if (caseFingerprint.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      caseFingerprint,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: headlineMetrics,
+                  ),
                 ],
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: headlineMetrics,
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          GridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width >= 760 ? 4 : 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.18,
-            children: visibleTiles,
-          ),
-          const SizedBox(height: 14),
-          _ReportActionPanel(
-            api: api,
-            analysisId: result.analysisId,
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Clinical Snapshot',
-            subtitle: 'Fast summary table for the current ECG screening session',
-            child: _reportTable(snapshotRows, highlight: result.riskColor),
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Analysis summary',
-            subtitle: 'Primary result status and data provenance for this ECG session',
-            child: Column(
-              children: [
-                _statusStrip(
-                  'Screening status',
-                  result.classification.isEmpty ? 'AI-assisted screening complete' : result.classification,
-                  result.riskColor,
-                ),
-                const SizedBox(height: 10),
-                _statusStrip(
-                  'Signal readiness',
-                  result.signalQualityLabel ?? 'Unavailable',
-                  AppColors.accent,
-                ),
-                const SizedBox(height: 10),
-                _statusStrip('Processing source', source, AppColors.success),
-              ],
+            const SizedBox(height: 14),
+            GridView.count(
+              crossAxisCount: MediaQuery.of(context).size.width >= 760 ? 4 : 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.18,
+              children: visibleTiles,
             ),
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Patient & Session Context',
-            subtitle: 'Identity fields attached to the generated result',
-            child: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1.15),
-                1: FlexColumnWidth(1.85),
-              },
-              children: [
-                _contextRow('Patient', patientName),
-                _contextRow('Identity', identity),
-                _contextRow('Doctor', doctorName),
-                _contextRow('Notes', draft?.notes.trim().isNotEmpty == true ? draft!.notes : 'No session notes'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Primary Analysis Table',
-            subtitle: 'Core screening outputs available from the current pipeline',
-            child: _reportTable(primaryRows, highlight: result.riskColor),
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Operational Mapping',
-            subtitle: 'Session routing and device logic linked to the result',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _reportTable(operationalRows, highlight: AppColors.accent),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Localized Coil Map',
-                        style: GoogleFonts.sora(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      CoilArrayWidget(active: result.activeCoils),
-                      const SizedBox(height: 10),
-                      Text(
-                        result.activeCoils.isEmpty
-                            ? 'No activation suggested for the current screening output.'
-                            : 'Active targets: ${result.activeCoils.join(', ')}',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (result.waveform.isNotEmpty)
+            const SizedBox(height: 14),
             _sectionCard(
-              title: 'ECG visualization',
-              subtitle: 'Rendered from the backend graph payload of the analyzed ECG segment',
+              title: 'AI Copilot Summary',
+              subtitle:
+                  'Clinician-facing interpretation generated from model outputs and computed ECG measurements',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _statusStrip('Triage', aiBundle.triage, aiBundle.triageColor),
+                  const SizedBox(height: 10),
+                  _statusStrip('Confidence Context', aiBundle.confidenceSummary,
+                      AppColors.accent),
+                  const SizedBox(height: 12),
+                  _infoBlock('Clinician Summary', aiBundle.clinicianSummary),
+                  const SizedBox(height: 10),
+                  _infoBlock('Signal Quality Context', aiBundle.qualitySummary),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Patient-Friendly Explanation',
+              subtitle:
+                  'Plain-language explanation that stays aligned with the currently available ECG pipeline outputs',
+              child: _infoBlock('What this means', aiBundle.patientSummary),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'AI Watchlist',
+              subtitle:
+                  'Model-derived review points highlighted from the current result',
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(child: AppMetricTile._miniStat('Duration view', '${result.waveform.length} pts')),
-                      const SizedBox(width: 10),
-                      Expanded(child: AppMetricTile._miniStat('Scale', 'Medical grid')),
-                      const SizedBox(width: 10),
-                      Expanded(child: AppMetricTile._miniStat('Region', result.region)),
-                    ],
+                  ...aiBundle.watchItems.map(
+                      (item) => _bulletInfoRow(item, aiBundle.triageColor)),
+                  const SizedBox(height: 8),
+                  ...aiBundle.nextSteps
+                      .map((item) => _bulletInfoRow(item, AppColors.primary)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _ReportActionPanel(
+              api: api,
+              analysisId: result.analysisId,
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Clinical Snapshot',
+              subtitle:
+                  'Fast summary table for the current ECG screening session',
+              child: _reportTable(snapshotRows, highlight: result.riskColor),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Analysis summary',
+              subtitle:
+                  'Primary result status and data provenance for this ECG session',
+              child: Column(
+                children: [
+                  _statusStrip(
+                    'Screening status',
+                    result.classification.isEmpty
+                        ? 'AI-assisted screening complete'
+                        : result.classification,
+                    result.riskColor,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  _statusStrip(
+                    'Signal readiness',
+                    result.signalQualityLabel ?? 'Unavailable',
+                    AppColors.accent,
+                  ),
+                  const SizedBox(height: 10),
+                  _statusStrip('Processing source', source, AppColors.success),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Patient & Session Context',
+              subtitle: 'Identity fields attached to the generated result',
+              child: Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(1.15),
+                  1: FlexColumnWidth(1.85),
+                },
+                children: [
+                  _contextRow('Patient', patientName),
+                  _contextRow('Identity', identity),
+                  _contextRow('Doctor', doctorName),
+                  _contextRow(
+                      'Notes',
+                      draft?.notes.trim().isNotEmpty == true
+                          ? draft!.notes
+                          : 'No session notes'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Primary Analysis Table',
+              subtitle:
+                  'Core screening outputs available from the current pipeline',
+              child: _reportTable(primaryRows, highlight: result.riskColor),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Operational Mapping',
+              subtitle: 'Session routing and device logic linked to the result',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _reportTable(operationalRows, highlight: AppColors.accent),
+                  const SizedBox(height: 14),
                   Container(
-                    height: 220,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Stack(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Positioned.fill(child: CustomPaint(painter: GridPainter())),
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: ECGPainter(result.waveform.take(900).toList()),
+                        Text(
+                          'Localized Coil Map',
+                          style: GoogleFonts.sora(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        CoilArrayWidget(active: result.activeCoils),
+                        const SizedBox(height: 10),
+                        Text(
+                          result.activeCoils.isEmpty
+                              ? 'No activation suggested for the current screening output.'
+                              : 'Active targets: ${result.activeCoils.join(', ')}',
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
@@ -7025,103 +8805,161 @@ class AnalysisResultPage extends StatelessWidget {
                 ],
               ),
             ),
-          if (result.waveform.isNotEmpty) const SizedBox(height: 14),
-          if (result.waveform.length > 2)
-            _sectionCard(
-              title: 'Clinical visualizations',
-              subtitle: 'Compact trend inspection derived from the analyzed waveform payload',
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 170,
-                    child: CustomPaint(
-                      painter: TrendPainter(
-                        result.waveform.take(120).map((e) => e.abs()).toList(),
+            const SizedBox(height: 14),
+            if (result.waveform.isNotEmpty)
+              _sectionCard(
+                title: 'ECG visualization',
+                subtitle:
+                    'Rendered from the backend graph payload of the analyzed ECG segment',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                            child: AppMetricTile._miniStat('Duration view',
+                                '${result.waveform.length} pts')),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: AppMetricTile._miniStat(
+                                'Scale', 'Medical grid')),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: AppMetricTile._miniStat(
+                                'Region', result.region)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 220,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                              child: CustomPaint(painter: GridPainter())),
+                          Positioned.fill(
+                            child: CustomPaint(
+                              painter: ECGPainter(
+                                  result.waveform.take(900).toList()),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Trend preview uses analyzed waveform magnitudes for visual inspection only.',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          if (result.waveform.length > 2) const SizedBox(height: 14),
-          if (measurementRows.isNotEmpty)
-            _sectionCard(
-              title: 'Key measurements',
-              subtitle: 'Only values currently computed by the backend are shown',
-              child: _reportTable(
-                measurementRows,
-                highlight: AppColors.success,
+            if (result.waveform.isNotEmpty) const SizedBox(height: 14),
+            if (result.waveform.length > 2)
+              _sectionCard(
+                title: 'Clinical visualizations',
+                subtitle:
+                    'Compact trend inspection derived from the analyzed waveform payload',
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 170,
+                      child: CustomPaint(
+                        painter: TrendPainter(
+                          result.waveform
+                              .take(120)
+                              .map((e) => e.abs())
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Trend preview uses analyzed waveform magnitudes for visual inspection only.',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          if (measurementRows.isNotEmpty) const SizedBox(height: 14),
-          if (result.findings.isNotEmpty)
+            if (result.waveform.length > 2) const SizedBox(height: 14),
+            if (measurementRows.isNotEmpty)
+              _sectionCard(
+                title: 'Key measurements',
+                subtitle:
+                    'Only values currently computed by the backend are shown',
+                child: _reportTable(
+                  measurementRows,
+                  highlight: AppColors.success,
+                ),
+              ),
+            if (measurementRows.isNotEmpty) const SizedBox(height: 14),
+            if (result.findings.isNotEmpty)
+              _sectionCard(
+                title: 'AI analysis',
+                subtitle:
+                    'Backend-generated findings from this specific analysis',
+                child: Table(
+                  columnWidths: const {
+                    0: FlexColumnWidth(0.35),
+                    1: FlexColumnWidth(2.65),
+                    2: FlexColumnWidth(0.9),
+                  },
+                  children: [
+                    _tableHeader('No.', 'Finding', 'Type'),
+                    ...List.generate(result.findings.length, (index) {
+                      return _tableRow(
+                        '${index + 1}',
+                        result.findings[index],
+                        index == 0 ? 'AI' : 'ECG',
+                        index.isEven,
+                        AppColors.accent,
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            if (result.findings.isNotEmpty) const SizedBox(height: 14),
             _sectionCard(
-              title: 'AI analysis',
-              subtitle: 'Backend-generated findings from this specific analysis',
+              title: 'Recommended Next Steps',
+              subtitle:
+                  'Generated action list for the current screening output',
               child: Table(
                 columnWidths: const {
-                  0: FlexColumnWidth(0.35),
-                  1: FlexColumnWidth(2.65),
-                  2: FlexColumnWidth(0.9),
+                  0: FlexColumnWidth(0.45),
+                  1: FlexColumnWidth(2.1),
+                  2: FlexColumnWidth(1.0),
                 },
                 children: [
-                  _tableHeader('No.', 'Finding', 'Type'),
-                  ...List.generate(result.findings.length, (index) {
+                  _tableHeader('No.', 'Action', 'Priority'),
+                  ...List.generate(result.recommendations.length, (index) {
                     return _tableRow(
                       '${index + 1}',
-                      result.findings[index],
-                      index == 0 ? 'AI' : 'ECG',
+                      result.recommendations[index],
+                      result.riskLevel,
                       index.isEven,
-                      AppColors.accent,
+                      result.riskColor,
                     );
                   }),
                 ],
               ),
             ),
-          if (result.findings.isNotEmpty) const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Recommended Next Steps',
-            subtitle: 'Generated action list for the current screening output',
-            child: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(0.45),
-                1: FlexColumnWidth(2.1),
-                2: FlexColumnWidth(1.0),
-              },
-              children: [
-                _tableHeader('No.', 'Action', 'Priority'),
-                ...List.generate(result.recommendations.length, (index) {
-                  return _tableRow(
-                    '${index + 1}',
-                    result.recommendations[index],
-                    result.riskLevel,
-                    index.isEven,
-                    result.riskColor,
-                  );
-                }),
-              ],
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Review Status',
+              subtitle: 'Presentation and escalation posture for this report',
+              child: Column(
+                children: [
+                  _statusStrip(
+                      'Review Priority', reviewLabel, result.riskColor),
+                  const SizedBox(height: 10),
+                  _statusStrip('Report Format', 'Shareable PDF-ready summary',
+                      AppColors.accent),
+                  const SizedBox(height: 10),
+                  _statusStrip('Safety Layer', 'Prototype safeguards available',
+                      AppColors.success),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          _sectionCard(
-            title: 'Review Status',
-            subtitle: 'Presentation and escalation posture for this report',
-            child: Column(
-              children: [
-                _statusStrip('Review Priority', reviewLabel, result.riskColor),
-                const SizedBox(height: 10),
-                _statusStrip('Report Format', 'Shareable PDF-ready summary', AppColors.accent),
-                const SizedBox(height: 10),
-                _statusStrip('Safety Layer', 'Prototype safeguards available', AppColors.success),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
             GlassPanel(
               padding: const EdgeInsets.all(14),
               child: const Text(
@@ -7147,7 +8985,8 @@ class AnalysisResultPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
           const SizedBox(height: 6),
           Text(
             value,
@@ -7182,7 +9021,10 @@ class AnalysisResultPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(color: dark ? Colors.white60 : AppColors.textSecondary, fontSize: 12)),
+          Text(subtitle,
+              style: TextStyle(
+                  color: dark ? Colors.white60 : AppColors.textSecondary,
+                  fontSize: 12)),
           const Divider(height: 22),
           child,
         ],
@@ -7190,7 +9032,8 @@ class AnalysisResultPage extends StatelessWidget {
     );
   }
 
-  static Widget _reportTable(List<_ReportRow> rows, {required Color highlight}) {
+  static Widget _reportTable(List<_ReportRow> rows,
+      {required Color highlight}) {
     return Table(
       columnWidths: const {
         0: FlexColumnWidth(1.3),
@@ -7201,7 +9044,8 @@ class AnalysisResultPage extends StatelessWidget {
         _tableHeader('Parameter', 'Result', 'Comment'),
         ...List.generate(rows.length, (index) {
           final row = rows[index];
-          return _tableRow(row.label, row.value, row.note, index.isEven, highlight);
+          return _tableRow(
+              row.label, row.value, row.note, index.isEven, highlight);
         }),
       ],
     );
@@ -7211,7 +9055,9 @@ class AnalysisResultPage extends StatelessWidget {
     final dark = AppState.isDarkMode.value;
     return TableRow(
       decoration: BoxDecoration(
-        color: dark ? AppColors.primary.withAlpha(48) : AppColors.primary.withAlpha(18),
+        color: dark
+            ? AppColors.primary.withAlpha(48)
+            : AppColors.primary.withAlpha(18),
         borderRadius: BorderRadius.circular(10),
       ),
       children: [
@@ -7234,7 +9080,9 @@ class AnalysisResultPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: even
             ? (dark ? AppColors.surfaceDark.withAlpha(160) : Colors.white)
-            : (dark ? AppColors.backgroundDark.withAlpha(120) : AppColors.background),
+            : (dark
+                ? AppColors.backgroundDark.withAlpha(120)
+                : AppColors.background),
       ),
       children: [
         _tableCell(c1),
@@ -7310,6 +9158,64 @@ class AnalysisResultPage extends StatelessWidget {
       ),
     );
   }
+
+  static Widget _infoBlock(String title, String body) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.sora(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _bulletInfoRow(String text, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Icon(Icons.circle, size: 10, color: color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ReportActionPanel extends StatefulWidget {
@@ -7365,7 +9271,9 @@ class _ReportActionPanelState extends State<_ReportActionPanel> {
     final opened = await launchUrlString(url, webOnlyWindowName: '_blank');
     if (!mounted) return;
     setState(() {
-      _status = opened ? 'Latest report opened.' : 'Unable to open the latest report.';
+      _status = opened
+          ? 'Latest report opened.'
+          : 'Unable to open the latest report.';
     });
   }
 
@@ -7404,20 +9312,26 @@ class _ReportActionPanelState extends State<_ReportActionPanel> {
               ),
               ElevatedButton.icon(
                 onPressed: _loading || !canGenerate ? null : _generateAndOpen,
-                icon: Icon(_loading ? Icons.sync : Icons.picture_as_pdf_outlined),
-                label: Text(_loading ? 'Generating report...' : 'Generate PDF Report'),
+                icon:
+                    Icon(_loading ? Icons.sync : Icons.picture_as_pdf_outlined),
+                label: Text(
+                    _loading ? 'Generating report...' : 'Generate PDF Report'),
               ),
               OutlinedButton.icon(
-                onPressed: _loading || _lastReportUrl == null ? null : _openLastReport,
+                onPressed:
+                    _loading || _lastReportUrl == null ? null : _openLastReport,
                 icon: const Icon(Icons.open_in_new_rounded),
                 label: const Text('Open latest report'),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _miniStatusRow('Analysis ID', widget.analysisId.isEmpty ? 'Unavailable' : widget.analysisId),
-          _miniStatusRow('Session Mode', canGenerate ? 'Analysis-linked report' : 'Unavailable'),
-          _miniStatusRow('Latest Report URL', _lastReportUrl ?? 'Not generated yet'),
+          _miniStatusRow('Analysis ID',
+              widget.analysisId.isEmpty ? 'Unavailable' : widget.analysisId),
+          _miniStatusRow('Session Mode',
+              canGenerate ? 'Analysis-linked report' : 'Unavailable'),
+          _miniStatusRow(
+              'Latest Report URL', _lastReportUrl ?? 'Not generated yet'),
           if (_status != null) ...[
             const SizedBox(height: 10),
             Container(
@@ -7488,6 +9402,7 @@ class _ReportRow {
   final String note;
   const _ReportRow(this.label, this.value, this.note);
 }
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -7546,9 +9461,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Text(
                       _t('Settings', 'الإعدادات'),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -7622,7 +9538,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                           title: Text(_t('Arabic Language', 'اللغة العربية')),
                           subtitle: Text(
-                            _t('Switch interface copy between English and Arabic.', 'التبديل بين اللغة الإنجليزية والعربية.'),
+                            _t('Switch interface copy between English and Arabic.',
+                                'التبديل بين اللغة الإنجليزية والعربية.'),
                           ),
                           contentPadding: EdgeInsets.zero,
                         );
@@ -7639,7 +9556,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                           title: Text(_t('Dark Theme', 'الثيم الداكن')),
                           subtitle: Text(
-                            _t('Use the darker visual mode for demos and low-light review.', 'استخدم النمط الداكن للعروض والمراجعة في الإضاءة المنخفضة.'),
+                            _t('Use the darker visual mode for demos and low-light review.',
+                                'استخدم النمط الداكن للعروض والمراجعة في الإضاءة المنخفضة.'),
                           ),
                           contentPadding: EdgeInsets.zero,
                         );
@@ -7655,7 +9573,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _t('Developer / Advanced Mode', 'وضع المطور / الوضع المتقدم'),
+                      _t('Developer / Advanced Mode',
+                          'وضع المطور / الوضع المتقدم'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
@@ -7672,8 +9591,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                 AppState.developerMode.value = v;
                                 unawaited(AppState.persistSettings());
                               },
-                              title: Text(_t('Enable advanced connectivity controls', 'تفعيل إعدادات الاتصال المتقدمة')),
-                              subtitle: Text(_t('Use this only for demo setup, local server changes, and debugging.', 'استخدم هذا فقط لإعداد العرض أو تغيير الخادم المحلي أو التصحيح.')),
+                              title: Text(_t(
+                                  'Enable advanced connectivity controls',
+                                  'تفعيل إعدادات الاتصال المتقدمة')),
+                              subtitle: Text(_t(
+                                  'Use this only for demo setup, local server changes, and debugging.',
+                                  'استخدم هذا فقط لإعداد العرض أو تغيير الخادم المحلي أو التصحيح.')),
                               contentPadding: EdgeInsets.zero,
                             ),
                             if (enabled) ...[
@@ -7683,7 +9606,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                 style: _inputTextStyle(context),
                                 decoration: InputDecoration(
                                   labelText: _t('Server URL', 'رابط الخادم'),
-                                  helperText: _t('Example: http://192.168.1.10:8001', 'مثال: http://192.168.1.10:8001'),
+                                  helperText: _t(
+                                      'Example: http://192.168.1.10:8001',
+                                      'مثال: http://192.168.1.10:8001'),
                                   prefixIcon: const Icon(Icons.link),
                                 ),
                               ),
@@ -7694,7 +9619,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                 child: ElevatedButton.icon(
                                   onPressed: _save,
                                   icon: const Icon(Icons.save_outlined),
-                                  label: Text(_t('Save Connection Settings', 'حفظ إعدادات الاتصال')),
+                                  label: Text(_t('Save Connection Settings',
+                                      'حفظ إعدادات الاتصال')),
                                 ),
                               ),
                             ],
@@ -7710,7 +9636,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 padding: const EdgeInsets.all(16),
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.auto_awesome, color: AppColors.accent),
+                  leading:
+                      const Icon(Icons.auto_awesome, color: AppColors.accent),
                   title: Text(
                     _t('System Enhancements', 'تطويرات النظام'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -7718,8 +9645,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                   ),
                   subtitle: Text(
-                    _t('Explainable AI, safety, and compliance', 'تفسير الذكاء، الأمان، والامتثال'),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    _t('Explainable AI, safety, and compliance',
+                        'تفسير الذكاء، الأمان، والامتثال'),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
@@ -7736,7 +9665,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   height: 50,
                   child: OutlinedButton.icon(
                     onPressed: _signOut,
-                    icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
+                    icon: const Icon(Icons.logout_rounded,
+                        color: AppColors.danger),
                     label: Text(
                       _t('Sign out', 'تسجيل الخروج'),
                       style: const TextStyle(
@@ -7764,54 +9694,51 @@ class SystemEnhancementsPage extends StatelessWidget {
       (
         _t('Explainable AI Module',
             'ÙˆØ­Ø¯Ø© ØªÙØ³ÙŠØ± Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ'),
-        _t(
-            'Visual explanations highlight ECG patterns behind alerts.',
+        _t('Visual explanations highlight ECG patterns behind alerts.',
             'ØªÙˆØ¶ÙŠØ­Ø§Øª Ù…Ø±Ø¦ÙŠØ© ØªÙØ¸Ù‡Ø± Ø£Ù†Ù…Ø§Ø· Ø±Ø³Ù… Ø§Ù„Ù‚Ù„Ø¨ ÙˆØ±Ø§Ø¡ Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡Ø§Øª.')
       ),
       (
         _t('Clinical Override & Human-in-the-Loop',
             'Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ø·Ø¨ÙŠØ¨ ÙˆØ§Ù„ØªØ­ÙƒÙ… Ø§Ù„Ø¨Ø´Ø±ÙŠ'),
-        _t(
-            'Physicians can confirm or override AI alerts.',
+        _t('Physicians can confirm or override AI alerts.',
             'ÙŠÙ…ÙƒÙ† Ù„Ù„Ø·Ø¨ÙŠØ¨ ØªØ£ÙƒÙŠØ¯ Ø£Ùˆ ØªØ¬Ø§ÙˆØ² ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡.')
       ),
       (
         _t('Personalized Baseline Calibration',
             'Ù…Ø¹Ø§ÙŠØ±Ø© Ø®Ø· Ø£Ø³Ø§Ø³ Ù…Ø®ØµØµØ©'),
-        _t(
-            'Risk detection based on each patient baseline.',
+        _t('Risk detection based on each patient baseline.',
             'Ø§Ù„ÙƒØ´Ù ÙŠØ¹ØªÙ…Ø¯ Ø¹Ù„Ù‰ Ø®Ø· Ø§Ù„Ø£Ø³Ø§Ø³ Ù„ÙƒÙ„ Ù…Ø±ÙŠØ¶.')
       ),
       (
         _t('Data Security & Medical Compliance',
             'Ø£Ù…Ø§Ù† Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø·Ø¨ÙŠ'),
-        _t(
-            'End-to-end encryption with role-based access.',
+        _t('End-to-end encryption with role-based access.',
             'ØªØ´ÙÙŠØ± Ø´Ø§Ù…Ù„ Ù…Ø¹ ØµÙ„Ø§Ø­ÙŠØ§Øª ÙˆØµÙˆÙ„ Ø­Ø³Ø¨ Ø§Ù„Ø¯ÙˆØ±.')
       ),
       (
-        _t('Offline Safety Mode',
-            'ÙˆØ¶Ø¹ Ø£Ù…Ø§Ù† Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„'),
-        _t(
-            'Local monitoring continues during outages.',
+        _t('Offline Safety Mode', 'ÙˆØ¶Ø¹ Ø£Ù…Ø§Ù† Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„'),
+        _t('Local monitoring continues during outages.',
             'Ø§Ù„Ù…Ø±Ø§Ù‚Ø¨Ø© ØªØ³ØªÙ…Ø± Ù…Ø­Ù„ÙŠÙ‹Ø§ Ø¹Ù†Ø¯ Ø§Ù†Ù‚Ø·Ø§Ø¹ Ø§Ù„Ø´Ø¨ÙƒØ©.')
       ),
       (
         _t('Research & Clinical Logging Mode',
             'ÙˆØ¶Ø¹ Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„Ø¨Ø­Ø«ÙŠ'),
-        _t(
-            'Anonymized logs for research with consent.',
+        _t('Anonymized logs for research with consent.',
             'ØªØ³Ø¬ÙŠÙ„Ø§Øª Ù…Ø¬Ù‡ÙˆÙ„Ø© Ù„Ù„Ø¨Ø­Ø« Ø¨Ù…ÙˆØ§ÙÙ‚Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù….')
       ),
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(_t('System Enhancements', 'ØªØ·ÙˆÙŠØ±Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…'))),
+      appBar: AppBar(
+        title: Text(_t('System Enhancements', 'ØªØ·ÙˆÙŠØ±Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…')),
+        actions: _topBarActions(context),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
           AppHeroBanner(
-            title: _t('Clinical-grade improvements', 'ØªØ­Ø³ÙŠÙ†Ø§Øª Ø¨Ù…Ø³ØªÙˆÙ‰ Ø·Ø¨ÙŠ'),
+            title: _t('Clinical-grade improvements',
+                'ØªØ­Ø³ÙŠÙ†Ø§Øª Ø¨Ù…Ø³ØªÙˆÙ‰ Ø·Ø¨ÙŠ'),
             subtitle: _t('Transparency, safety, and research readiness.',
                 'Ø´ÙØ§ÙÙŠØ©ØŒ Ø£Ù…Ø§Ù†ØŒ ÙˆØ¬Ø§Ù‡Ø²ÙŠØ© Ø¨Ø­Ø«ÙŠØ©.'),
             icon: Icons.shield_outlined,
@@ -7846,8 +9773,8 @@ class SystemEnhancementsPage extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           item.$2,
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 12),
+                          style:
+                              const TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ],
                     ),
@@ -7950,12 +9877,15 @@ class _PatientHomeState extends State<PatientHome> {
                   Padding(
                     padding: const EdgeInsets.all(18),
                     child: GlassPanel(
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 18, horizontal: 10),
                       child: NavigationRail(
                         selectedIndex: _index,
-                        onDestinationSelected: (value) => setState(() => _index = value),
+                        onDestinationSelected: (value) =>
+                            setState(() => _index = value),
                         backgroundColor: Colors.transparent,
-                        indicatorColor: AppColors.accentSoft.withAlpha(dark ? 24 : 255),
+                        indicatorColor:
+                            AppColors.accentSoft.withAlpha(dark ? 24 : 255),
                         labelType: NavigationRailLabelType.all,
                         leading: Container(
                           width: 52,
@@ -7964,7 +9894,8 @@ class _PatientHomeState extends State<PatientHome> {
                             gradient: AppGradients.hero,
                             borderRadius: BorderRadius.circular(18),
                           ),
-                          child: const Icon(Icons.monitor_heart_outlined, color: Colors.white),
+                          child: const Icon(Icons.monitor_heart_outlined,
+                              color: Colors.white),
                         ),
                         destinations: destinations
                             .map(
@@ -8041,7 +9972,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
     final patients = await _api.listPatients();
     PatientModel? patient;
     for (final item in patients) {
-      if (item.name.trim().toLowerCase() == widget.username.trim().toLowerCase()) {
+      if (item.name.trim().toLowerCase() ==
+          widget.username.trim().toLowerCase()) {
         patient = item;
         break;
       }
@@ -8072,7 +10004,7 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('Your Heart Health', 'صحة قلبك')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _refresh(),
@@ -8092,19 +10024,31 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
               return ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  _dashboardHero('Unable to load dashboard', 'Pull to refresh and verify server connectivity.'),
+                  _dashboardHero('Unable to load dashboard',
+                      'Pull to refresh and verify server connectivity.'),
                 ],
               );
             }
-            final data = snapshot.data ?? const PatientDashboardSnapshot(patient: null, report: null, appointments: []);
+            final data = snapshot.data ??
+                const PatientDashboardSnapshot(
+                    patient: null, report: null, appointments: []);
             final report = data.report;
             final patient = data.patient;
             final appointments = data.appointments;
-            final latestRisk = report?.riskLevels.isNotEmpty == true ? report!.riskLevels.last : 'No analysis';
-            final latestBpm = report?.bpm.isNotEmpty == true ? '${report!.bpm.last} bpm' : 'Unavailable';
-            final trendValues = (report?.bpm ?? const <int>[]).map((e) => e.toDouble()).toList();
+            final latestRisk = report?.riskLevels.isNotEmpty == true
+                ? report!.riskLevels.last
+                : 'No analysis';
+            final latestBpm = report?.bpm.isNotEmpty == true
+                ? '${report!.bpm.last} bpm'
+                : 'Unavailable';
+            final trendValues = (report?.bpm ?? const <int>[])
+                .map((e) => e.toDouble())
+                .toList();
             final latestDate = report?.createdAt?.split('T').first ?? 'No date';
-            final nextAppointment = appointments.isNotEmpty ? appointments.first.when : _t('No visit scheduled', 'لا توجد زيارة مجدولة');
+            final nextAppointment = appointments.isNotEmpty
+                ? appointments.first.when
+                : _t('No visit scheduled', 'لا توجد زيارة مجدولة');
+            final trendInsight = _buildTrendComparison(report);
 
             return ListView(
               padding: const EdgeInsets.all(18),
@@ -8129,7 +10073,10 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                     children: [
                       Text(
                         _t('Latest Screening', 'آخر فحص'),
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -8143,24 +10090,31 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                       const SizedBox(height: 6),
                       Text(
                         '${_t('Updated', 'تم التحديث')} $latestDate',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
                       ),
                       const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
-                            child: _heroMetric(_t('Heart Rate', 'معدل النبض'), latestBpm),
+                            child: _heroMetric(
+                                _t('Heart Rate', 'معدل النبض'), latestBpm),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _heroMetric(_t('Signal Flow', 'حالة التحليل'), patient?.id != null ? 'Linked' : 'Profile only'),
+                            child: _heroMetric(
+                                _t('Signal Flow', 'حالة التحليل'),
+                                patient?.id != null
+                                    ? 'Linked'
+                                    : 'Profile only'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Text(
                         '${_t('Next follow-up', 'المتابعة القادمة')}: $nextAppointment',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
                       ),
                       const SizedBox(height: 14),
                       SizedBox(
@@ -8178,8 +10132,102 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadii.xl),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppShadows.soft,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSectionHeader(
+                        title: _t('AI Patient Copilot', 'المساعد الذكي للمريض'),
+                        subtitle: _t(
+                          'Simple explanation and change detection based on your stored ECG results.',
+                          'شرح مبسط واكتشاف للتغيرات بناءً على نتائج ECG المحفوظة لديك.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: trendInsight.color.withAlpha(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: trendInsight.color.withAlpha(38)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trendInsight.headline,
+                              style: GoogleFonts.sora(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: trendInsight.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              trendInsight.summary,
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary, height: 1.45),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppMetricTile._miniStat(
+                                _t('BPM Change', 'تغير النبض'),
+                                trendInsight.bpmDeltaLabel),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: AppMetricTile._miniStat(
+                                _t('Risk Shift', 'تغير الخطر'),
+                                trendInsight.riskShiftLabel),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...trendInsight.bullets.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Icon(Icons.circle,
+                                    size: 10, color: trendInsight.color),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  item,
+                                  style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      height: 1.45),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 GridView.count(
-                  crossAxisCount: MediaQuery.of(context).size.width >= 700 ? 4 : 2,
+                  crossAxisCount:
+                      MediaQuery.of(context).size.width >= 700 ? 4 : 2,
                   shrinkWrap: true,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
@@ -8189,34 +10237,39 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                     AppMetricTile(
                       label: _t('Latest Risk', 'آخر خطر'),
                       value: latestRisk,
-                      caption: _t('Most recent screening state', 'آخر حالة فحص'),
+                      caption:
+                          _t('Most recent screening state', 'آخر حالة فحص'),
                       accent: AppColors.danger,
                       icon: Icons.priority_high_rounded,
                     ),
                     AppMetricTile(
                       label: _t('Heart Rate', 'النبض'),
                       value: latestBpm,
-                      caption: _t('Last available ECG session', 'آخر جلسة ECG متاحة'),
+                      caption: _t(
+                          'Last available ECG session', 'آخر جلسة ECG متاحة'),
                       accent: AppColors.accent,
                       icon: Icons.favorite_rounded,
                     ),
                     AppMetricTile(
                       label: _t('Trend Points', 'نقاط الاتجاه'),
                       value: '${report?.labels.length ?? 0}',
-                      caption: _t('Recent stored report samples', 'عينات التقارير الأخيرة'),
+                      caption: _t('Recent stored report samples',
+                          'عينات التقارير الأخيرة'),
                       accent: AppColors.success,
                       icon: Icons.insights_rounded,
                     ),
                     AppMetricTile(
                       label: _t('Appointments', 'المواعيد'),
                       value: '${appointments.length}',
-                      caption: _t('Linked follow-up visits', 'زيارات المتابعة المرتبطة'),
+                      caption: _t('Linked follow-up visits',
+                          'زيارات المتابعة المرتبطة'),
                       accent: AppColors.secondary,
                       icon: Icons.event_available_rounded,
                     ),
                     AppMetricTile(
                       label: _t('Assigned Doctor', 'الطبيب'),
-                      value: AppState.selectedDoctor?.name ?? _t('Not linked', 'غير مرتبط'),
+                      value: AppState.selectedDoctor?.name ??
+                          _t('Not linked', 'غير مرتبط'),
                       caption: _t('Current care owner', 'المتابع الحالي'),
                       accent: AppColors.primary,
                       icon: Icons.medical_services_rounded,
@@ -8237,13 +10290,16 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                     children: [
                       AppSectionHeader(
                         title: _t('Trend Visualization', 'عرض الاتجاه'),
-                        subtitle: _t('Recent heart-rate points from saved analyses', 'آخر نقاط معدل النبض من التحليلات المحفوظة'),
+                        subtitle: _t(
+                            'Recent heart-rate points from saved analyses',
+                            'آخر نقاط معدل النبض من التحليلات المحفوظة'),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
                         height: 180,
                         child: trendValues.isEmpty
-                            ? _emptyState(_t('No saved trend yet.', 'لا يوجد اتجاه محفوظ بعد.'))
+                            ? _emptyState(_t('No saved trend yet.',
+                                'لا يوجد اتجاه محفوظ بعد.'))
                             : CustomPaint(painter: TrendPainter(trendValues)),
                       ),
                     ],
@@ -8263,7 +10319,9 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                     children: [
                       AppSectionHeader(
                         title: _t('Recent Analyses', 'التحاليل الأخيرة'),
-                        subtitle: _t('Saved report timeline for this patient profile', 'الخط الزمني للتقارير المحفوظة لهذا الملف'),
+                        subtitle: _t(
+                            'Saved report timeline for this patient profile',
+                            'الخط الزمني للتقارير المحفوظة لهذا الملف'),
                         action: TextButton(
                           onPressed: () => widget.onNavigate(2),
                           child: Text(_t('Open History', 'فتح السجل')),
@@ -8271,12 +10329,16 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                       ),
                       const SizedBox(height: 8),
                       if (report == null || report.labels.isEmpty)
-                        _emptyState(_t('No analysis history yet.', 'لا يوجد سجل تحاليل بعد.'))
+                        _emptyState(_t('No analysis history yet.',
+                            'لا يوجد سجل تحاليل بعد.'))
                       else
                         ...List.generate(report.labels.length, (index) {
                           final label = report.labels[index];
-                          final bpm = index < report.bpm.length ? report.bpm[index] : 0;
-                          final risk = index < report.riskLevels.length ? report.riskLevels[index] : '-';
+                          final bpm =
+                              index < report.bpm.length ? report.bpm[index] : 0;
+                          final risk = index < report.riskLevels.length
+                              ? report.riskLevels[index]
+                              : '-';
                           return _timelineRow(label, bpm, risk);
                         }),
                     ],
@@ -8285,17 +10347,47 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _quickActionCard(_t('Monitor', 'المراقبة'), Icons.monitor_heart_rounded, AppColors.accent, () => widget.onNavigate(3))),
+                    Expanded(
+                        child: _quickActionCard(
+                            _t('Monitor', 'المراقبة'),
+                            Icons.monitor_heart_rounded,
+                            AppColors.accent,
+                            () => widget.onNavigate(3))),
                     const SizedBox(width: 12),
-                    Expanded(child: _quickActionCard(_t('Reports', 'التقارير'), Icons.description_rounded, AppColors.success, () => Navigator.push(context, _fadeRoute(PatientReportsPage(patient: patient ?? PatientModel(name: widget.username)))))),
+                    Expanded(
+                        child: _quickActionCard(
+                            _t('Reports', 'التقارير'),
+                            Icons.description_rounded,
+                            AppColors.success,
+                            () => Navigator.push(
+                                context,
+                                _fadeRoute(PatientReportsPage(
+                                    patient: patient ??
+                                        PatientModel(
+                                            name: widget.username)))))),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _quickActionCard(_t('Appointments', 'المواعيد'), Icons.event_note_rounded, AppColors.secondary, () => Navigator.push(context, _fadeRoute(PatientAppointmentsPage(patient: patient ?? PatientModel(name: widget.username)))))),
+                    Expanded(
+                        child: _quickActionCard(
+                            _t('Appointments', 'المواعيد'),
+                            Icons.event_note_rounded,
+                            AppColors.secondary,
+                            () => Navigator.push(
+                                context,
+                                _fadeRoute(PatientAppointmentsPage(
+                                    patient: patient ??
+                                        PatientModel(
+                                            name: widget.username)))))),
                     const SizedBox(width: 12),
-                    Expanded(child: _quickActionCard(_t('Profile & Doctor', 'الملف والطبيب'), Icons.person_pin_circle_outlined, AppColors.primary, () => widget.onNavigate(4))),
+                    Expanded(
+                        child: _quickActionCard(
+                            _t('Profile & Doctor', 'الملف والطبيب'),
+                            Icons.person_pin_circle_outlined,
+                            AppColors.primary,
+                            () => widget.onNavigate(4))),
                   ],
                 ),
               ],
@@ -8324,7 +10416,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
               gradient: AppGradients.accentGlow,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.favorite_rounded, color: AppColors.accentDeep, size: 28),
+            child: const Icon(Icons.favorite_rounded,
+                color: AppColors.accentDeep, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -8342,7 +10435,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12, height: 1.4),
+                  style: const TextStyle(
+                      color: Colors.grey, fontSize: 12, height: 1.4),
                 ),
               ],
             ),
@@ -8363,11 +10457,13 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
           ),
         ],
       ),
@@ -8415,7 +10511,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
           Expanded(
             child: Text(
               '$label  •  $bpm bpm',
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.w600),
             ),
           ),
           Container(
@@ -8426,7 +10523,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
             ),
             child: Text(
               risk,
-              style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11),
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w700, fontSize: 11),
             ),
           ),
         ],
@@ -8434,7 +10532,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
     );
   }
 
-  Widget _quickActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _quickActionCard(
+      String title, IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -8461,7 +10560,8 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.w700),
               ),
             ),
             const Icon(Icons.chevron_right_rounded, color: Colors.grey),
@@ -8481,10 +10581,8 @@ class PatientLiveScreen extends StatefulWidget {
 }
 
 class _PatientLiveScreenState extends State<PatientLiveScreen> {
-  static const String _bleServiceUuid =
-      '0000FFE0-0000-1000-8000-00805F9B34FB';
-  static const String _bleCharUuid =
-      '0000FFE1-0000-1000-8000-00805F9B34FB';
+  static const String _bleServiceUuid = '0000FFE0-0000-1000-8000-00805F9B34FB';
+  static const String _bleCharUuid = '0000FFE1-0000-1000-8000-00805F9B34FB';
 
   List<double> ecgPoints = [];
   Timer? _demoTimer;
@@ -8500,6 +10598,11 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
   double riskLevel = 0.2;
   String region = 'Anterior';
   List<String> activeCoils = CoilLogic.coilsForRegion('Anterior');
+  List<LiveAlertEvent> _liveEvents = const [];
+  String _lastRiskBand = 'low';
+  String _lastRegionLabel = 'Anterior';
+  int? _resolvedPatientId;
+  bool _loadingStoredEvents = false;
 
   final ApiService api = ApiService(baseUrl: _apiBaseUrl());
 
@@ -8508,6 +10611,7 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     super.initState();
     ecgPoints = List.generate(120, (index) => 0.0);
     _startDemoStream();
+    unawaited(_bootstrapMonitoringContext());
   }
 
   @override
@@ -8531,6 +10635,107 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       _applyEcgSample(value);
     });
     _setStatus('Demo', 'Demo stream');
+    _recordLiveEvent(
+      title: 'Demo monitoring started',
+      detail:
+          'The live screen is using the internal ECG simulator until a wearable device connects.',
+      color: AppColors.primary,
+    );
+  }
+
+  // ignore: unused_element
+  Widget _doctorMessagingAiCardLegacy(DoctorHomeSnapshot home) {
+    final brief = _buildMessagingOpsBrief(home);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(
+            title: _t('AI Messaging Summary', 'ملخص المراسلة الذكي'),
+            subtitle: _t(
+              'AI reads the current dashboard workload to suggest the right communication pace.',
+              'يلخّص الذكاء الاصطناعي ضغط المراسلات الحالي لاقتراح وتيرة المتابعة المناسبة.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: brief.color.withAlpha(12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: brief.color.withAlpha(35)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  brief.headline,
+                  style: GoogleFonts.sora(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brief.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  brief.summary,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _snapshotMetric('Queue', brief.queueLabel, brief.color),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _snapshotMetric(
+                    'Response', brief.responseLabel, AppColors.primary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...brief.bullets.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(Icons.circle, size: 10, color: brief.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _stopDemoStream() {
@@ -8552,6 +10757,38 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       }
       activeCoils = region == 'Low' ? [] : CoilLogic.coilsForRegion(region);
     });
+    final newRiskBand =
+        riskLevel > 0.62 ? 'high' : (riskLevel > 0.35 ? 'medium' : 'low');
+    if (newRiskBand != _lastRiskBand) {
+      _lastRiskBand = newRiskBand;
+      _recordLiveEvent(
+        title: newRiskBand == 'high'
+            ? 'High live risk window detected'
+            : newRiskBand == 'medium'
+                ? 'Moderate live risk window detected'
+                : 'Live risk returned to baseline',
+        detail:
+            'Risk band changed to ${newRiskBand.toUpperCase()} with current region ${region == 'Low' ? 'no dominant alert region' : region}.',
+        color: newRiskBand == 'high'
+            ? AppColors.danger
+            : newRiskBand == 'medium'
+                ? AppColors.warning
+                : AppColors.success,
+      );
+    }
+    final regionLabel = region == 'Low' ? 'Low' : region;
+    if (regionLabel != _lastRegionLabel) {
+      _lastRegionLabel = regionLabel;
+      _recordLiveEvent(
+        title: regionLabel == 'Low'
+            ? 'Dominant alert region cleared'
+            : 'Dominant alert region updated',
+        detail: regionLabel == 'Low'
+            ? 'No dominant stimulation region is currently active.'
+            : 'The live assistant shifted the dominant region to $regionLabel.',
+        color: regionLabel == 'Low' ? AppColors.success : AppColors.accent,
+      );
+    }
   }
 
   void _applyEcgSamples(List<double> values) {
@@ -8566,6 +10803,101 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       _connectionMode = mode;
       _connectionStatus = status;
     });
+    _recordLiveEvent(
+      title: '$mode connection update',
+      detail: status,
+      color: status.toLowerCase().contains('connected')
+          ? AppColors.success
+          : status.toLowerCase().contains('error') ||
+                  status.toLowerCase().contains('failed') ||
+                  status.toLowerCase().contains('not')
+              ? AppColors.danger
+              : AppColors.warning,
+    );
+  }
+
+  void _recordLiveEvent({
+    required String title,
+    required String detail,
+    required Color color,
+  }) {
+    if (!mounted) return;
+    final next = LiveAlertEvent(
+      timeLabel: _timeStampLabel(),
+      title: title,
+      detail: detail,
+      color: color,
+    );
+    setState(() {
+      _liveEvents = [next, ..._liveEvents].take(6).toList();
+    });
+    final patientId = _resolvedPatientId;
+    if (patientId != null) {
+      final severity = color == AppColors.danger
+          ? 'high'
+          : color == AppColors.warning
+              ? 'medium'
+              : 'info';
+      unawaited(
+        api.createMonitoringEvent(
+          patientId: patientId,
+          title: title,
+          detail: detail,
+          severity: severity,
+        ),
+      );
+    }
+  }
+
+  Future<void> _bootstrapMonitoringContext() async {
+    try {
+      final patients = await api.listPatients();
+      PatientModel? matched;
+      for (final patient in patients) {
+        if (patient.name.trim().toLowerCase() ==
+            widget.username.trim().toLowerCase()) {
+          matched = patient;
+          break;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _resolvedPatientId = matched?.id;
+      });
+      if (_resolvedPatientId != null) {
+        await _loadStoredEvents();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadStoredEvents() async {
+    final patientId = _resolvedPatientId;
+    if (patientId == null || _loadingStoredEvents) return;
+    _loadingStoredEvents = true;
+    try {
+      final items = await api.listMonitoringEvents(patientId, limit: 6);
+      if (!mounted || items.isEmpty) return;
+      final mapped = items
+          .map(
+            (item) => LiveAlertEvent(
+              timeLabel: _safeTimeLabel(item.createdAt),
+              title: item.title,
+              detail: item.detail,
+              color: item.severity == 'high'
+                  ? AppColors.danger
+                  : item.severity == 'medium'
+                      ? AppColors.warning
+                      : AppColors.success,
+            ),
+          )
+          .toList();
+      setState(() {
+        _liveEvents = mapped;
+      });
+    } catch (_) {
+    } finally {
+      _loadingStoredEvents = false;
+    }
   }
 
   Future<void> _disconnectAll() async {
@@ -8651,11 +10983,9 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       final services = await device.discoverServices();
       BluetoothCharacteristic? target;
       for (final s in services) {
-        if (s.uuid.toString().toLowerCase() ==
-            _bleServiceUuid.toLowerCase()) {
+        if (s.uuid.toString().toLowerCase() == _bleServiceUuid.toLowerCase()) {
           for (final c in s.characteristics) {
-            if (c.uuid.toString().toLowerCase() ==
-                _bleCharUuid.toLowerCase()) {
+            if (c.uuid.toString().toLowerCase() == _bleCharUuid.toLowerCase()) {
               target = c;
               break;
             }
@@ -8746,12 +11076,21 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                 statusLower.contains('not'))
             ? AppColors.danger
             : AppColors.warning;
+    final liveAi = _buildLiveMonitoringAiBrief(
+      riskLevel: riskLevel,
+      connectionMode: _connectionMode,
+      connectionStatus: _connectionStatus,
+      region: region,
+      activeCoils: activeCoils,
+      ecgPoints: ecgPoints,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(_t('Live Cardiac Monitoring', 'المراقبة القلبية الحية')),
         actions: [
+          _workspaceAction(context),
           _settingsAction(context),
           Container(
             margin: const EdgeInsets.only(right: 15),
@@ -8862,18 +11201,217 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                 iconColor: AppColors.success,
                 child: Column(
                   children: [
-                    _snapshotRow('Stream Mode', _connectionMode, AppColors.primary),
+                    _snapshotRow(
+                        'Stream Mode', _connectionMode, AppColors.primary),
                     const SizedBox(height: 10),
-                    _snapshotRow('Connection Status', _connectionStatus, statusColor),
+                    _snapshotRow(
+                        'Connection Status', _connectionStatus, statusColor),
                     const SizedBox(height: 10),
                     _snapshotRow('Estimated Risk', riskText, riskColor),
                     const SizedBox(height: 10),
-                    _snapshotRow('Detected Region', region == 'Low' ? 'No dominant alert region' : region, AppColors.accent),
+                    _snapshotRow(
+                        'Detected Region',
+                        region == 'Low' ? 'No dominant alert region' : region,
+                        AppColors.accent),
                     const SizedBox(height: 10),
-                    _snapshotRow('Window Samples', ecgPoints.length.toString(), AppColors.primary),
+                    _snapshotRow('Window Samples', ecgPoints.length.toString(),
+                        AppColors.primary),
                     const SizedBox(height: 10),
-                    _snapshotRow('Active Coil Targets', activeCoils.isEmpty ? 'None' : activeCoils.join(', '), AppColors.warning),
+                    _snapshotRow(
+                        'Active Coil Targets',
+                        activeCoils.isEmpty ? 'None' : activeCoils.join(', '),
+                        AppColors.warning),
                   ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              _card(
+                title: 'AI Live Copilot',
+                icon: Icons.auto_awesome,
+                iconColor: liveAi.color,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                liveAi.headline,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                liveAi.summary,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: liveAi.color.withAlpha(18),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            liveAi.urgencyLabel,
+                            style: TextStyle(
+                              color: liveAi.color,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _snapshotRow(
+                            'Signal State',
+                            liveAi.signalLabel,
+                            liveAi.color,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _snapshotRow(
+                            'Recommended Action',
+                            liveAi.recommendedAction,
+                            AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...liveAi.bullets.map(
+                      (bullet) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(top: 6),
+                              decoration: BoxDecoration(
+                                color: liveAi.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                bullet,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              _card(
+                title: 'Live Anomaly Timeline',
+                icon: Icons.timeline_rounded,
+                iconColor: AppColors.primary,
+                child: Column(
+                  children: _liveEvents.isEmpty
+                      ? [
+                          _emptyState(
+                            'No live monitoring events have been logged yet in this session.',
+                          ),
+                        ]
+                      : _liveEvents
+                          .map(
+                            (event) => Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: event.color.withAlpha(10),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: event.color.withAlpha(35),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 12,
+                                    height: 12,
+                                    margin: const EdgeInsets.only(top: 4),
+                                    decoration: BoxDecoration(
+                                      color: event.color,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                event.title,
+                                                style: const TextStyle(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              event.timeLabel,
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          event.detail,
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            height: 1.4,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
               const SizedBox(height: 18),
@@ -8908,7 +11446,8 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                         children: [
                           const Text(
                             'One-Lead Wearable ECG',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 12),
                           ),
                           Text(
                             riskLevel > 0.6 ? 'ALERT' : 'STABLE',
@@ -9108,7 +11647,37 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       ),
     );
   }
+
+  Widget _snapshotMetric(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Colors.grey, fontSize: 11),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
 class PatientInsightsPage extends StatelessWidget {
   const PatientInsightsPage({super.key});
 
@@ -9123,7 +11692,7 @@ class PatientInsightsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('Insights', 'التحليلات')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: ListView(
         padding: const EdgeInsets.all(18),
@@ -9148,10 +11717,14 @@ class PatientInsightsPage extends StatelessWidget {
               },
               children: [
                 _summaryHeader('Metric', 'Value', 'Interpretation'),
-                _summaryRow('Average BPM', average.toStringAsFixed(1), 'Recent session mean', true),
-                _summaryRow('Peak BPM', '$peak', 'Highest recorded point', false),
-                _summaryRow('Lowest BPM', '$low', 'Lowest recorded point', true),
-                _summaryRow('Range', '$spread bpm', 'Overall variability span', false),
+                _summaryRow('Average BPM', average.toStringAsFixed(1),
+                    'Recent session mean', true),
+                _summaryRow(
+                    'Peak BPM', '$peak', 'Highest recorded point', false),
+                _summaryRow(
+                    'Lowest BPM', '$low', 'Lowest recorded point', true),
+                _summaryRow(
+                    'Range', '$spread bpm', 'Overall variability span', false),
               ],
             ),
           ),
@@ -9160,11 +11733,17 @@ class PatientInsightsPage extends StatelessWidget {
             title: 'Monitoring Notes',
             child: Column(
               children: [
-                _noteStrip('Trend profile', spread > 18 ? 'Wider fluctuation across recent sessions' : 'Stable fluctuation across recent sessions'),
+                _noteStrip(
+                    'Trend profile',
+                    spread > 18
+                        ? 'Wider fluctuation across recent sessions'
+                        : 'Stable fluctuation across recent sessions'),
                 const SizedBox(height: 10),
-                _noteStrip('Use case', 'Designed for longitudinal review, not standalone diagnosis'),
+                _noteStrip('Use case',
+                    'Designed for longitudinal review, not standalone diagnosis'),
                 const SizedBox(height: 10),
-                _noteStrip('Recommended action', 'Correlate this trend with uploaded ECG reports and wearable sessions'),
+                _noteStrip('Recommended action',
+                    'Correlate this trend with uploaded ECG reports and wearable sessions'),
               ],
             ),
           ),
@@ -9222,7 +11801,8 @@ class PatientInsightsPage extends StatelessWidget {
 
   static TableRow _summaryRow(String a, String b, String c, bool even) {
     return TableRow(
-      decoration: BoxDecoration(color: even ? Colors.white : AppColors.background),
+      decoration:
+          BoxDecoration(color: even ? Colors.white : AppColors.background),
       children: [
         _summaryCell(a),
         _summaryCell(b, color: AppColors.primary, weight: FontWeight.w700),
@@ -9285,6 +11865,7 @@ class PatientInsightsPage extends StatelessWidget {
     );
   }
 }
+
 class PatientHistoryPage extends StatefulWidget {
   const PatientHistoryPage({super.key});
 
@@ -9322,7 +11903,8 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
         appointments = await _api.listAppointments(patientId: patient!.id!);
       } catch (_) {}
     }
-    return PatientHistorySnapshot(patient: patient, report: report, appointments: appointments);
+    return PatientHistorySnapshot(
+        patient: patient, report: report, appointments: appointments);
   }
 
   void _refresh() {
@@ -9334,7 +11916,7 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('History', 'السجل')),
-        actions: [_settingsAction(context)],
+        actions: _topBarActions(context),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _refresh(),
@@ -9358,17 +11940,24 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
                 ],
               );
             }
-            final data = snapshot.data ?? const PatientHistorySnapshot(patient: null, report: null, appointments: []);
+            final data = snapshot.data ??
+                const PatientHistorySnapshot(
+                    patient: null, report: null, appointments: []);
             final report = data.report;
             final appointments = data.appointments;
+            final trendInsight = _buildTrendComparison(report);
             final rows = <(String, String, String, Color)>[];
             if (report != null) {
               for (var i = 0; i < report.labels.length; i++) {
                 rows.add((
                   _safeDateLabel(report.createdAt),
                   i < report.bpm.length ? '${report.bpm[i]} bpm' : '--',
-                  i < report.riskLevels.length ? report.riskLevels[i] : report.labels[i],
-                  _riskColor(i < report.riskLevels.length ? report.riskLevels[i] : 'Low'),
+                  i < report.riskLevels.length
+                      ? report.riskLevels[i]
+                      : report.labels[i],
+                  _riskColor(i < report.riskLevels.length
+                      ? report.riskLevels[i]
+                      : 'Low'),
                 ));
               }
             }
@@ -9377,22 +11966,107 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
                 _safeDateLabel(appointment.when),
                 _safeTimeLabel(appointment.when),
                 '${_t("Visit", "زيارة")} • ${appointment.status}',
-                appointment.status == 'Confirmed' ? AppColors.success : AppColors.warning,
+                appointment.status == 'Confirmed'
+                    ? AppColors.success
+                    : AppColors.warning,
               ));
             }
             return SecondaryPageShell(
               title: _t('Analysis History', 'سجل التحليل'),
-              subtitle: _t('Timeline of prior screenings, uploads, reports, and follow-up sessions', 'الخط الزمني للفحوصات والرفع والتقارير وجلسات المتابعة'),
+              subtitle: _t(
+                  'Timeline of prior screenings, uploads, reports, and follow-up sessions',
+                  'الخط الزمني للفحوصات والرفع والتقارير وجلسات المتابعة'),
               icon: Icons.timeline_rounded,
               children: [
                 Row(
                   children: [
-                    Expanded(child: AppMetricTile(label: _t('Entries', 'العناصر'), value: '${rows.length}', caption: _t('Stored history records', 'السجلات المحفوظة'), accent: AppColors.accent, icon: Icons.history_rounded)),
+                    Expanded(
+                        child: AppMetricTile(
+                            label: _t('Entries', 'العناصر'),
+                            value: '${rows.length}',
+                            caption: _t(
+                                'Stored history records', 'السجلات المحفوظة'),
+                            accent: AppColors.accent,
+                            icon: Icons.history_rounded)),
                     const SizedBox(width: 12),
-                    Expanded(child: AppMetricTile(label: _t('Reports', 'التقارير'), value: '${report?.labels.length ?? 0}', caption: _t('Saved report points', 'نقاط التقارير المحفوظة'), accent: AppColors.success, icon: Icons.description_outlined)),
+                    Expanded(
+                        child: AppMetricTile(
+                            label: _t('Reports', 'التقارير'),
+                            value: '${report?.labels.length ?? 0}',
+                            caption: _t('Saved report points',
+                                'نقاط التقارير المحفوظة'),
+                            accent: AppColors.success,
+                            icon: Icons.description_outlined)),
                     const SizedBox(width: 12),
-                    Expanded(child: AppMetricTile(label: _t('Visits', 'الزيارات'), value: '${appointments.length}', caption: _t('Follow-up appointments', 'مواعيد المتابعة'), accent: AppColors.secondary, icon: Icons.event_note_rounded)),
+                    Expanded(
+                        child: AppMetricTile(
+                            label: _t('Visits', 'الزيارات'),
+                            value: '${appointments.length}',
+                            caption:
+                                _t('Follow-up appointments', 'مواعيد المتابعة'),
+                            accent: AppColors.secondary,
+                            icon: Icons.event_note_rounded)),
                   ],
+                ),
+                const SizedBox(height: 16),
+                glassListCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppSectionHeader(
+                        title:
+                            _t('AI History Comparison', 'مقارنة السجل الذكية'),
+                        subtitle: _t(
+                          'Automatic comparison of the latest stored ECG history points.',
+                          'مقارنة تلقائية بين أحدث نقاط ECG المحفوظة في السجل.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: trendInsight.color.withAlpha(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: trendInsight.color.withAlpha(38)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trendInsight.headline,
+                              style: GoogleFonts.sora(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: trendInsight.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              trendInsight.summary,
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary, height: 1.45),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                              child: AppMetricTile._miniStat(
+                                  _t('BPM Change', 'تغير النبض'),
+                                  trendInsight.bpmDeltaLabel)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: AppMetricTile._miniStat(
+                                  _t('Risk Shift', 'تغير الخطر'),
+                                  trendInsight.riskShiftLabel)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 glassListCard(
@@ -9408,7 +12082,8 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
                       ),
                       const SizedBox(height: 12),
                       if (rows.isEmpty)
-                        _emptyState(_t('No history has been stored yet.', 'لا يوجد سجل محفوظ حتى الآن.'))
+                        _emptyState(_t('No history has been stored yet.',
+                            'لا يوجد سجل محفوظ حتى الآن.'))
                       else
                         Table(
                           columnWidths: const {
@@ -9417,7 +12092,8 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
                             2: FlexColumnWidth(1.8),
                           },
                           children: [
-                            AnalysisResultPage._tableHeader('Date', 'Metric', 'Session'),
+                            AnalysisResultPage._tableHeader(
+                                'Date', 'Metric', 'Session'),
                             ...List.generate(rows.length, (i) {
                               final row = rows[i];
                               return AnalysisResultPage._tableRow(
@@ -9435,7 +12111,9 @@ class _PatientHistoryPageState extends State<PatientHistoryPage> {
                 ),
                 const SizedBox(height: 16),
                 if (rows.isEmpty)
-                  _emptyState(_t('No patient reports or appointments are available yet.', 'لا توجد تقارير أو مواعيد متاحة للمريض حتى الآن.'))
+                  _emptyState(_t(
+                      'No patient reports or appointments are available yet.',
+                      'لا توجد تقارير أو مواعيد متاحة للمريض حتى الآن.'))
                 else
                   ...rows.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -9499,10 +12177,15 @@ class PatientAlertsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = _mockPatientAlerts();
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Alerts', 'Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡Ø§Øª'))),
+      appBar: AppBar(
+        title: Text(_t('Alerts', 'Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡Ø§Øª')),
+        actions: _topBarActions(context),
+      ),
       body: SecondaryPageShell(
         title: _t('Alerts', 'التنبيهات'),
-        subtitle: _t('Review patient-facing safety notifications and follow-up prompts', 'راجع تنبيهات السلامة والتنبيهات الموجهة للمريض'),
+        subtitle: _t(
+            'Review patient-facing safety notifications and follow-up prompts',
+            'راجع تنبيهات السلامة والتنبيهات الموجهة للمريض'),
         icon: Icons.notifications_active_outlined,
         children: List.generate(items.length, (i) {
           final item = items[i];
@@ -9525,7 +12208,8 @@ class PatientAlertsPage extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary)),
                       const SizedBox(height: 4),
-                      Text(item.detail, style: const TextStyle(color: Colors.grey)),
+                      Text(item.detail,
+                          style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -9547,10 +12231,15 @@ class CarePlanPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = _mockCarePlan();
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Care Plan', 'Ø®Ø·Ø© Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©'))),
+      appBar: AppBar(
+        title: Text(_t('Care Plan', 'Ø®Ø·Ø© Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©')),
+        actions: _topBarActions(context),
+      ),
       body: SecondaryPageShell(
         title: _t('Care Plan', 'خطة المتابعة'),
-        subtitle: _t('Daily care tasks, reminders, and monitoring follow-up items', 'مهام المتابعة اليومية والتذكيرات وعناصر الرعاية'),
+        subtitle: _t(
+            'Daily care tasks, reminders, and monitoring follow-up items',
+            'مهام المتابعة اليومية والتذكيرات وعناصر الرعاية'),
         icon: Icons.assignment_turned_in_outlined,
         children: List.generate(items.length, (i) {
           final item = items[i];
@@ -9573,7 +12262,8 @@ class CarePlanPage extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary)),
                       const SizedBox(height: 4),
-                      Text(item.detail, style: const TextStyle(color: Colors.grey)),
+                      Text(item.detail,
+                          style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -9594,15 +12284,22 @@ class HelpCenterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final faqs = [
-      _t('How do I upload ECG files?', 'ÙƒÙŠÙ Ø£Ø±ÙØ¹ Ù…Ù„ÙØ§Øª Ø±Ø³Ù… Ø§Ù„Ù‚Ù„Ø¨ØŸ'),
+      _t('How do I upload ECG files?',
+          'ÙƒÙŠÙ Ø£Ø±ÙØ¹ Ù…Ù„ÙØ§Øª Ø±Ø³Ù… Ø§Ù„Ù‚Ù„Ø¨ØŸ'),
       _t('What does High Risk mean?', 'Ù…Ø§Ø°Ø§ ÙŠØ¹Ù†ÙŠ Ø®Ø·Ø± Ù…Ø±ØªÙØ¹ØŸ'),
-      _t('How to contact my doctor?', 'ÙƒÙŠÙ Ø£ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ø·Ø¨ÙŠØ¨ØŸ'),
+      _t('How to contact my doctor?',
+          'ÙƒÙŠÙ Ø£ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ø·Ø¨ÙŠØ¨ØŸ'),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Help Center', 'Ù…Ø±ÙƒØ² Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø©'))),
+      appBar: AppBar(
+        title: Text(_t('Help Center', 'Ù…Ø±ÙƒØ² Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø©')),
+        actions: _topBarActions(context),
+      ),
       body: SecondaryPageShell(
         title: _t('Help Center', 'مركز المساعدة'),
-        subtitle: _t('Frequently asked questions and guided help for ECG workflows', 'أسئلة شائعة ومساعدة موجهة لمسارات ECG'),
+        subtitle: _t(
+            'Frequently asked questions and guided help for ECG workflows',
+            'أسئلة شائعة ومساعدة موجهة لمسارات ECG'),
         icon: Icons.help_outline,
         children: [
           ...faqs.map(
@@ -9639,10 +12336,15 @@ class SessionLogPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = _mockSessionLogs();
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Session Logs', 'Ø³Ø¬Ù„ Ø§Ù„Ø¬Ù„Ø³Ø§Øª'))),
+      appBar: AppBar(
+        title: Text(_t('Session Logs', 'Ø³Ø¬Ù„ Ø§Ù„Ø¬Ù„Ø³Ø§Øª')),
+        actions: _topBarActions(context),
+      ),
       body: SecondaryPageShell(
         title: _t('Session Logs', 'سجل الجلسات'),
-        subtitle: _t('Timeline of wearable monitoring sessions and screening outcomes', 'الخط الزمني لجلسات المراقبة ونتائج الفحص'),
+        subtitle: _t(
+            'Timeline of wearable monitoring sessions and screening outcomes',
+            'الخط الزمني لجلسات المراقبة ونتائج الفحص'),
         icon: Icons.monitor_heart_outlined,
         children: List.generate(items.length, (i) {
           final item = items[i];
@@ -9670,7 +12372,8 @@ class SessionLogPage extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary)),
                       const SizedBox(height: 4),
-                      Text(item.detail, style: const TextStyle(color: Colors.grey)),
+                      Text(item.detail,
+                          style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -9722,7 +12425,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _t('No doctor accounts are available yet.', 'لا توجد حسابات أطباء متاحة الآن.'),
+            _t('No doctor accounts are available yet.',
+                'لا توجد حسابات أطباء متاحة الآن.'),
           ),
         ),
       );
@@ -9747,7 +12451,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                   children: [
                     const CircleAvatar(
                       backgroundColor: AppColors.accentSoft,
-                      child: Icon(Icons.add_rounded, color: AppColors.accentDeep),
+                      child:
+                          Icon(Icons.add_rounded, color: AppColors.accentDeep),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -9756,7 +12461,10 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                         children: [
                           Text(
                             _t('Choose Doctor', 'اختر الطبيب'),
-                            style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(sheetContext)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -9765,7 +12473,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                               'Tap any doctor to link this patient profile.',
                               'اضغط على أي طبيب لربطه بملف المريض.',
                             ),
-                            style: const TextStyle(color: AppColors.textSecondary),
+                            style:
+                                const TextStyle(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -9776,7 +12485,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                 TextField(
                   style: _inputTextStyle(sheetContext),
                   decoration: InputDecoration(
-                    hintText: _t('Search by doctor name or specialty', 'ابحث باسم الطبيب أو التخصص'),
+                    hintText: _t('Search by doctor name or specialty',
+                        'ابحث باسم الطبيب أو التخصص'),
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: ValueListenableBuilder<String>(
                       valueListenable: query,
@@ -9789,7 +12499,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                       },
                     ),
                   ),
-                  onChanged: (value) => query.value = value.trim().toLowerCase(),
+                  onChanged: (value) =>
+                      query.value = value.trim().toLowerCase(),
                 ),
                 const SizedBox(height: 14),
                 if (AppState.selectedDoctor != null) ...[
@@ -9798,7 +12509,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.pop(sheetContext),
                       icon: const Icon(Icons.link_off_rounded),
-                      label: Text(_t('Keep current doctor link', 'الاحتفاظ بالطبيب الحالي')),
+                      label: Text(_t('Keep current doctor link',
+                          'الاحتفاظ بالطبيب الحالي')),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -9810,14 +12522,17 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                       final filtered = doctors.where((doctor) {
                         if (search.isEmpty) return true;
                         final haystack =
-                            '${doctor.name} ${doctor.specialty} ${doctor.clinic} ${doctor.phone}'.toLowerCase();
+                            '${doctor.name} ${doctor.specialty} ${doctor.clinic} ${doctor.phone}'
+                                .toLowerCase();
                         return haystack.contains(search);
                       }).toList();
                       if (filtered.isEmpty) {
                         return Center(
                           child: Text(
-                            _t('No doctors matched this search.', 'لا يوجد أطباء مطابقون لهذا البحث.'),
-                            style: const TextStyle(color: AppColors.textSecondary),
+                            _t('No doctors matched this search.',
+                                'لا يوجد أطباء مطابقون لهذا البحث.'),
+                            style:
+                                const TextStyle(color: AppColors.textSecondary),
                           ),
                         );
                       }
@@ -9826,29 +12541,38 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final doctor = filtered[index];
-                          final active = AppState.selectedDoctor?.email == doctor.email;
+                          final active =
+                              AppState.selectedDoctor?.email == doctor.email;
                           return InkWell(
                             borderRadius: BorderRadius.circular(18),
                             onTap: () => Navigator.pop(sheetContext, doctor),
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: active ? AppColors.accentSoft : Colors.white,
+                                color: active
+                                    ? AppColors.accentSoft
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
-                                  color: active ? AppColors.accent : AppColors.border,
+                                  color: active
+                                      ? AppColors.accent
+                                      : AppColors.border,
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: AppColors.accent.withAlpha(24),
-                                    child: const Icon(Icons.local_hospital_outlined, color: AppColors.accentDeep),
+                                    backgroundColor:
+                                        AppColors.accent.withAlpha(24),
+                                    child: const Icon(
+                                        Icons.local_hospital_outlined,
+                                        color: AppColors.accentDeep),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           doctor.name,
@@ -9860,18 +12584,22 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                                         const SizedBox(height: 4),
                                         Text(
                                           '${doctor.specialty} • ${doctor.clinic}',
-                                          style: const TextStyle(color: AppColors.textSecondary),
+                                          style: const TextStyle(
+                                              color: AppColors.textSecondary),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           doctor.phone,
-                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                          style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12),
                                         ),
                                       ],
                                     ),
                                   ),
                                   if (active)
-                                    const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                                    const Icon(Icons.check_circle_rounded,
+                                        color: AppColors.success),
                                 ],
                               ),
                             ),
@@ -9899,7 +12627,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_t('Doctor linked successfully.', 'تم ربط الطبيب بنجاح.'))),
+      SnackBar(
+          content:
+              Text(_t('Doctor linked successfully.', 'تم ربط الطبيب بنجاح.'))),
     );
   }
 
@@ -9950,7 +12680,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
         _t('Messages', 'الرسائل'),
         Icons.chat_bubble_outline,
         AppColors.accent,
-        () => Navigator.push(context, _fadeRoute(PatientChatPage(username: widget.username)))
+        () => Navigator.push(
+            context, _fadeRoute(PatientChatPage(username: widget.username)))
       ),
     ];
 
@@ -9958,6 +12689,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       appBar: AppBar(
         title: Text(_t('Profile', 'الملف')),
         actions: [
+          _workspaceAction(context),
           IconButton(
             onPressed: _pickDoctor,
             icon: const Icon(Icons.add_rounded),
@@ -9968,12 +12700,16 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       ),
       body: SecondaryPageShell(
         title: widget.username,
-        subtitle: _t('Patient access profile, quick actions, and connected care context', 'ملف دخول المريض والإجراءات السريعة وسياق الرعاية المتصل'),
+        subtitle: _t(
+            'Patient access profile, quick actions, and connected care context',
+            'ملف دخول المريض والإجراءات السريعة وسياق الرعاية المتصل'),
         icon: Icons.person_outline_rounded,
         children: [
           _profileHeader(),
           const SizedBox(height: 14),
           _patientSnapshot(),
+          const SizedBox(height: 16),
+          _patientAiCompanionCard(),
           const SizedBox(height: 16),
           _sectionTitle(_t('Quick Actions', 'إجراءات سريعة')),
           const SizedBox(height: 10),
@@ -9992,7 +12728,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
                     child: AppMetricTile(
                       label: item.$1,
                       value: _t('Open', 'فتح'),
-                      caption: _t('Primary patient workflow', 'مسار مريض أساسي'),
+                      caption:
+                          _t('Primary patient workflow', 'مسار مريض أساسي'),
                       accent: item.$3,
                       icon: item.$2,
                     ),
@@ -10071,9 +12808,12 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           const SizedBox(height: 16),
           _sectionTitle(_t('Preferences', 'التفضيلات')),
           const SizedBox(height: 10),
-          _settingTile(_t('Notifications', 'الإشعارات'), _t('Enabled', 'مفعلة')),
-          _settingTile(_t('Data Sync', 'مزامنة البيانات'), _t('Every 15 minutes', 'كل 15 دقيقة')),
-          _settingTile(_t('Connected Device', 'الجهاز المتصل'), _t('Wearable ECG vest', 'سترة ECG القابلة للارتداء')),
+          _settingTile(
+              _t('Notifications', 'الإشعارات'), _t('Enabled', 'مفعلة')),
+          _settingTile(_t('Data Sync', 'مزامنة البيانات'),
+              _t('Every 15 minutes', 'كل 15 دقيقة')),
+          _settingTile(_t('Connected Device', 'الجهاز المتصل'),
+              _t('Wearable ECG vest', 'سترة ECG القابلة للارتداء')),
         ],
       ),
     );
@@ -10083,7 +12823,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     final api = ApiService(baseUrl: _apiBaseUrl());
     final patients = await api.listPatients();
     for (final patient in patients) {
-      if (patient.name.trim().toLowerCase() == widget.username.trim().toLowerCase()) {
+      if (patient.name.trim().toLowerCase() ==
+          widget.username.trim().toLowerCase()) {
         return patient;
       }
     }
@@ -10097,7 +12838,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       if (patient == null || patient.id == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_t('No saved patient record was found for this profile yet.', 'لم يتم العثور على سجل مريض محفوظ لهذا الحساب بعد.')),
+            content: Text(_t(
+                'No saved patient record was found for this profile yet.',
+                'لم يتم العثور على سجل مريض محفوظ لهذا الحساب بعد.')),
           ),
         );
         return;
@@ -10110,7 +12853,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_t('Unable to open care visits right now.', 'تعذر فتح زيارات المتابعة الآن.')),
+          content: Text(_t('Unable to open care visits right now.',
+              'تعذر فتح زيارات المتابعة الآن.')),
         ),
       );
     }
@@ -10123,7 +12867,9 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       if (patient == null || patient.id == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_t('No saved patient record was found for this profile yet.', 'لم يتم العثور على سجل مريض محفوظ لهذا الحساب بعد.')),
+            content: Text(_t(
+                'No saved patient record was found for this profile yet.',
+                'لم يتم العثور على سجل مريض محفوظ لهذا الحساب بعد.')),
           ),
         );
         return;
@@ -10136,7 +12882,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_t('Unable to open the report library right now.', 'تعذر فتح مكتبة التقارير الآن.')),
+          content: Text(_t('Unable to open the report library right now.',
+              'تعذر فتح مكتبة التقارير الآن.')),
         ),
       );
     }
@@ -10198,7 +12945,6 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
     );
   }
 
-
   Widget _patientSnapshot() {
     final doctorName = AppState.selectedDoctor?.name ?? 'Not assigned';
     return Container(
@@ -10212,7 +12958,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Patient Status Snapshot',
+          Text(
+            'Patient Status Snapshot',
             style: GoogleFonts.sora(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -10220,22 +12967,134 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text('Current monitoring and care context', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text('Current monitoring and care context',
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _snapshotMetric('Device', 'Wearable ECG vest', AppColors.primary)),
+              Expanded(
+                  child: _snapshotMetric(
+                      'Device', 'Wearable ECG vest', AppColors.primary)),
               const SizedBox(width: 10),
-              Expanded(child: _snapshotMetric('Care Owner', doctorName, AppColors.accent)),
+              Expanded(
+                  child: _snapshotMetric(
+                      'Care Owner', doctorName, AppColors.accent)),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _snapshotMetric('Sync', 'Every 15 min', AppColors.success)),
+              Expanded(
+                  child: _snapshotMetric(
+                      'Sync', 'Every 15 min', AppColors.success)),
               const SizedBox(width: 10),
-              Expanded(child: _snapshotMetric('Status', 'Monitoring active', AppColors.warning)),
+              Expanded(
+                  child: _snapshotMetric(
+                      'Status', 'Monitoring active', AppColors.warning)),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _patientAiCompanionCard() {
+    final brief = _buildPatientAiCompanionBrief(
+      doctor: AppState.selectedDoctor,
+    );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSectionHeader(
+            title: _t('AI Care Companion', 'المرافق الذكي للرعاية'),
+            subtitle: _t(
+              'A patient-focused AI layer that recommends the next useful action in your care flow.',
+              'طبقة ذكية موجهة للمريض تقترح الخطوة الأكثر فائدة داخل مسار المتابعة.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: brief.color.withAlpha(12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: brief.color.withAlpha(35)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  brief.headline,
+                  style: GoogleFonts.sora(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: brief.color,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  brief.summary,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _snapshotMetric(
+                  'Readiness',
+                  brief.readinessLabel,
+                  brief.color,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _snapshotMetric(
+                  'Doctor State',
+                  brief.doctorStateLabel,
+                  AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...brief.bullets.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(Icons.circle, size: 10, color: brief.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -10257,7 +13116,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12),
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.w700, fontSize: 12),
           ),
         ],
       ),
@@ -10347,7 +13207,8 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           ),
           IconButton(
             onPressed: _pickDoctor,
-            icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.grey),
+            icon: const Icon(Icons.add_circle_outline_rounded,
+                color: Colors.grey),
           ),
         ],
       ),
@@ -10515,7 +13376,8 @@ class PatientAppointmentsPage extends StatefulWidget {
   const PatientAppointmentsPage({super.key, required this.patient});
 
   @override
-  State<PatientAppointmentsPage> createState() => _PatientAppointmentsPageState();
+  State<PatientAppointmentsPage> createState() =>
+      _PatientAppointmentsPageState();
 }
 
 class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
@@ -10548,7 +13410,9 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${_t('Appointments', 'المواعيد')} - ${widget.patient.name}'),
+        title:
+            Text('${_t('Appointments', 'المواعيد')} - ${widget.patient.name}'),
+        actions: _topBarActions(context),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _add,
@@ -10569,7 +13433,8 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                 padding: const EdgeInsets.all(18),
                 children: [
                   _retryCard(
-                    message: _t('Failed to load appointments', 'فشل تحميل المواعيد'),
+                    message:
+                        _t('Failed to load appointments', 'فشل تحميل المواعيد'),
                     onRetry: _refresh,
                   ),
                 ],
@@ -10582,7 +13447,8 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                 children: [
                   AppHeroBanner(
                     title: widget.patient.name,
-                    subtitle: 'Upcoming visits, follow-up scheduling, and coordination history',
+                    subtitle:
+                        'Upcoming visits, follow-up scheduling, and coordination history',
                     icon: Icons.event_note_outlined,
                     gradient: AppGradients.hero,
                   ),
@@ -10596,7 +13462,8 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
               children: [
                 AppHeroBanner(
                   title: widget.patient.name,
-                  subtitle: 'Upcoming visits, follow-up scheduling, and coordination history',
+                  subtitle:
+                      'Upcoming visits, follow-up scheduling, and coordination history',
                   icon: Icons.event_note_outlined,
                   gradient: AppGradients.hero,
                 ),
@@ -10614,7 +13481,8 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                     children: [
                       AppSectionHeader(
                         title: _t('Appointment table', 'جدول المواعيد'),
-                        subtitle: _t('Patient-side follow-up queue', 'قائمة المتابعة الخاصة بالمريض'),
+                        subtitle: _t('Patient-side follow-up queue',
+                            'قائمة المتابعة الخاصة بالمريض'),
                       ),
                       const SizedBox(height: 12),
                       Table(
@@ -10624,10 +13492,13 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                           2: FlexColumnWidth(0.9),
                         },
                         children: [
-                          AnalysisResultPage._tableHeader('Doctor', 'When', 'Status'),
+                          AnalysisResultPage._tableHeader(
+                              'Doctor', 'When', 'Status'),
                           ...List.generate(items.length, (i) {
                             final item = items[i];
-                            final color = item.status == 'Confirmed' ? AppColors.success : AppColors.warning;
+                            final color = item.status == 'Confirmed'
+                                ? AppColors.success
+                                : AppColors.warning;
                             return AnalysisResultPage._tableRow(
                               item.doctorName,
                               item.when,
@@ -10644,7 +13515,9 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                 const SizedBox(height: 16),
                 ...items.map((item) {
                   final status = item.status;
-                  final color = status == 'Confirmed' ? AppColors.success : AppColors.warning;
+                  final color = status == 'Confirmed'
+                      ? AppColors.success
+                      : AppColors.warning;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Container(
@@ -10674,19 +13547,24 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(item.when, style: const TextStyle(color: Colors.grey)),
+                                Text(item.when,
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: color.withAlpha(26),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               status,
-                              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+                              style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
                             ),
                           ),
                         ],
@@ -10749,10 +13627,12 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('${_t('Reports', 'التقارير')} - ${widget.patient.name}'),
+        actions: _topBarActions(context),
       ),
       body: SecondaryPageShell(
         title: widget.patient.name,
-        subtitle: 'Export and review your latest AI-assisted ECG report summaries',
+        subtitle:
+            'Export and review your latest AI-assisted ECG report summaries',
         icon: Icons.description_outlined,
         children: [
           FutureBuilder<ReportModel>(
@@ -10763,14 +13643,15 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
               }
               if (snapshot.hasError) {
                 return _retryCard(
-                  message: _t('Failed to load report', 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ‚Ø±ÙŠØ±'),
+                  message: _t('Failed to load report',
+                      'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ‚Ø±ÙŠØ±'),
                   onRetry: _reload,
                 );
               }
               final report = snapshot.data;
               if (report == null) return const SizedBox.shrink();
-              final latestBpm =
-                  report.bpm.isNotEmpty ? report.bpm.last : 0;
+              final trendInsight = _buildTrendComparison(report);
+              final latestBpm = report.bpm.isNotEmpty ? report.bpm.last : 0;
               final latestRisk =
                   report.riskLevels.isNotEmpty ? report.riskLevels.last : 'Low';
               final riskColor = latestRisk == 'High'
@@ -10786,7 +13667,8 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
                         child: AppMetricTile(
                           label: _t('Latest Risk', 'آخر خطر'),
                           value: latestRisk,
-                          caption: _t('Most recent report risk label', 'آخر تصنيف خطر'),
+                          caption: _t(
+                              'Most recent report risk label', 'آخر تصنيف خطر'),
                           accent: riskColor,
                           icon: Icons.flag_rounded,
                         ),
@@ -10796,12 +13678,104 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
                         child: AppMetricTile(
                           label: _t('Latest BPM', 'آخر نبض'),
                           value: '$latestBpm',
-                          caption: _t('Latest stored heart rate point', 'آخر نقطة نبض محفوظة'),
+                          caption: _t('Latest stored heart rate point',
+                              'آخر نقطة نبض محفوظة'),
                           accent: AppColors.accent,
                           icon: Icons.favorite_rounded,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  glassListCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppSectionHeader(
+                          title:
+                              _t('AI Report Reading', 'قراءة التقرير الذكية'),
+                          subtitle: _t(
+                            'A quick summary of the latest report trajectory for this patient.',
+                            'ملخص سريع لمسار أحدث تقرير لهذا المريض.',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: trendInsight.color.withAlpha(12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: trendInsight.color.withAlpha(38)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trendInsight.headline,
+                                style: GoogleFonts.sora(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: trendInsight.color,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                trendInsight.summary,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    height: 1.45),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppMetricTile._miniStat(
+                                _t('BPM Change', 'تغير النبض'),
+                                trendInsight.bpmDeltaLabel,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: AppMetricTile._miniStat(
+                                _t('Risk Shift', 'تغير الخطر'),
+                                trendInsight.riskShiftLabel,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...trendInsight.bullets.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Icon(Icons.circle,
+                                      size: 10, color: trendInsight.color),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   glassListCard(
@@ -10835,7 +13809,8 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _t('Download detailed PDF report', 'تنزيل تقرير PDF التفصيلي'),
+                            _t('Download detailed PDF report',
+                                'تنزيل تقرير PDF التفصيلي'),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
@@ -10844,8 +13819,7 @@ class _PatientReportsPageState extends State<PatientReportsPage> {
                         ),
                         TextButton(
                           onPressed: _exporting ? null : _export,
-                          child:
-                              Text(_exporting ? 'Exporting...' : 'Export'),
+                          child: Text(_exporting ? 'Exporting...' : 'Export'),
                         ),
                       ],
                     ),
@@ -10898,7 +13872,10 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Patient Management')),
+      appBar: AppBar(
+        title: const Text('Patient Management'),
+        actions: _topBarActions(context),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddPatient,
         backgroundColor: AppColors.accent,
@@ -10928,16 +13905,20 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
             if (patients.isEmpty) {
               return SecondaryPageShell(
                 title: 'Patient Management',
-                subtitle: 'Registry, search, and follow-up access for doctor workflows',
+                subtitle:
+                    'Registry, search, and follow-up access for doctor workflows',
                 icon: Icons.people_alt_outlined,
                 children: const [
-                  Center(child: Text('No patients yet. Tap "Add Patient" to create one.')),
+                  Center(
+                      child: Text(
+                          'No patients yet. Tap "Add Patient" to create one.')),
                 ],
               );
             }
             return SecondaryPageShell(
               title: 'Patient Management',
-              subtitle: 'Registry, search, and follow-up access for doctor workflows',
+              subtitle:
+                  'Registry, search, and follow-up access for doctor workflows',
               icon: Icons.people_alt_outlined,
               children: [
                 glassListCard(
@@ -10946,7 +13927,9 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
                     children: [
                       AppSectionHeader(
                         title: _t('Patient table', 'جدول المرضى'),
-                        subtitle: _t('Quick registry view for the current clinic', 'عرض سريع لسجل المرضى في العيادة الحالية'),
+                        subtitle: _t(
+                            'Quick registry view for the current clinic',
+                            'عرض سريع لسجل المرضى في العيادة الحالية'),
                       ),
                       const SizedBox(height: 12),
                       Table(
@@ -10956,7 +13939,8 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
                           2: FlexColumnWidth(1.5),
                         },
                         children: [
-                          AnalysisResultPage._tableHeader('Patient', 'Age', 'Profile'),
+                          AnalysisResultPage._tableHeader(
+                              'Patient', 'Age', 'Profile'),
                           ...List.generate(patients.length, (i) {
                             final p = patients[i];
                             return AnalysisResultPage._tableRow(
@@ -10982,7 +13966,8 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
                           children: [
                             CircleAvatar(
                               backgroundColor: AppColors.accent.withAlpha(31),
-                              child: const Icon(Icons.person, color: AppColors.accent),
+                              child: const Icon(Icons.person,
+                                  color: AppColors.accent),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -11004,12 +13989,14 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
                                   if ((p.phone ?? '').isNotEmpty)
                                     Text(
                                       p.phone!,
-                                      style: const TextStyle(color: Colors.grey),
+                                      style:
+                                          const TextStyle(color: Colors.grey),
                                     ),
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                            Icon(Icons.chevron_right,
+                                color: Colors.grey.shade400),
                           ],
                         ),
                       ),
@@ -11070,21 +14057,29 @@ class _AddPatientPageState extends State<AddPatientPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Add Patient', 'إضافة مريض'))),
+      appBar: AppBar(
+        title: Text(_t('Add Patient', 'إضافة مريض')),
+        actions: _topBarActions(context),
+      ),
       body: Form(
         key: _formKey,
         child: SecondaryPageShell(
           title: _t('New Patient Profile', 'ملف مريض جديد'),
-          subtitle: _t('Create a structured patient record for analysis, visits, and report linkage', 'أنشئ ملف مريض منظم للتحليل والزيارات وربط التقارير'),
+          subtitle: _t(
+              'Create a structured patient record for analysis, visits, and report linkage',
+              'أنشئ ملف مريض منظم للتحليل والزيارات وربط التقارير'),
           icon: Icons.person_add_alt_1_outlined,
           children: [
             glassListCard(
               padding: const EdgeInsets.all(18),
               child: Column(
                 children: [
-                  _formField(_name, _t('Full Name', 'الاسم الكامل'), Icons.person, required: true),
+                  _formField(
+                      _name, _t('Full Name', 'الاسم الكامل'), Icons.person,
+                      required: true),
                   const SizedBox(height: 12),
-                  _formField(_age, _t('Age', 'العمر'), Icons.cake, keyboardType: TextInputType.number),
+                  _formField(_age, _t('Age', 'العمر'), Icons.cake,
+                      keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _gender,
@@ -11102,14 +14097,17 @@ class _AddPatientPageState extends State<AddPatientPage> {
                   const SizedBox(height: 12),
                   _formField(_phone, _t('Phone', 'الهاتف'), Icons.phone),
                   const SizedBox(height: 12),
-                  _formField(_notes, _t('Notes', 'ملاحظات'), Icons.notes, maxLines: 3),
+                  _formField(_notes, _t('Notes', 'ملاحظات'), Icons.notes,
+                      maxLines: 3),
                   const SizedBox(height: 18),
                   SizedBox(
                     height: 50,
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
-                      child: Text(_saving ? _t('Saving...', 'جارٍ الحفظ...') : _t('Save Patient', 'حفظ المريض')),
+                      child: Text(_saving
+                          ? _t('Saving...', 'جارٍ الحفظ...')
+                          : _t('Save Patient', 'حفظ المريض')),
                     ),
                   ),
                 ],
@@ -11172,29 +14170,33 @@ class _PatientPickerPageState extends State<PatientPickerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_t('Select Patient', 'اختر المريض'))),
+      appBar: AppBar(
+        title: Text(_t('Select Patient', 'اختر المريض')),
+        actions: _topBarActions(context),
+      ),
       body: FutureBuilder<List<PatientModel>>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-            if (snapshot.hasError) {
-              return ListView(
-                padding: const EdgeInsets.all(18),
-                children: [
-                  _retryCard(
-                    message: _patientLoadMessage(snapshot.error),
-                    onRetry: _reload,
-                  ),
-                ],
-              );
+          if (snapshot.hasError) {
+            return ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                _retryCard(
+                  message: _patientLoadMessage(snapshot.error),
+                  onRetry: _reload,
+                ),
+              ],
+            );
           }
           final items = snapshot.data ?? [];
           if (items.isEmpty) {
             return SecondaryPageShell(
               title: 'Select Patient',
-              subtitle: 'Choose a saved patient profile to continue with messaging, appointments, or analysis',
+              subtitle:
+                  'Choose a saved patient profile to continue with messaging, appointments, or analysis',
               icon: Icons.person_search_outlined,
               children: const [
                 Center(child: Text('No patients yet.')),
@@ -11203,7 +14205,8 @@ class _PatientPickerPageState extends State<PatientPickerPage> {
           }
           return SecondaryPageShell(
             title: 'Select Patient',
-            subtitle: 'Choose a saved patient profile to continue with messaging, appointments, or analysis',
+            subtitle:
+                'Choose a saved patient profile to continue with messaging, appointments, or analysis',
             icon: Icons.person_search_outlined,
             children: [
               ...items.map((p) => glassListCard(
@@ -11211,13 +14214,17 @@ class _PatientPickerPageState extends State<PatientPickerPage> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: AppColors.accent.withAlpha(20),
-                        child: const Icon(Icons.person, color: AppColors.accent),
+                        child:
+                            const Icon(Icons.person, color: AppColors.accent),
                       ),
                       title: Text(
                         p.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary),
                       ),
-                      subtitle: Text('Age: ${p.age ?? '-'} - ${p.gender ?? 'Unknown'}'),
+                      subtitle: Text(
+                          'Age: ${p.age ?? '-'} - ${p.gender ?? 'Unknown'}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.pop(context, p),
                     ),
@@ -11233,7 +14240,8 @@ class _PatientPickerPageState extends State<PatientPickerPage> {
 class AddAppointmentPage extends StatefulWidget {
   final PatientModel patient;
   final ApiService api;
-  const AddAppointmentPage({super.key, required this.patient, required this.api});
+  const AddAppointmentPage(
+      {super.key, required this.patient, required this.api});
 
   @override
   State<AddAppointmentPage> createState() => _AddAppointmentPageState();
@@ -11275,21 +14283,27 @@ class _AddAppointmentPageState extends State<AddAppointmentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Appointment')),
+      appBar: AppBar(
+        title: const Text('Add Appointment'),
+        actions: _topBarActions(context),
+      ),
       body: SecondaryPageShell(
         title: widget.patient.name,
-        subtitle: 'Create a new follow-up visit or review appointment for this patient',
+        subtitle:
+            'Create a new follow-up visit or review appointment for this patient',
         icon: Icons.event_available,
         children: [
           glassListCard(
             padding: const EdgeInsets.all(18),
             child: Column(
               children: [
-                _formField(_doctor, _t('Doctor Name', 'اسم الطبيب'), Icons.medical_services),
+                _formField(_doctor, _t('Doctor Name', 'اسم الطبيب'),
+                    Icons.medical_services),
                 const SizedBox(height: 12),
                 _formField(
                   _when,
-                  _t('When (e.g. 2026-08-10 14:00)', 'الموعد (مثال 2026-08-10 14:00)'),
+                  _t('When (e.g. 2026-08-10 14:00)',
+                      'الموعد (مثال 2026-08-10 14:00)'),
                   Icons.event,
                 ),
                 const SizedBox(height: 12),
@@ -11301,20 +14315,25 @@ class _AddAppointmentPageState extends State<AddAppointmentPage> {
                   ),
                   items: const [
                     DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                    DropdownMenuItem(value: 'Confirmed', child: Text('Confirmed')),
-                    DropdownMenuItem(value: 'Cancelled', child: Text('Cancelled')),
+                    DropdownMenuItem(
+                        value: 'Confirmed', child: Text('Confirmed')),
+                    DropdownMenuItem(
+                        value: 'Cancelled', child: Text('Cancelled')),
                   ],
                   onChanged: (v) => setState(() => _status = v ?? 'Pending'),
                 ),
                 const SizedBox(height: 12),
-                _formField(_notes, _t('Notes', 'ملاحظات'), Icons.notes, maxLines: 3),
+                _formField(_notes, _t('Notes', 'ملاحظات'), Icons.notes,
+                    maxLines: 3),
                 const SizedBox(height: 18),
                 SizedBox(
                   height: 50,
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _saving ? null : _save,
-                    child: Text(_saving ? _t('Saving...', 'جارٍ الحفظ...') : _t('Save Appointment', 'حفظ الموعد')),
+                    child: Text(_saving
+                        ? _t('Saving...', 'جارٍ الحفظ...')
+                        : _t('Save Appointment', 'حفظ الموعد')),
                   ),
                 ),
               ],
@@ -11345,6 +14364,7 @@ class _AddAppointmentPageState extends State<AddAppointmentPage> {
     );
   }
 }
+
 class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -11712,11 +14732,13 @@ class ApiService {
       _applyAuthToMultipart(req);
       if (file.bytes != null) {
         req.files.add(
-          http.MultipartFile.fromBytes('file', file.bytes!, filename: file.name),
+          http.MultipartFile.fromBytes('file', file.bytes!,
+              filename: file.name),
         );
       } else if (file.path != null) {
         req.files.add(
-          await http.MultipartFile.fromPath('file', file.path!, filename: file.name),
+          await http.MultipartFile.fromPath('file', file.path!,
+              filename: file.name),
         );
       } else {
         throw Exception('Selected file could not be read');
@@ -11741,7 +14763,8 @@ class ApiService {
       );
     } else if (file.path != null) {
       req.files.add(
-        await http.MultipartFile.fromPath('file', file.path!, filename: file.name),
+        await http.MultipartFile.fromPath('file', file.path!,
+            filename: file.name),
       );
     } else {
       throw Exception('Selected image could not be read');
@@ -11830,6 +14853,53 @@ class ApiService {
     return MessageModel.fromJson(jsonDecode(res.body));
   }
 
+  Future<MessageSummaryModel> getMessageSummary(int patientId) async {
+    final uri = _u('/messages/summary?patientId=$patientId');
+    final res = await _get(uri);
+    if (res.statusCode != 200) {
+      throw Exception('API error: ${res.statusCode} ${res.body}');
+    }
+    return MessageSummaryModel.fromJson(jsonDecode(res.body));
+  }
+
+  Future<MonitoringEventModel> createMonitoringEvent({
+    String? sessionId,
+    required int patientId,
+    required String title,
+    required String detail,
+    String severity = 'info',
+    String source = 'live_ai',
+  }) async {
+    final uri = _u('/monitoring/events');
+    final res = await _postJson(uri, {
+      'sessionId': sessionId,
+      'patientId': patientId,
+      'title': title,
+      'detail': detail,
+      'severity': severity,
+      'source': source,
+    });
+    if (res.statusCode != 200) {
+      throw Exception('API error: ${res.statusCode} ${res.body}');
+    }
+    return MonitoringEventModel.fromJson(jsonDecode(res.body));
+  }
+
+  Future<List<MonitoringEventModel>> listMonitoringEvents(
+    int patientId, {
+    int limit = 20,
+  }) async {
+    final uri = _u('/monitoring/$patientId/events?limit=$limit');
+    final res = await _get(uri);
+    if (res.statusCode != 200) {
+      throw Exception('API error: ${res.statusCode} ${res.body}');
+    }
+    final data = jsonDecode(res.body) as List<dynamic>;
+    return data
+        .map((e) => MonitoringEventModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<AppointmentModel>> listAppointments({int? patientId}) async {
     final query = patientId == null ? '' : '?patientId=$patientId';
     final uri = _u('/appointments$query');
@@ -11876,7 +14946,8 @@ class ApiService {
     return ReportModel.fromJson(jsonDecode(res.body));
   }
 
-  String reportDownloadUrl(String reportId) => '$_base/reports/$reportId/download';
+  String reportDownloadUrl(String reportId) =>
+      '$_base/reports/$reportId/download';
 
   Future<String> exportReport() async {
     final uri = _u('/reports/export');
@@ -11970,7 +15041,8 @@ class AnalysisResult {
   }
 
   factory AnalysisResult.fromJson(Map<String, dynamic> j) {
-    final measurementsJson = j['measurements'] as Map<String, dynamic>? ?? const {};
+    final measurementsJson =
+        j['measurements'] as Map<String, dynamic>? ?? const {};
     final graphData = j['graphData'] as Map<String, dynamic>? ?? const {};
     return AnalysisResult(
       analysisId: j['analysisId'] as String? ?? '',
@@ -12102,7 +15174,6 @@ class AppMetricTile extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class MeasurementValue {
@@ -12274,6 +15345,77 @@ class MessageModel {
   }
 }
 
+class MessageSummaryModel {
+  final int patientId;
+  final String headline;
+  final String status;
+  final String urgency;
+  final String summary;
+  final List<String> suggestedReplies;
+  final List<String> keySignals;
+
+  MessageSummaryModel({
+    required this.patientId,
+    required this.headline,
+    required this.status,
+    required this.urgency,
+    required this.summary,
+    required this.suggestedReplies,
+    required this.keySignals,
+  });
+
+  factory MessageSummaryModel.fromJson(Map<String, dynamic> j) {
+    return MessageSummaryModel(
+      patientId: j['patientId'] as int? ?? 0,
+      headline: j['headline'] as String? ?? '',
+      status: j['status'] as String? ?? '',
+      urgency: j['urgency'] as String? ?? 'low',
+      summary: j['summary'] as String? ?? '',
+      suggestedReplies: (j['suggestedReplies'] as List<dynamic>? ?? [])
+          .map((e) => e as String)
+          .toList(),
+      keySignals: (j['keySignals'] as List<dynamic>? ?? [])
+          .map((e) => e as String)
+          .toList(),
+    );
+  }
+}
+
+class MonitoringEventModel {
+  final int id;
+  final String? sessionId;
+  final int patientId;
+  final String title;
+  final String detail;
+  final String severity;
+  final String source;
+  final String createdAt;
+
+  MonitoringEventModel({
+    required this.id,
+    required this.sessionId,
+    required this.patientId,
+    required this.title,
+    required this.detail,
+    required this.severity,
+    required this.source,
+    required this.createdAt,
+  });
+
+  factory MonitoringEventModel.fromJson(Map<String, dynamic> j) {
+    return MonitoringEventModel(
+      id: j['id'] as int? ?? 0,
+      sessionId: j['sessionId'] as String?,
+      patientId: j['patientId'] as int? ?? 0,
+      title: j['title'] as String? ?? '',
+      detail: j['detail'] as String? ?? '',
+      severity: j['severity'] as String? ?? 'info',
+      source: j['source'] as String? ?? 'live_ai',
+      createdAt: j['createdAt'] as String? ?? '',
+    );
+  }
+}
+
 class AppointmentModel {
   final int id;
   final int patientId;
@@ -12345,8 +15487,9 @@ class ReportModel {
       filePath: j['filePath'] as String?,
       createdAt: j['createdAt'] as String?,
       bpm: (j['bpm'] as List<dynamic>? ?? []).map((e) => e as int).toList(),
-      labels:
-          (j['labels'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
+      labels: (j['labels'] as List<dynamic>? ?? [])
+          .map((e) => e as String)
+          .toList(),
       riskLevels: (j['riskLevels'] as List<dynamic>? ?? [])
           .map((e) => e as String)
           .toList(),
@@ -12645,7 +15788,8 @@ Widget _roleCard({
             color: dark ? Colors.white10 : AppColors.accentSoft,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(Icons.arrow_forward_rounded, size: 18, color: dark ? Colors.white : AppColors.primary),
+          child: Icon(Icons.arrow_forward_rounded,
+              size: 18, color: dark ? Colors.white : AppColors.primary),
         ),
       ],
     ),
@@ -12766,12 +15910,3 @@ Route<T> _scaleRoute<T>(Widget page) {
     },
   );
 }
-
-
-
-
-
-
-
-
-

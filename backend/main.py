@@ -145,6 +145,16 @@ class MessageOut(MessageIn):
     createdAt: str
 
 
+class MessageSummaryOut(BaseModel):
+    patientId: int
+    headline: str
+    status: str
+    urgency: str
+    summary: str
+    suggestedReplies: List[str]
+    keySignals: List[str]
+
+
 class AppointmentIn(BaseModel):
     patientId: int
     doctorName: str
@@ -256,6 +266,20 @@ class MonitoringSessionOut(BaseModel):
     notes: Optional[str] = None
     startedAt: str
     stoppedAt: Optional[str] = None
+
+
+class MonitoringEventIn(BaseModel):
+    sessionId: Optional[str] = None
+    patientId: int
+    title: str
+    detail: str
+    severity: str = "info"
+    source: str = "live_ai"
+
+
+class MonitoringEventOut(MonitoringEventIn):
+    id: int
+    createdAt: str
 
 
 class GenerateReportIn(BaseModel):
@@ -662,6 +686,20 @@ def _init_db() -> None:
             );
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS monitoring_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_uid TEXT,
+                patient_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                detail TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                source TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
 
         _ensure_column(conn, "users", "mobile", "TEXT")
         _ensure_column(conn, "users", "specialty", "TEXT")
@@ -693,6 +731,25 @@ def _normalize_mobile(mobile: Optional[str]) -> Optional[str]:
         return None
     cleaned = "".join(ch for ch in mobile if ch.isdigit() or ch == "+")
     return cleaned or None
+
+
+def _contains_urgent_terms(text: str) -> bool:
+    lower = (text or "").lower()
+    keywords = (
+        "pain",
+        "chest",
+        "pressure",
+        "faint",
+        "dizzy",
+        "blackout",
+        "emergency",
+        "urgent",
+        "palpitation",
+        "stroke",
+        "weakness",
+        "shortness of breath",
+    )
+    return any(keyword in lower for keyword in keywords)
 
 
 def _get_user_by_token(auth_header: Optional[str]) -> Dict[str, Any]:
@@ -3092,6 +3149,76 @@ def monitoring_for_patient(
     ]
 
 
+@app.post("/monitoring/events", response_model=MonitoringEventOut)
+def create_monitoring_event(
+    payload: MonitoringEventIn, user: Dict[str, Any] = Depends(_current_user)
+) -> MonitoringEventOut:
+    created_at = datetime.utcnow().isoformat()
+    with _db_connection() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO monitoring_events (
+                session_uid, patient_id, title, detail, severity, source, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                payload.sessionId,
+                payload.patientId,
+                payload.title,
+                payload.detail,
+                payload.severity,
+                payload.source,
+                created_at,
+            ),
+        )
+        conn.commit()
+        event_id = cur.lastrowid
+    return MonitoringEventOut(
+        id=event_id,
+        sessionId=payload.sessionId,
+        patientId=payload.patientId,
+        title=payload.title,
+        detail=payload.detail,
+        severity=payload.severity,
+        source=payload.source,
+        createdAt=created_at,
+    )
+
+
+@app.get("/monitoring/{patient_id}/events", response_model=List[MonitoringEventOut])
+def list_monitoring_events(
+    patient_id: int,
+    limit: int = 20,
+    user: Dict[str, Any] = Depends(_current_user),
+) -> List[MonitoringEventOut]:
+    safe_limit = max(1, min(limit, 100))
+    with _db_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, session_uid, patient_id, title, detail, severity, source, created_at
+            FROM monitoring_events
+            WHERE patient_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (patient_id, safe_limit),
+        ).fetchall()
+    return [
+        MonitoringEventOut(
+            id=row["id"],
+            sessionId=row["session_uid"],
+            patientId=row["patient_id"],
+            title=row["title"],
+            detail=row["detail"],
+            severity=row["severity"],
+            source=row["source"],
+            createdAt=row["created_at"],
+        )
+        for row in rows
+    ]
+
+
 @app.post("/emergency", response_model=EmergencyOut)
 def emergency(payload: EmergencyIn) -> EmergencyOut:
     created_at = datetime.utcnow().isoformat()
@@ -3187,6 +3314,100 @@ def create_message(payload: MessageIn, user: Dict[str, Any] = Depends(_current_u
         senderName=payload.senderName,
         text=payload.text,
         createdAt=created_at,
+    )
+
+
+@app.get("/messages/summary", response_model=MessageSummaryOut)
+def message_summary(
+    patientId: int, user: Dict[str, Any] = Depends(_current_user)
+) -> MessageSummaryOut:
+    with _db_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT sender_role, sender_name, text, created_at
+            FROM messages
+            WHERE patient_id = ?
+            ORDER BY id DESC
+            LIMIT 25
+            """,
+            (patientId,),
+        ).fetchall()
+    items = [dict(row) for row in rows]
+    if not items:
+        return MessageSummaryOut(
+            patientId=patientId,
+            headline="Conversation not started",
+            status="new_thread",
+            urgency="low",
+            summary="No doctor-patient messages are stored yet for this patient.",
+            suggestedReplies=[
+                "Please describe your current symptoms and when they started.",
+                "Upload a recent ECG if you want a new AI-guided review.",
+                "If symptoms are severe right now, seek urgent care immediately.",
+            ],
+            keySignals=[
+                "No message history is available yet.",
+                "AI cannot estimate response urgency without conversation content.",
+            ],
+        )
+
+    urgent_hits = [item for item in items if _contains_urgent_terms(item["text"])]
+    patient_count = sum(1 for item in items if item["sender_role"] == "patient")
+    doctor_count = sum(1 for item in items if item["sender_role"] == "doctor")
+    latest = items[0]
+
+    if urgent_hits:
+        headline = "Urgent symptom language detected"
+        status = "escalation_watch"
+        urgency = "high"
+        summary = (
+            "Recent messages contain symptom language that may justify immediate review "
+            "or emergency escalation depending on current symptom severity."
+        )
+        suggested = [
+            "If chest pain, fainting, weakness, or severe shortness of breath are active now, seek emergency care immediately.",
+            "Please confirm symptom timing, duration, and whether the ECG was captured during symptoms.",
+            "Repeat the ECG upload if the signal has changed since the last recording.",
+        ]
+    elif patient_count > doctor_count:
+        headline = "Patient updates awaiting response"
+        status = "response_pending"
+        urgency = "medium"
+        summary = (
+            "The message thread currently contains more patient updates than doctor replies, "
+            "so follow-up communication is likely still pending."
+        )
+        suggested = [
+            "I reviewed your update and will compare it with the latest ECG findings.",
+            "Please send one more symptom update if anything changes before the next review.",
+            "Upload another ECG if the episode repeats or the symptoms worsen.",
+        ]
+    else:
+        headline = "Conversation appears stable"
+        status = "routine_followup"
+        urgency = "low"
+        summary = (
+            "The recent conversation looks relatively balanced and does not show obvious urgent-language pressure."
+        )
+        suggested = [
+            "Continue routine follow-up and store the next ECG for trend comparison.",
+            "Use one concise message with symptom timing if a new episode occurs.",
+            "Keep messaging aligned with uploaded ECG sessions for cleaner review context.",
+        ]
+
+    signals = [
+        f"Latest sender: {latest['sender_name']} ({latest['sender_role']}).",
+        f"Recent message count reviewed: {len(items)}.",
+        f"Urgent-language hits: {len(urgent_hits)}.",
+    ]
+    return MessageSummaryOut(
+        patientId=patientId,
+        headline=headline,
+        status=status,
+        urgency=urgency,
+        summary=summary,
+        suggestedReplies=suggested,
+        keySignals=signals,
     )
 
 
