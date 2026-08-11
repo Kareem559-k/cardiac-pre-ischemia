@@ -276,6 +276,21 @@ class ReportOut(BaseModel):
 
 class ModelProbeRow(BaseModel):
     recordingId: str
+    inputFile: Optional[str] = None
+    signalLength: Optional[int] = None
+    samplingRate: Optional[float] = None
+    channelUsed: Optional[str] = None
+    signalMin: Optional[float] = None
+    signalMax: Optional[float] = None
+    signalMean: Optional[float] = None
+    signalStd: Optional[float] = None
+    validSamples: Optional[int] = None
+    featureCount: Optional[int] = None
+    featureVectorHash: Optional[str] = None
+    featureMin: Optional[float] = None
+    featureMax: Optional[float] = None
+    featureMean: Optional[float] = None
+    featureStd: Optional[float] = None
     heartRate: Optional[float] = None
     rrIntervalMs: Optional[float] = None
     qrsDurationMs: Optional[float] = None
@@ -291,6 +306,16 @@ class ModelProbeRow(BaseModel):
 
 class ModelProbeOut(BaseModel):
     total: int
+    uniqueFeatureVectors: int = 0
+    uniqueRawProbabilities: int = 0
+    uniqueCalibratedProbabilities: int = 0
+    probabilityMean: Optional[float] = None
+    probabilityStd: Optional[float] = None
+    probabilityMin: Optional[float] = None
+    probabilityMax: Optional[float] = None
+    pctAbove099: Optional[float] = None
+    pctBelow001: Optional[float] = None
+    pctIdenticalPredictions: Optional[float] = None
     rows: List[ModelProbeRow]
 
 
@@ -2072,6 +2097,9 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
     measurements, _ = _derive_measurements(processed, fs)
     quality = ecg_pipeline.signal_quality_metrics(signal, processed, fs)
     signal_signature = _signal_signature_metrics(signal, processed, fs, quality, rr)
+    representative = ecg_pipeline.representative_lead(processed)
+    feature_vector = ecg_pipeline.extract_model_features(processed, fs)
+    feature_hash = hashlib.sha256(feature_vector.astype(np.float32).tobytes()).hexdigest()
 
     metadata = _fallback_model_metadata()
     threshold = float(metadata["threshold"])
@@ -2080,8 +2108,7 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
     model_error: Optional[str] = None
     try:
         model_bundle = _ensure_model()
-        features = ecg_pipeline.extract_model_features(processed, fs)
-        x_imputed = model_bundle.imputer.transform([features])
+        x_imputed = model_bundle.imputer.transform([feature_vector])
         x_scaled = model_bundle.qt.transform(x_imputed)
         probability_details = model_bundle.predict_details(x_scaled)
         raw_probability = float(probability_details["raw_probability"])
@@ -2104,6 +2131,21 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
 
     return ModelProbeRow(
         recordingId=record_path.stem,
+        inputFile=str(record_path),
+        signalLength=int(representative.size),
+        samplingRate=float(fs),
+        channelUsed="representative_lead_dynamic",
+        signalMin=float(np.min(representative)) if representative.size else None,
+        signalMax=float(np.max(representative)) if representative.size else None,
+        signalMean=float(np.mean(representative)) if representative.size else None,
+        signalStd=float(np.std(representative)) if representative.size else None,
+        validSamples=int(np.sum(np.isfinite(representative))) if representative.size else 0,
+        featureCount=int(feature_vector.size),
+        featureVectorHash=feature_hash,
+        featureMin=float(np.min(feature_vector)) if feature_vector.size else None,
+        featureMax=float(np.max(feature_vector)) if feature_vector.size else None,
+        featureMean=float(np.mean(feature_vector)) if feature_vector.size else None,
+        featureStd=float(np.std(feature_vector)) if feature_vector.size else None,
         heartRate=measurements.get("heart_rate").value if measurements.get("heart_rate") else None,
         rrIntervalMs=measurements.get("rr_interval").value if measurements.get("rr_interval") else None,
         qrsDurationMs=measurements.get("qrs_duration").value if measurements.get("qrs_duration") else None,
@@ -2152,8 +2194,35 @@ def debug_model_probe(
             except Exception:
                 continue
             if len(record_rows) >= max(1, min(limit, 20)):
-                return ModelProbeOut(total=len(record_rows), rows=record_rows)
-    return ModelProbeOut(total=len(record_rows), rows=record_rows)
+                break
+        if len(record_rows) >= max(1, min(limit, 20)):
+            break
+
+    calibrated = np.asarray([row.calibratedProbability for row in record_rows], dtype=np.float64)
+    raw_values = [round(float(row.rawProbability), 6) for row in record_rows if row.rawProbability is not None]
+    calibrated_values = [round(float(row.calibratedProbability), 6) for row in record_rows]
+    feature_hashes = {row.featureVectorHash for row in record_rows if row.featureVectorHash}
+    most_common_prediction_count = 0
+    if calibrated_values:
+        counts: Dict[float, int] = {}
+        for value in calibrated_values:
+            counts[value] = counts.get(value, 0) + 1
+        most_common_prediction_count = max(counts.values())
+
+    return ModelProbeOut(
+        total=len(record_rows),
+        uniqueFeatureVectors=len(feature_hashes),
+        uniqueRawProbabilities=len(set(raw_values)),
+        uniqueCalibratedProbabilities=len(set(calibrated_values)),
+        probabilityMean=float(np.mean(calibrated)) if calibrated.size else None,
+        probabilityStd=float(np.std(calibrated)) if calibrated.size else None,
+        probabilityMin=float(np.min(calibrated)) if calibrated.size else None,
+        probabilityMax=float(np.max(calibrated)) if calibrated.size else None,
+        pctAbove099=float(np.mean(calibrated > 0.99) * 100.0) if calibrated.size else None,
+        pctBelow001=float(np.mean(calibrated < 0.01) * 100.0) if calibrated.size else None,
+        pctIdenticalPredictions=float((most_common_prediction_count / len(record_rows)) * 100.0) if record_rows else None,
+        rows=record_rows,
+    )
 
 
 def _report_trend(patient_id: int) -> Tuple[List[str], List[int], List[str]]:

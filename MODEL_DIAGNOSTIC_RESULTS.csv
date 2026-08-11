@@ -1,0 +1,1 @@
+recording_id,input_file,signal_length,sampling_rate,channel_used,signal_min,signal_max,signal_mean,signal_std,number_of_valid_samples,feature_count,feature_vector_hash,feature_min,feature_max,feature_mean,feature_std,heart_rate,rr,pr,qrs,qt,qtc,st_deviation,sdnn,rmssd,pnn50,raw_probability,calibrated_probability,threshold,classification,inference_mode,model_version
