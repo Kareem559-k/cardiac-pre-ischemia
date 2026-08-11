@@ -1453,20 +1453,24 @@ class _LoginPageState extends State<LoginPage> {
         username: (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim(),
       );
       AppState.currentWorkspace = 'role_selection';
+      final resolvedName =
+          (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim();
+      final isPatient = user.role == 'patient';
+      AppState.currentWorkspace = isPatient ? 'patient_home' : 'role_selection';
       await AppState.persistSession(
         token: user.token,
         role: user.role,
-        username: (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim(),
-        workspace: 'role_selection',
+        username: resolvedName,
+        workspace: isPatient ? 'patient_home' : 'role_selection',
       );
       if (!mounted) return;
-      final displayName = (user.name ?? mobile).trim();
+      final displayName = resolvedName;
       Navigator.pushReplacement(
         context,
         _fadeRoute(
-          RoleSelectionPage(
-            username: displayName.isEmpty ? mobile : displayName,
-          ),
+          isPatient
+              ? PatientHome(username: displayName)
+              : RoleSelectionPage(username: displayName),
         ),
       );
     } catch (e) {
@@ -2609,9 +2613,13 @@ class RoleSelectionPage extends StatelessWidget {
                 sub: _t('Personal monitoring, ECG upload, reports, and care follow-up', 'مراقبة شخصية ورفع ECG والتقارير والمتابعة مع الطبيب'),
                 color: AppColors.success,
                 onTap: () {
-                  AppState.currentWorkspace = 'role_selection';
-                  unawaited(AppState.persistSession(workspace: 'role_selection'));
-                  Navigator.push(context, _fadeRoute(const DoctorSelectionPage(username: '')));
+                  ApiService.currentUsername = username;
+                  AppState.currentWorkspace = 'patient_home';
+                  unawaited(AppState.persistSession(
+                    username: username,
+                    workspace: 'patient_home',
+                  ));
+                  Navigator.push(context, _fadeRoute(PatientHome(username: username)));
                 },
               ),
               const SizedBox(height: 14),
@@ -8673,9 +8681,151 @@ class SessionLogPage extends StatelessWidget {
   }
 }
 
-class PatientProfilePage extends StatelessWidget {
+class PatientProfilePage extends StatefulWidget {
   final String username;
   const PatientProfilePage({super.key, required this.username});
+
+  @override
+  State<PatientProfilePage> createState() => _PatientProfilePageState();
+}
+
+class _PatientProfilePageState extends State<PatientProfilePage> {
+  Future<void> _pickDoctor() async {
+    final doctors = AppState.doctors;
+    if (doctors.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t('No doctor accounts are available yet.', 'لا توجد حسابات أطباء متاحة الآن.'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final picked = await showModalBottomSheet<AppDoctor>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return FractionallySizedBox(
+          heightFactor: 0.72,
+          child: GlassPanel(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            radius: BorderRadius.circular(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: AppColors.accentSoft,
+                      child: Icon(Icons.add_rounded, color: AppColors.accentDeep),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t('Choose Doctor', 'اختر الطبيب'),
+                            style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          Text(
+                            _t(
+                              'Tap any doctor to link this patient profile.',
+                              'اضغط على أي طبيب لربطه بملف المريض.',
+                            ),
+                            style: const TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: doctors.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final doctor = doctors[index];
+                      final active = AppState.selectedDoctor?.email == doctor.email;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => Navigator.pop(sheetContext, doctor),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: active ? AppColors.accentSoft : Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: active ? AppColors.accent : AppColors.border,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: AppColors.accent.withAlpha(24),
+                                child: const Icon(Icons.local_hospital_outlined, color: AppColors.accentDeep),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      doctor.name,
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${doctor.specialty} • ${doctor.clinic}',
+                                      style: const TextStyle(color: AppColors.textSecondary),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      doctor.phone,
+                                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (active)
+                                const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (picked == null) return;
+    setState(() {
+      AppState.upsertDoctor(picked);
+      AppState.selectedDoctor = picked;
+    });
+    await AppState.persistSession(
+      username: widget.username,
+      workspace: 'patient_home',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_t('Doctor linked successfully.', 'تم ربط الطبيب بنجاح.'))),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -8697,7 +8847,7 @@ class PatientProfilePage extends StatelessWidget {
                   accentColor: AppColors.accent,
                   sourceLabel: 'Patient',
                   presetDraft: AnalysisSessionDraft(
-                    patientName: username,
+                    patientName: widget.username,
                     patientAge: '',
                     patientSex: 'Not specified',
                     doctorName: AppState.selectedDoctor?.name ?? '',
@@ -8724,17 +8874,24 @@ class PatientProfilePage extends StatelessWidget {
         _t('Messages', 'الرسائل'),
         Icons.chat_bubble_outline,
         AppColors.accent,
-        () => Navigator.push(context, _fadeRoute(PatientChatPage(username: username)))
+        () => Navigator.push(context, _fadeRoute(PatientChatPage(username: widget.username)))
       ),
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('Profile', 'الملف')),
-        actions: [_settingsAction(context)],
+        actions: [
+          IconButton(
+            onPressed: _pickDoctor,
+            icon: const Icon(Icons.add_rounded),
+            tooltip: _t('Link doctor', 'ربط طبيب'),
+          ),
+          _settingsAction(context),
+        ],
       ),
       body: SecondaryPageShell(
-        title: username,
+        title: widget.username,
         subtitle: _t('Patient access profile, quick actions, and connected care context', 'ملف دخول المريض والإجراءات السريعة وسياق الرعاية المتصل'),
         icon: Icons.person_outline_rounded,
         children: [
@@ -8850,7 +9007,7 @@ class PatientProfilePage extends StatelessWidget {
     final api = ApiService(baseUrl: _apiBaseUrl());
     final patients = await api.listPatients();
     for (final patient in patients) {
-      if (patient.name.trim().toLowerCase() == username.trim().toLowerCase()) {
+      if (patient.name.trim().toLowerCase() == widget.username.trim().toLowerCase()) {
         return patient;
       }
     }
@@ -8930,7 +9087,7 @@ class PatientProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  username,
+                  widget.username,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -9065,11 +9222,8 @@ class PatientProfilePage extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                _fadeRoute(DoctorSelectionPage(username: username)),
-              ),
-              child: const Text('Assign'),
+              onPressed: _pickDoctor,
+              child: Text(_t('Assign', 'ربط')),
             ),
           ],
         ),
@@ -9116,11 +9270,8 @@ class PatientProfilePage extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              _fadeRoute(DoctorSelectionPage(username: username)),
-            ),
-            icon: const Icon(Icons.edit, color: Colors.grey),
+            onPressed: _pickDoctor,
+            icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.grey),
           ),
         ],
       ),
