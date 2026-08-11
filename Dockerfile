@@ -11,7 +11,8 @@ ENV KIMO_ECG_MODEL_DIR=/app/ECG_MODEL_V15_FINAL
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
-COPY backend/requirements.txt /app/backend-requirements.txt
+RUN mkdir -p /app/backend
+COPY backend/requirements.txt /app/backend/requirements.txt
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
