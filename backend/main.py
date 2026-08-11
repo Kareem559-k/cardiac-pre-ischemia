@@ -706,6 +706,52 @@ def _ensure_model() -> ModelBundle:
     return _model_bundle
 
 
+def _fallback_model_metadata() -> Dict[str, Any]:
+    return {
+        "model_version": "heuristic_ecg_fallback_v1",
+        "pipeline_version": "signal_only_fallback_v1",
+        "feature_version": "fallback_rules_v1",
+        "feature_count": 0,
+        "threshold": 0.52,
+    }
+
+
+def _heuristic_model_score(
+    *,
+    bpm: int,
+    signal_quality: float,
+    measurements: Dict[str, "MeasurementOut"],
+) -> float:
+    score = 0.18
+    if bpm < 50 or bpm > 110:
+        score += 0.18
+
+    qrs = measurements.get("qrs_duration")
+    if qrs and qrs.value is not None and qrs.value >= 120:
+        score += 0.18
+
+    qtc = measurements.get("qtc")
+    if qtc and qtc.value is not None and qtc.value >= 470:
+        score += 0.12
+
+    st_dev = measurements.get("st_deviation")
+    if st_dev and st_dev.value is not None and abs(float(st_dev.value)) >= 0.2:
+        score += 0.18
+
+    sdnn = measurements.get("sdnn")
+    if sdnn and sdnn.value is not None and sdnn.value >= 140:
+        score += 0.08
+
+    rmssd = measurements.get("rmssd")
+    if rmssd and rmssd.value is not None and rmssd.value >= 120:
+        score += 0.08
+
+    if signal_quality < 0.35:
+        score += 0.05
+
+    return float(np.clip(score, 0.05, 0.95))
+
+
 def _butter_bandpass(lowcut: float, highcut: float, fs: float, order: int = 5):
     nyq = 0.5 * fs
     low = lowcut / nyq
@@ -1283,13 +1329,8 @@ def _run_signal_analysis(
     input_type: str,
     source_filename: Optional[str],
 ) -> AnalysisResponse:
-    model_bundle = _ensure_model()
     processed = ecg_pipeline.ensure_lead_first(processed_signal)
     raw = ecg_pipeline.ensure_lead_first(raw_signal)
-    features = ecg_pipeline.extract_model_features(processed, fs)
-    x_imputed = model_bundle.imputer.transform([features])
-    x_scaled = model_bundle.qt.transform(x_imputed)
-    score = model_bundle.predict_probability(x_scaled)
     rr = ecg_pipeline.compute_rr_hrv(ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs), fs)
     bpm = int(round(rr["heart_rate_bpm"])) if rr["heart_rate_bpm"] is not None else 0
     quality = ecg_pipeline.signal_quality_metrics(raw, processed, fs)
@@ -1366,7 +1407,28 @@ def _run_signal_analysis(
         unit="mV",
         source="ESTIMATED" if intervals["st_deviation_estimate"] is not None else "UNAVAILABLE",
     )
-    risk = ecg_pipeline.risk_band(score, model_bundle.threshold)
+
+    features = np.asarray([], dtype=np.float32)
+    metadata = _fallback_model_metadata()
+    threshold = float(metadata["threshold"])
+    model_error: Optional[str] = None
+    try:
+        model_bundle = _ensure_model()
+        features = ecg_pipeline.extract_model_features(processed, fs)
+        x_imputed = model_bundle.imputer.transform([features])
+        x_scaled = model_bundle.qt.transform(x_imputed)
+        score = model_bundle.predict_probability(x_scaled)
+        metadata = model_bundle.metadata
+        threshold = float(model_bundle.threshold)
+    except HTTPException as exc:
+        model_error = str(exc.detail)
+        score = _heuristic_model_score(
+            bpm=bpm,
+            signal_quality=signal_quality,
+            measurements=measurements,
+        )
+
+    risk = ecg_pipeline.risk_band(score, threshold)
     region, coils = ecg_pipeline.region_and_coils(processed, risk)
     classification = _risk_to_classification(risk)
     graph_data["signalQuality"] = signal_quality
@@ -1378,6 +1440,8 @@ def _run_signal_analysis(
         f"Signal quality score: {quality['signal_quality_score']:.2f}",
         f"Noise level: {quality['noise_level']}",
     ]
+    if model_error:
+        findings.append("Fallback signal-based inference was used because the deploy-time model runtime was unavailable.")
     if recording_id:
         findings.append(f"Recording ID: {recording_id}")
     recommendations = [
@@ -1404,10 +1468,17 @@ def _run_signal_analysis(
         explainability={
             "type": "Feature magnitude ranking",
             "topFeatures": ecg_pipeline.explain_top_features(features),
+            "fallbackReason": model_error,
         },
         measurements=measurements,
         graph_data=graph_data,
-        metadata=model_bundle.metadata,
+        metadata={
+            "model_version": metadata["model_version"],
+            "pipeline_version": metadata["pipeline_version"],
+            "feature_version": metadata["feature_version"],
+            "feature_count": metadata["feature_count"],
+            "threshold": threshold,
+        },
     )
 
 
@@ -2067,7 +2138,6 @@ async def analyze_image(
     patientId: Optional[int] = None,
     user: Optional[Dict[str, Any]] = Depends(_current_user_optional),
 ) -> AnalysisResponse:
-    _ensure_model()
     _validate_upload(file.filename or "upload", ALLOWED_IMAGE_EXTENSIONS)
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = Path(tmpdir) / Path(file.filename or "image.png").name
@@ -2096,7 +2166,6 @@ async def analyze_files(
     patientId: Optional[int] = None,
     user: Optional[Dict[str, Any]] = Depends(_current_user_optional),
 ) -> AnalysisResponse:
-    _ensure_model()
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
     with tempfile.TemporaryDirectory() as tmpdir:
