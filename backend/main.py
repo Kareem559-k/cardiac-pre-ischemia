@@ -928,7 +928,7 @@ def _compute_signal_quality(signal: np.ndarray) -> Tuple[float, str]:
 
 
 def _derive_measurements(signal: np.ndarray, fs: float) -> Tuple[Dict[str, MeasurementOut], Dict[str, Any]]:
-    representative = signal[1] if signal.shape[0] > 1 else signal[0]
+    representative = ecg_pipeline.representative_lead(signal)
     peaks, _ = find_peaks(representative, distance=max(int(0.2 * fs), 1), prominence=0.5)
     rr_ms: List[float] = []
     bpm = 0
@@ -988,6 +988,23 @@ def _derive_measurements(signal: np.ndarray, fs: float) -> Tuple[Dict[str, Measu
         "rrIntervalsMs": rr_ms[:100],
     }
     return measurements, graph_data
+
+
+def _top_signal_leads(signal: np.ndarray, limit: int = 4) -> List[np.ndarray]:
+    lead_first = ecg_pipeline.ensure_lead_first(signal)
+    ranking: List[Tuple[float, np.ndarray]] = []
+    for lead in lead_first:
+        strength = float(np.std(lead) + 0.35 * np.max(np.abs(lead)))
+        ranking.append((strength, lead))
+    ranking.sort(key=lambda item: item[0], reverse=True)
+    return [lead for _, lead in ranking[: max(1, limit)]]
+
+
+def _median_non_null(values: List[Optional[float]]) -> Optional[float]:
+    filtered = [float(v) for v in values if v is not None and np.isfinite(float(v))]
+    if not filtered:
+        return None
+    return float(np.median(np.asarray(filtered, dtype=np.float32)))
 
 
 def _estimate_region_and_coils(signal: np.ndarray, risk: str) -> Tuple[str, List[str]]:
@@ -1549,16 +1566,26 @@ def _run_signal_analysis(
         unit="%",
         source="MEASURED" if rr["pnn50_pct"] is not None else "UNAVAILABLE",
     )
-    qrs_ms = ecg_pipeline.estimate_qrs_duration_ms(
-        ecg_pipeline.representative_lead(processed),
-        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs),
-        fs,
-    )
-    intervals = ecg_pipeline.estimate_wave_intervals(
-        ecg_pipeline.representative_lead(processed),
-        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs),
-        fs,
-    )
+    candidate_leads = _top_signal_leads(processed, limit=4)
+    qrs_candidates: List[Optional[float]] = []
+    pr_candidates: List[Optional[float]] = []
+    qt_candidates: List[Optional[float]] = []
+    qtc_candidates: List[Optional[float]] = []
+    st_candidates: List[Optional[float]] = []
+    for lead in candidate_leads:
+        lead_peaks = ecg_pipeline.detect_r_peaks(lead, fs)
+        qrs_candidates.append(ecg_pipeline.estimate_qrs_duration_ms(lead, lead_peaks, fs))
+        lead_intervals = ecg_pipeline.estimate_wave_intervals(lead, lead_peaks, fs)
+        pr_candidates.append(lead_intervals["pr_interval_ms_estimate"])
+        qt_candidates.append(lead_intervals["qt_interval_ms_estimate"])
+        qtc_candidates.append(lead_intervals["qtc_bazett_ms_estimate"])
+        st_candidates.append(lead_intervals["st_deviation_estimate"])
+
+    qrs_ms = _median_non_null(qrs_candidates)
+    pr_ms = _median_non_null(pr_candidates)
+    qt_ms = _median_non_null(qt_candidates)
+    qtc_ms = _median_non_null(qtc_candidates)
+    st_mv = _median_non_null(st_candidates)
     measurements["qrs_duration"] = MeasurementOut(
         name="qrs_duration",
         value=qrs_ms,
@@ -1567,27 +1594,27 @@ def _run_signal_analysis(
     )
     measurements["pr_interval"] = MeasurementOut(
         name="pr_interval",
-        value=intervals["pr_interval_ms_estimate"],
+        value=pr_ms,
         unit="ms",
-        source="ESTIMATED" if intervals["pr_interval_ms_estimate"] is not None else "UNAVAILABLE",
+        source="ESTIMATED" if pr_ms is not None else "UNAVAILABLE",
     )
     measurements["qt_interval"] = MeasurementOut(
         name="qt_interval",
-        value=intervals["qt_interval_ms_estimate"],
+        value=qt_ms,
         unit="ms",
-        source="ESTIMATED" if intervals["qt_interval_ms_estimate"] is not None else "UNAVAILABLE",
+        source="ESTIMATED" if qt_ms is not None else "UNAVAILABLE",
     )
     measurements["qtc"] = MeasurementOut(
         name="qtc",
-        value=intervals["qtc_bazett_ms_estimate"],
+        value=qtc_ms,
         unit="ms",
-        source="ESTIMATED" if intervals["qtc_bazett_ms_estimate"] is not None else "UNAVAILABLE",
+        source="ESTIMATED" if qtc_ms is not None else "UNAVAILABLE",
     )
     measurements["st_deviation"] = MeasurementOut(
         name="st_deviation",
-        value=intervals["st_deviation_estimate"],
+        value=st_mv,
         unit="mV",
-        source="ESTIMATED" if intervals["st_deviation_estimate"] is not None else "UNAVAILABLE",
+        source="ESTIMATED" if st_mv is not None else "UNAVAILABLE",
     )
     rhythm_label = ecg_pipeline.classify_rhythm(
         rr.get("heart_rate_bpm"),

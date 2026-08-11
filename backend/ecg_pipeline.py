@@ -111,7 +111,28 @@ def preprocess_signal(signal: np.ndarray, fs: float, apply_notch: bool = True) -
 
 def representative_lead(signal: np.ndarray) -> np.ndarray:
     lead_first = ensure_lead_first(signal)
-    return lead_first[1] if lead_first.shape[0] >= 2 else lead_first[0]
+    if lead_first.shape[0] == 1:
+        return lead_first[0]
+
+    best_idx = 0
+    best_score = -np.inf
+    for idx, lead in enumerate(lead_first):
+        lead_std = float(np.std(lead))
+        if lead_std <= 1e-6:
+            continue
+        peaks, props = find_peaks(
+            lead,
+            distance=max(int(0.25 * DEFAULT_FS), 1),
+            prominence=max(0.30 * lead_std, 0.12),
+        )
+        peak_count = float(len(peaks))
+        peak_prom = float(np.mean(props["prominences"])) if len(peaks) and "prominences" in props else 0.0
+        abs_amp = float(np.max(np.abs(lead))) if lead.size else 0.0
+        score = (peak_count * 0.45) + (peak_prom * 1.7) + (lead_std * 0.9) + (abs_amp * 0.35)
+        if score > best_score:
+            best_score = score
+            best_idx = idx
+    return lead_first[best_idx]
 
 
 def detect_r_peaks(signal_1d: np.ndarray, fs: float) -> np.ndarray:
@@ -463,4 +484,3 @@ def region_and_coils(signal: np.ndarray, risk_level: str) -> tuple[str, list[str
 
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
