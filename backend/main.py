@@ -814,6 +814,67 @@ def _heuristic_model_score(
     return float(np.clip(score, 0.05, 0.95))
 
 
+def _image_signal_screening_score(
+    *,
+    bpm: int,
+    signal_quality: float,
+    measurements: Dict[str, "MeasurementOut"],
+    signal_signature: Optional[Dict[str, float]] = None,
+) -> float:
+    signature = signal_signature or {}
+    score = 0.10
+
+    rr = measurements.get("rr_interval")
+    if rr and rr.value is not None:
+        score += min(abs(float(rr.value) - 800.0) / 550.0, 1.0) * 0.08
+
+    score += min(abs(float(bpm) - 72.0) / 70.0, 1.0) * 0.16
+
+    pr = measurements.get("pr_interval")
+    if pr and pr.value is not None:
+        pr_val = float(pr.value)
+        if pr_val < 110 or pr_val > 220:
+            score += min(abs(pr_val - 165.0) / 120.0, 1.0) * 0.06
+
+    qrs = measurements.get("qrs_duration")
+    if qrs and qrs.value is not None:
+        qrs_val = float(qrs.value)
+        score += min(abs(qrs_val - 95.0) / 70.0, 1.0) * 0.17
+
+    qt = measurements.get("qt_interval")
+    if qt and qt.value is not None:
+        score += min(abs(float(qt.value) - 380.0) / 170.0, 1.0) * 0.06
+
+    qtc = measurements.get("qtc")
+    if qtc and qtc.value is not None:
+        qtc_val = float(qtc.value)
+        score += min(abs(qtc_val - 420.0) / 140.0, 1.0) * 0.15
+
+    st_dev = measurements.get("st_deviation")
+    if st_dev and st_dev.value is not None:
+        score += min(abs(float(st_dev.value)) / 0.30, 1.0) * 0.18
+
+    sdnn = measurements.get("sdnn")
+    if sdnn and sdnn.value is not None:
+        score += min(float(sdnn.value) / 180.0, 1.0) * 0.06
+
+    rmssd = measurements.get("rmssd")
+    if rmssd and rmssd.value is not None:
+        score += min(float(rmssd.value) / 220.0, 1.0) * 0.05
+
+    pnn50 = measurements.get("pnn50")
+    if pnn50 and pnn50.value is not None:
+        score += min(float(pnn50.value) / 100.0, 1.0) * 0.04
+
+    score += min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.60, 0.0), 1.0) * 0.07
+    score += min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.70, 0.0), 1.0) * 0.08
+    score += min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.35, 0.0), 1.0) * 0.08
+    score += min(max(float(signature.get("spectral_entropy", 0.0)) - 0.50, 0.0) / 0.40, 1.0) * 0.05
+    score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.06
+
+    return float(np.clip(score, 0.03, 0.97))
+
+
 def _signal_signature_metrics(
     raw_signal: np.ndarray,
     processed_signal: np.ndarray,
@@ -1686,25 +1747,42 @@ def _run_signal_analysis(
     model_error: Optional[str] = None
     raw_probability: Optional[float] = None
     inference_mode = "heuristic_fallback"
-    try:
-        model_bundle = _ensure_model()
-        features = ecg_pipeline.extract_model_features(processed, fs)
-        x_imputed = model_bundle.imputer.transform([features])
-        x_scaled = model_bundle.qt.transform(x_imputed)
-        probability_details = model_bundle.predict_details(x_scaled)
-        raw_probability = float(probability_details["raw_probability"])
-        score = float(probability_details["calibrated_probability"])
-        metadata = model_bundle.metadata
-        threshold = float(model_bundle.threshold)
-        inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
-    except HTTPException as exc:
-        model_error = str(exc.detail)
-        score = _heuristic_model_score(
+    if input_type == "image":
+        metadata = {
+            "model_version": "image_signal_screening_v2",
+            "pipeline_version": "image_ecg_signal_only_v2",
+            "feature_version": "rule_based_measurement_fusion_v2",
+            "feature_count": 0,
+            "threshold": 0.52,
+        }
+        threshold = 0.52
+        inference_mode = "image_signal_screening"
+        score = _image_signal_screening_score(
             bpm=bpm,
             signal_quality=signal_quality,
             measurements=measurements,
             signal_signature=signal_signature,
         )
+    else:
+        try:
+            model_bundle = _ensure_model()
+            features = ecg_pipeline.extract_model_features(processed, fs)
+            x_imputed = model_bundle.imputer.transform([features])
+            x_scaled = model_bundle.qt.transform(x_imputed)
+            probability_details = model_bundle.predict_details(x_scaled)
+            raw_probability = float(probability_details["raw_probability"])
+            score = float(probability_details["calibrated_probability"])
+            metadata = model_bundle.metadata
+            threshold = float(model_bundle.threshold)
+            inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
+        except HTTPException as exc:
+            model_error = str(exc.detail)
+            score = _heuristic_model_score(
+                bpm=bpm,
+                signal_quality=signal_quality,
+                measurements=measurements,
+                signal_signature=signal_signature,
+            )
 
     risk = ecg_pipeline.risk_band(score, threshold)
     region, coils = ecg_pipeline.region_and_coils(processed, risk)
@@ -1735,6 +1813,8 @@ def _run_signal_analysis(
         )
     if model_error:
         findings.append("Fallback signal-based inference was used because the deploy-time model runtime was unavailable.")
+    if input_type == "image":
+        findings.append("Image upload used signal-only ECG screening because the packaged V15 classifier is validated for WFDB multi-lead records, not paper/screenshot ECG inputs.")
     if recording_id:
         findings.append(f"Recording ID: {recording_id}")
     recommendations = [
