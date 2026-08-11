@@ -1899,17 +1899,93 @@ def _report_context_from_analysis(analysis: AnalysisResponse) -> Dict[str, Any]:
     }
 
 
-def _build_report_file(analysis: AnalysisResponse) -> Path:
-    if str(PROJECT_ROOT) not in sys.path:
-        sys.path.append(str(PROJECT_ROOT))
-    from new_report import generate_report_variant
+def _build_basic_report_pdf(report_path: Path, analysis: AnalysisResponse) -> None:
+    pdf = canvas.Canvas(str(report_path), pagesize=A4)
+    width, height = A4
+    y = height - 42
 
+    def line(text: str, *, size: int = 10, step: int = 14) -> None:
+        nonlocal y
+        pdf.setFont("Helvetica", size)
+        pdf.drawString(42, y, text[:120])
+        y -= step
+
+    pdf.setTitle(f"Cardiac Pre-Ischemia Report - {analysis.analysisId}")
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(42, y, "CARDIAC PRE-ISCHEMIA")
+    y -= 22
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(42, y, "AI-Assisted ECG Analysis Report")
+    y -= 20
+
+    line(f"Generated: {datetime.utcnow().isoformat()} UTC", size=9, step=12)
+    line(f"Analysis ID: {analysis.analysisId}", size=9, step=12)
+    line(f"Recording ID: {analysis.recordingId or '-'}", size=9, step=12)
+    line(f"Model Version: {analysis.modelVersion}", size=9, step=12)
+    line(f"Pipeline Version: {analysis.pipelineVersion}", size=9, step=18)
+
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(42, y, "Clinical Summary")
+    y -= 16
+    line(f"Classification: {analysis.classification}")
+    line(f"Risk Level: {analysis.riskLevel}")
+    line(f"Model Score: {analysis.modelScore * 100.0:.2f}%")
+    line(f"Heart Rate: {analysis.bpm} bpm")
+    line(
+        f"Signal Quality: {((analysis.signalQuality or 0.0) * 100.0):.1f}% ({analysis.signalQualityLabel or 'unknown'})",
+        step=18,
+    )
+
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(42, y, "Measurements")
+    y -= 16
+    for key in ["heart_rate", "rr_interval", "pr_interval", "qrs_duration", "qt_interval", "qtc", "st_deviation", "sdnn", "rmssd", "pnn50"]:
+        measurement = analysis.measurements.get(key)
+        if measurement is None:
+            continue
+        value = "-" if measurement.value is None else f"{measurement.value:.2f}"
+        unit = measurement.unit or ""
+        line(f"{measurement.name}: {value} {unit} [{measurement.source}]")
+        if y < 120:
+            pdf.showPage()
+            y = height - 42
+
+    y -= 4
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(42, y, "Key Findings")
+    y -= 16
+    for item in analysis.findings[:10]:
+        line(f"- {item}", size=9, step=12)
+        if y < 120:
+            pdf.showPage()
+            y = height - 42
+
+    y -= 4
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(42, y, "Recommendations")
+    y -= 16
+    for item in analysis.recommendations[:8]:
+        line(f"- {item}", size=9, step=12)
+        if y < 100:
+            pdf.showPage()
+            y = height - 42
+
+    pdf.save()
+
+
+def _build_report_file(analysis: AnalysisResponse) -> Path:
     report_uid = uuid.uuid4().hex
     report_path = REPORTS_DIR / f"{report_uid}.pdf"
-    context = _report_context_from_analysis(analysis)
-    # Use the approved layout as the master design reference for all generated reports.
-    _ = MASTER_REPORT_TEMPLATE
-    generate_report_variant(report_path, context, "approved")
+    try:
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.append(str(PROJECT_ROOT))
+        from new_report import generate_report_variant
+
+        context = _report_context_from_analysis(analysis)
+        _ = MASTER_REPORT_TEMPLATE
+        generate_report_variant(report_path, context, "approved")
+    except Exception:
+        _build_basic_report_pdf(report_path, analysis)
     return report_path
 
 
