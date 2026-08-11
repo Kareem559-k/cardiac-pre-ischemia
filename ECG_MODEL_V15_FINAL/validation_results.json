@@ -1,0 +1,5 @@
+{
+  "status": "pending_backend_reload",
+  "generated_on": "2026-08-09",
+  "note": "Use backend/validate_ecg_backend.ps1 after restarting the backend so validation results correspond to ECG_MODEL_V15_FINAL."
+}

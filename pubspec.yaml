@@ -1,0 +1,32 @@
+name: cardiac_pre_ischemia
+description: Cardiac Pre-Ischemia AI monitoring platform.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # المكتبات الأساسية
+  cupertino_icons: ^1.0.6
+  image_picker: ^1.0.7
+  file_picker: ^8.0.0
+  intl: ^0.20.2 # لإدارة التواريخ
+  http: ^1.2.2
+  geolocator: ^12.0.0
+  google_fonts: ^6.2.1
+  path_provider: ^2.1.3
+  flutter_blue_plus: ^1.33.5
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

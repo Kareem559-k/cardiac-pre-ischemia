@@ -1,0 +1,38 @@
+{
+  "lead_layout": "lead-first",
+  "sampling_rate_policy": "use WFDB fs from the record; default 100 Hz for image-derived synthetic traces only",
+  "bandpass_filter": {
+    "type": "butterworth",
+    "order": 3,
+    "low_cut_hz": 0.5,
+    "high_cut_hz": 40.0,
+    "implementation": "scipy.signal.filtfilt"
+  },
+  "notch_filter": {
+    "enabled": true,
+    "frequency_hz": 50.0,
+    "quality_factor": 30.0,
+    "condition": "apply only when fs > 2 * notch_frequency"
+  },
+  "normalization": {
+    "method": "per-lead z-score",
+    "mean_center": true,
+    "std_scale": true,
+    "zero_std_policy": "replace zero std with 1.0"
+  },
+  "r_peak_detection": {
+    "distance_seconds": 0.25,
+    "prominence_rule": "max(0.35 * std(signal), 0.15)"
+  },
+  "signal_quality": {
+    "uses_raw_and_processed_signal": true,
+    "outputs": [
+      "signal_quality_score",
+      "noise_level",
+      "baseline_wander_ratio",
+      "noise_ratio",
+      "clipping_ratio",
+      "nan_ratio"
+    ]
+  }
+}
