@@ -867,8 +867,11 @@ def _image_signal_screening_score(
         score += min(float(pnn50.value) / 100.0, 1.0) * 0.04
 
     score += min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.60, 0.0), 1.0) * 0.07
+    score += min(max(float(signature.get("raw_lead_strength_cv", 0.0)) / 0.70, 0.0), 1.0) * 0.08
     score += min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.70, 0.0), 1.0) * 0.08
     score += min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.35, 0.0), 1.0) * 0.08
+    score += min(max(float(signature.get("slope_energy", 0.0)) / 0.35, 0.0), 1.0) * 0.05
+    score += min(max(float(signature.get("zero_crossing_rate", 0.0)) / 0.20, 0.0), 1.0) * 0.04
     score += min(max(float(signature.get("spectral_entropy", 0.0)) - 0.50, 0.0) / 0.40, 1.0) * 0.05
     score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.06
 
@@ -890,9 +893,18 @@ def _signal_signature_metrics(
         [float(np.std(lead) + 0.35 * np.max(np.abs(lead))) for lead in usable],
         dtype=np.float32,
     )
+    raw_usable = raw[: min(12, raw.shape[0])]
+    raw_lead_strength = np.asarray(
+        [float(np.std(lead) + 0.35 * np.max(np.abs(lead))) for lead in raw_usable],
+        dtype=np.float32,
+    )
     lead_strength_mean = float(np.mean(lead_strength)) if lead_strength.size else 0.0
     lead_strength_cv = (
         float(np.std(lead_strength) / (lead_strength_mean + 1e-6)) if lead_strength.size else 0.0
+    )
+    raw_strength_mean = float(np.mean(raw_lead_strength)) if raw_lead_strength.size else 0.0
+    raw_strength_cv = (
+        float(np.std(raw_lead_strength) / (raw_strength_mean + 1e-6)) if raw_lead_strength.size else 0.0
     )
 
     lead_diversity_index = 0.0
@@ -904,6 +916,8 @@ def _signal_signature_metrics(
             lead_diversity_index = float(np.clip(1.0 - np.mean(np.abs(upper)), 0.0, 1.0))
 
     rep = ecg_pipeline.representative_lead(processed)
+    zero_crossings = float(np.mean(np.diff(np.signbit(rep)).astype(np.float32))) if rep.size > 1 else 0.0
+    slope_energy = float(np.mean(np.abs(np.diff(rep)))) if rep.size > 1 else 0.0
     fft_values = np.abs(fft(rep))
     half = np.asarray(fft_values[: max(len(fft_values) // 2, 1)], dtype=np.float64)
     if half.size > 1 and float(np.sum(half)) > 0:
@@ -942,7 +956,11 @@ def _signal_signature_metrics(
         "lead_count": float(raw.shape[0]),
         "lead_strength_mean": round(lead_strength_mean, 4),
         "lead_strength_cv": round(float(lead_strength_cv), 4),
+        "raw_lead_strength_mean": round(raw_strength_mean, 4),
+        "raw_lead_strength_cv": round(float(raw_strength_cv), 4),
         "lead_diversity_index": round(float(lead_diversity_index), 4),
+        "zero_crossing_rate": round(float(zero_crossings), 4),
+        "slope_energy": round(float(slope_energy), 4),
         "spectral_entropy": round(float(spectral_entropy), 4),
         "rr_irregularity_index": round(float(rr_irregularity_index), 4),
         "baseline_wander_ratio": round(float(quality.get("baseline_wander_ratio", 0.0)), 4),
@@ -1211,6 +1229,12 @@ def _normalize_lead_signal(signal: np.ndarray) -> np.ndarray:
     return np.clip(arr, -6.0, 6.0).astype(np.float32)
 
 
+def _center_lead_signal(signal: np.ndarray) -> np.ndarray:
+    arr = np.asarray(signal, dtype=np.float32).copy()
+    arr -= float(np.mean(arr))
+    return arr.astype(np.float32)
+
+
 def _resample_signal_1d(signal: np.ndarray, target_width: int) -> np.ndarray:
     if signal.size == target_width:
         return signal.astype(np.float32)
@@ -1241,6 +1265,69 @@ def _extract_trace_from_mask(mask: np.ndarray) -> Optional[np.ndarray]:
     return signal
 
 
+def _finalize_image_leads(leads: List[np.ndarray], target_width: int) -> Optional[np.ndarray]:
+    if len(leads) < 6:
+        return None
+
+    prepared: List[np.ndarray] = []
+    for lead in leads[:12]:
+        lead_resampled = _resample_signal_1d(lead, target_width)
+        lead_centered = _center_lead_signal(lead_resampled)
+        if float(np.std(lead_centered)) < 0.02:
+            continue
+        prepared.append(lead_centered)
+
+    if len(prepared) < 6:
+        return None
+
+    lead_stds = np.asarray([max(float(np.std(lead)), 1e-6) for lead in prepared], dtype=np.float32)
+    global_scale = float(np.median(lead_stds)) if lead_stds.size else 1.0
+    if global_scale <= 1e-6:
+        global_scale = 1.0
+
+    finalized = [np.clip(lead / global_scale, -8.0, 8.0).astype(np.float32) for lead in prepared]
+    if len(finalized) > 12:
+        finalized = finalized[:12]
+    return np.vstack(finalized).astype(np.float32)
+
+
+def _extract_standard_layout_multilead(
+    trace: np.ndarray,
+    row_boundaries: List[int],
+    target_width: int,
+) -> Optional[np.ndarray]:
+    h, w = trace.shape
+    usable_rows = len(row_boundaries) - 1
+    if usable_rows < 3:
+        return None
+
+    row_spans = [(row_boundaries[idx], row_boundaries[idx + 1]) for idx in range(usable_rows)]
+    row_spans = sorted(row_spans, key=lambda item: item[1] - item[0], reverse=True)[:4]
+    row_spans = sorted(row_spans, key=lambda item: item[0])
+    signal_rows = row_spans[:3]
+
+    leads: List[np.ndarray] = []
+    col_edges = np.linspace(0, w, 5, dtype=int)
+    for top, bottom in signal_rows:
+        top = max(top - 4, 0)
+        bottom = min(bottom + 4, h)
+        if bottom - top < 10:
+            continue
+        row_mask = trace[top:bottom, :]
+        for col_idx in range(4):
+            left = int(col_edges[col_idx])
+            right = int(col_edges[col_idx + 1])
+            if right - left < 24:
+                continue
+            cell_mask = row_mask[:, left:right]
+            signal = _extract_trace_from_mask(cell_mask)
+            if signal is None:
+                continue
+            leads.append(signal)
+
+    return _finalize_image_leads(leads, target_width)
+
+
 def _extract_multilead_from_image_mask(trace: np.ndarray, target_width: int) -> Optional[np.ndarray]:
     h, w = trace.shape
     row_energy = np.mean(trace > 0, axis=1).astype(np.float32)
@@ -1267,6 +1354,10 @@ def _extract_multilead_from_image_mask(trace: np.ndarray, target_width: int) -> 
         row_boundaries.append(int((left_peak + right_peak) // 2))
     row_boundaries.append(h)
 
+    standard_layout = _extract_standard_layout_multilead(trace, row_boundaries, target_width)
+    if standard_layout is not None:
+        return standard_layout
+
     leads: List[np.ndarray] = []
     n_cols = 4
     col_edges = np.linspace(0, w, n_cols + 1, dtype=int)
@@ -1285,19 +1376,12 @@ def _extract_multilead_from_image_mask(trace: np.ndarray, target_width: int) -> 
             cell_signal = _extract_trace_from_mask(cell_mask)
             if cell_signal is None:
                 continue
-            cell_signal = _resample_signal_1d(cell_signal, target_width)
-            cell_signal = _normalize_lead_signal(cell_signal)
-            if float(np.std(cell_signal)) < 0.08:
-                continue
             leads.append(cell_signal)
-
-    if len(leads) < 6:
-        return None
 
     if len(leads) > 12:
         ranked = sorted(leads, key=lambda lead: float(np.std(lead)), reverse=True)
         leads = ranked[:12]
-    return np.vstack(leads).astype(np.float32)
+    return _finalize_image_leads(leads, target_width)
 
 
 def _image_to_signal(image_path: str, target_width: int = 1200) -> np.ndarray:
