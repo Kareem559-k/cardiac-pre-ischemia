@@ -22,6 +22,10 @@ Completed:
 - Patient flow was simplified so the patient can register/login and use the app without selecting a doctor.
 - Patient profile now includes optional doctor linking through a `+` action and bottom-sheet doctor picker.
 - Legacy `Patient Setup` screen was changed so it no longer asks the patient to choose a doctor before entering the patient workspace.
+- Session bootstrap now falls back to the saved local workspace when `/auth/me` fails transiently instead of forcing logout on refresh.
+- Web bootstrap now unregisters old service workers and loads Flutter without a service worker to avoid stale cached deployments.
+- Backend now serves `index.html` with explicit no-cache headers so fresh deployments appear immediately.
+- `build/web` was regenerated on `2026-08-11` so Railway can publish the current Flutter UI instead of an older build artifact.
 - Backend now exposes inference transparency fields and `/debug/model-probe`.
 - Backend separates image screening from WFDB model inference instead of forcing all image inputs through the packaged WFDB classifier.
 - Backend includes safe fallback PDF generation if the advanced report renderer fails.
@@ -33,9 +37,9 @@ Currently being worked on:
 
 Broken / unresolved:
 - Different ECG inputs may still yield very similar high-confidence predictions; root cause is not yet scientifically verified.
-- End-to-end deployed behavior after the latest session/session-UX changes is not yet verified from this environment.
+- End-to-end deployed behavior after the latest refresh/cache/session fixes is not yet verified from this environment.
 - Some patient-facing copy outside the main patient path may still contain wording related to follow-up/care coordination even though doctor linking is now optional.
-- The latest patient setup fix will not appear in production until the app is redeployed.
+- The latest patient setup fix and refresh/cache fixes will not appear in production until the app is redeployed.
 
 NOT verified:
 - Multi-ECG probability distribution after latest deploy
@@ -49,6 +53,7 @@ Remaining to be done:
 - Run `/health` and `/debug/model-probe`
 - Perform multi-ECG regression test
 - Verify report generation on multiple distinct ECG cases
+- Verify refresh behavior on deployed web after the rebuilt bundle is live
 - Continue wording cleanup only after inference behavior is verified
 
 # ML PIPELINE STATUS
@@ -216,12 +221,41 @@ Current verified evidence:
 - Decision: Keep change
 - Next step: Redeploy and verify the old patient setup screen no longer shows doctor selection or the warning banner
 
+## EXP-2026-08-11-006
+- Date: `2026-08-11`
+- Purpose: Fix stale deployed web builds and stop refresh from forcing logout on transient auth checks
+- Files changed:
+  - `lib/main.dart`
+  - `backend/main.py`
+  - `web/flutter_bootstrap.js`
+  - `build/web/*`
+  - `PROJECT_STATE.md`
+- Model version: `ECG_MODEL_V15_FINAL`
+- Dataset/split: `N/A`
+- Parameters:
+  - `SessionBootstrapPage` now restores the saved workspace if `/auth/me` fails instead of clearing the session immediately
+  - Custom web bootstrap unregisters old service workers and disables new service-worker loading
+  - Backend serves `index.html` with explicit `no-store` headers
+  - Flutter web production bundle regenerated successfully on `2026-08-11`
+- Results:
+  - `build/web/main.dart.js` timestamp updated on `2026-08-11`
+  - Old patient setup warning text is no longer present in the rebuilt web bundle
+  - Railway now has a fresh deployable artifact that matches current source changes
+- Problems discovered:
+  - Full runtime verification against the deployed public URL has not yet been performed from this session
+- Decision: Keep change
+- Next step: Push and redeploy, then verify refresh behavior and patient registration flow on the live URL
+
 # FILES CHANGED
 
 - `lib/main.dart`
   - Main Flutter app, auth flow, patient/doctor workflows, session persistence, result pages
 - `backend/main.py`
   - FastAPI backend, analysis endpoints, report generation, inference routing, `/debug/model-probe`
+- `web/flutter_bootstrap.js`
+  - Custom Flutter web bootstrap that unregisters stale service workers and disables web service-worker loading
+- `build/web`
+  - Regenerated deployed Flutter web bundle copied by Docker/Railway
 - `backend/ecg_pipeline.py`
   - ECG signal processing and runtime feature extraction
 - `new_report/report_data.py`
@@ -248,7 +282,7 @@ Current verified evidence:
 3. Latest deployed production environment is not verified from this session after the newest commits.
 4. Image-derived ECG analysis may still lose diversity relative to true WFDB multi-lead signals.
 5. Some non-critical patient-facing wording may still imply follow-up/care ownership in secondary screens.
-6. Production may still be serving the old patient setup screen until redeploy.
+6. Production may still be serving the old patient setup screen or old refresh behavior until redeploy.
 
 # VERIFIED FACTS
 
@@ -268,6 +302,8 @@ Current verified evidence:
   - `Continue to Patient Workspace`
   - `Direct access`
   - a patient setup flow without the old doctor dropdown or warning banner
+- Local `build/web/main.dart.js` no longer contains the old `No doctors are registered yet...` warning string after the rebuild on `2026-08-11`.
+- Local `build/web/flutter_bootstrap.js` now unregisters old service workers and loads Flutter with `serviceWorkerSettings: null`.
 - `backend/main.py` contains:
   - `predict_details()`
   - `rawProbability`
@@ -275,12 +311,13 @@ Current verified evidence:
   - `inferenceMode`
   - `/debug/model-probe`
   - `image_signal_screening_v2` path for image inputs
+- `backend/main.py` now sends `Cache-Control: no-store` headers for `index.html` responses.
 - `pubspec.yaml` currently includes `shared_preferences` and app version `1.0.0+1`.
 
 # NOT VERIFIED
 
 - Real production output of `/debug/model-probe`
-- Whether production is currently serving commit `de17d51`
+- Whether production is currently serving the rebuilt `build/web` that includes the latest refresh/cache/patient-setup fixes
 - Whether the latest patient session persistence works correctly on deployed mobile/web
 - Whether current PDF generation matches expectations on multiple distinct ECG cases
 - Whether identical-looking outputs are caused more by model saturation, feature mismatch, fallback behavior, or front-end display reuse

@@ -3386,7 +3386,14 @@ def serve_web_root() -> FileResponse:
     index_path = WEB_BUILD_DIR / "index.html"
     if not index_path.is_file():
         raise HTTPException(status_code=404, detail="Web build not found")
-    return FileResponse(index_path)
+    return FileResponse(
+        index_path,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
@@ -3422,4 +3429,11 @@ def serve_web_or_asset(full_path: str) -> FileResponse:
     first_segment = full_path.split("/", 1)[0]
     if "." in full_path or first_segment in blocked_prefixes:
         raise HTTPException(status_code=404, detail="Resource not found")
-    return FileResponse(index_path)
+    return FileResponse(
+        index_path,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )

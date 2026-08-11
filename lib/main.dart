@@ -977,9 +977,25 @@ class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
               : RoleSelectionPage(username: resolvedName);
       }
     } catch (_) {
-      ApiService.clearAuth();
-      await AppState.clearSessionState();
-      return const SplashScreen();
+      final fallbackName = snapshot.username.trim().isEmpty ? 'User' : snapshot.username.trim();
+      ApiService.restoreAuth(
+        token: snapshot.token,
+        role: snapshot.role,
+        username: fallbackName,
+      );
+      switch (snapshot.workspace) {
+        case 'doctor_dashboard':
+          final doctorName = AppState.currentDoctorProfile?.name ?? fallbackName;
+          return DoctorDashboard(username: doctorName);
+        case 'patient_home':
+          return PatientHome(username: fallbackName);
+        case 'role_selection':
+          return RoleSelectionPage(username: fallbackName);
+        default:
+          return snapshot.role == 'patient'
+              ? PatientHome(username: fallbackName)
+              : RoleSelectionPage(username: fallbackName);
+      }
     }
   }
 
