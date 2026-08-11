@@ -15,9 +15,12 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SessionStore.instance.init();
   runApp(const CardiacApp());
 }
 
@@ -524,12 +527,160 @@ class AppDoctor {
     required this.email,
     required this.about,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'specialty': specialty,
+      'clinic': clinic,
+      'phone': phone,
+      'email': email,
+      'about': about,
+    };
+  }
+
+  factory AppDoctor.fromJson(Map<String, dynamic> json) {
+    return AppDoctor(
+      id: json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      specialty: json['specialty'] as String? ?? '',
+      clinic: json['clinic'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      about: json['about'] as String? ?? '',
+    );
+  }
+}
+
+class SessionSnapshot {
+  final String token;
+  final String role;
+  final String username;
+  final String workspace;
+  final AppDoctor? currentDoctor;
+  final AppDoctor? selectedDoctor;
+
+  const SessionSnapshot({
+    required this.token,
+    required this.role,
+    required this.username,
+    required this.workspace,
+    this.currentDoctor,
+    this.selectedDoctor,
+  });
+}
+
+class SessionStore {
+  SessionStore._();
+  static final SessionStore instance = SessionStore._();
+
+  static const _tokenKey = 'session_token';
+  static const _roleKey = 'session_role';
+  static const _usernameKey = 'session_username';
+  static const _workspaceKey = 'session_workspace';
+  static const _currentDoctorKey = 'session_current_doctor';
+  static const _selectedDoctorKey = 'session_selected_doctor';
+  static const _isArabicKey = 'pref_is_arabic';
+  static const _isDarkModeKey = 'pref_is_dark';
+  static const _developerModeKey = 'pref_dev_mode';
+  static const _apiBaseUrlKey = 'pref_api_base_url';
+
+  late SharedPreferences _prefs;
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  Future<void> saveSettings({
+    required bool isArabic,
+    required bool isDarkMode,
+    required bool developerMode,
+    required String apiBaseUrl,
+  }) async {
+    await _prefs.setBool(_isArabicKey, isArabic);
+    await _prefs.setBool(_isDarkModeKey, isDarkMode);
+    await _prefs.setBool(_developerModeKey, developerMode);
+    await _prefs.setString(_apiBaseUrlKey, apiBaseUrl);
+  }
+
+  void restoreSettings() {
+    AppState.isArabic.value = _prefs.getBool(_isArabicKey) ?? false;
+    AppState.isDarkMode.value = _prefs.getBool(_isDarkModeKey) ?? false;
+    AppState.developerMode.value = _prefs.getBool(_developerModeKey) ?? false;
+    final savedUrl = _prefs.getString(_apiBaseUrlKey);
+    if (savedUrl != null && savedUrl.trim().isNotEmpty) {
+      AppState.apiBaseUrl.value = savedUrl.trim();
+    }
+  }
+
+  Future<void> saveSession({
+    required String token,
+    required String role,
+    required String username,
+    required String workspace,
+    AppDoctor? currentDoctor,
+    AppDoctor? selectedDoctor,
+  }) async {
+    await _prefs.setString(_tokenKey, token);
+    await _prefs.setString(_roleKey, role);
+    await _prefs.setString(_usernameKey, username);
+    await _prefs.setString(_workspaceKey, workspace);
+    if (currentDoctor != null) {
+      await _prefs.setString(_currentDoctorKey, jsonEncode(currentDoctor.toJson()));
+    } else {
+      await _prefs.remove(_currentDoctorKey);
+    }
+    if (selectedDoctor != null) {
+      await _prefs.setString(_selectedDoctorKey, jsonEncode(selectedDoctor.toJson()));
+    } else {
+      await _prefs.remove(_selectedDoctorKey);
+    }
+  }
+
+  SessionSnapshot? restoreSession() {
+    final token = _prefs.getString(_tokenKey);
+    final role = _prefs.getString(_roleKey);
+    final username = _prefs.getString(_usernameKey);
+    final workspace = _prefs.getString(_workspaceKey);
+    if (token == null || role == null || username == null || workspace == null) {
+      return null;
+    }
+    AppDoctor? parseDoctor(String key) {
+      final raw = _prefs.getString(key);
+      if (raw == null || raw.trim().isEmpty) return null;
+      try {
+        return AppDoctor.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return SessionSnapshot(
+      token: token,
+      role: role,
+      username: username,
+      workspace: workspace,
+      currentDoctor: parseDoctor(_currentDoctorKey),
+      selectedDoctor: parseDoctor(_selectedDoctorKey),
+    );
+  }
+
+  Future<void> clearSession() async {
+    await _prefs.remove(_tokenKey);
+    await _prefs.remove(_roleKey);
+    await _prefs.remove(_usernameKey);
+    await _prefs.remove(_workspaceKey);
+    await _prefs.remove(_currentDoctorKey);
+    await _prefs.remove(_selectedDoctorKey);
+  }
 }
 
 class AppState {
   static int _nextDoctorId = 4;
   static AppDoctor? currentDoctorProfile;
   static AppDoctor? selectedDoctor;
+  static String currentWorkspace = 'guest';
   static final ValueNotifier<bool> isArabic = ValueNotifier(false);
   static final ValueNotifier<bool> isDarkMode = ValueNotifier(false);
   static final ValueNotifier<bool> developerMode = ValueNotifier(false);
@@ -547,6 +698,9 @@ class AppState {
       doctors.add(doctor);
     } else {
       doctors[idx] = doctor;
+    }
+    if (doctor.id >= _nextDoctorId) {
+      _nextDoctorId = doctor.id + 1;
     }
   }
 
@@ -569,7 +723,64 @@ class AppState {
     );
     upsertDoctor(doctor);
     currentDoctorProfile = doctor;
+    unawaited(persistSession());
     return doctor;
+  }
+
+  static Future<void> persistSettings() {
+    return SessionStore.instance.saveSettings(
+      isArabic: isArabic.value,
+      isDarkMode: isDarkMode.value,
+      developerMode: developerMode.value,
+      apiBaseUrl: apiBaseUrl.value,
+    );
+  }
+
+  static Future<void> persistSession({
+    String? token,
+    String? role,
+    String? username,
+    String? workspace,
+  }) async {
+    final activeToken = token ?? ApiService.currentToken;
+    final activeRole = role ?? ApiService.currentRole;
+    final activeUsername = username ?? ApiService.currentUsername;
+    final activeWorkspace = workspace ?? currentWorkspace;
+    if (activeToken == null ||
+        activeRole == null ||
+        activeUsername == null ||
+        activeWorkspace.trim().isEmpty) {
+      return;
+    }
+    await SessionStore.instance.saveSession(
+      token: activeToken,
+      role: activeRole,
+      username: activeUsername,
+      workspace: activeWorkspace,
+      currentDoctor: currentDoctorProfile,
+      selectedDoctor: selectedDoctor,
+    );
+  }
+
+  static void restoreDoctorContext({
+    AppDoctor? currentDoctor,
+    AppDoctor? selectedDoctorValue,
+  }) {
+    if (currentDoctor != null) {
+      upsertDoctor(currentDoctor);
+      currentDoctorProfile = currentDoctor;
+    }
+    if (selectedDoctorValue != null) {
+      upsertDoctor(selectedDoctorValue);
+      selectedDoctor = selectedDoctorValue;
+    }
+  }
+
+  static Future<void> clearSessionState() async {
+    currentDoctorProfile = null;
+    selectedDoctor = null;
+    currentWorkspace = 'guest';
+    await SessionStore.instance.clearSession();
   }
 }
 
@@ -691,10 +902,99 @@ class CardiacApp extends StatelessWidget {
                   child: child ?? const SizedBox.shrink(),
                 );
               },
-              home: const SplashScreen(),
+              home: const SessionBootstrapPage(),
             );
           },
         );
+      },
+    );
+  }
+}
+
+class SessionBootstrapPage extends StatefulWidget {
+  const SessionBootstrapPage({super.key});
+
+  @override
+  State<SessionBootstrapPage> createState() => _SessionBootstrapPageState();
+}
+
+class _SessionBootstrapPageState extends State<SessionBootstrapPage> {
+  late final Future<Widget> _futureHome;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureHome = _resolveHome();
+  }
+
+  Future<Widget> _resolveHome() async {
+    SessionStore.instance.restoreSettings();
+    final snapshot = SessionStore.instance.restoreSession();
+    if (snapshot == null) {
+      return const SplashScreen();
+    }
+
+    ApiService.restoreAuth(
+      token: snapshot.token,
+      role: snapshot.role,
+      username: snapshot.username,
+    );
+    AppState.restoreDoctorContext(
+      currentDoctor: snapshot.currentDoctor,
+      selectedDoctorValue: snapshot.selectedDoctor,
+    );
+    AppState.currentWorkspace = snapshot.workspace;
+
+    final api = ApiService(baseUrl: _apiBaseUrl());
+    try {
+      final me = await api.me();
+      final resolvedName = (me.name ?? snapshot.username).trim().isEmpty
+          ? snapshot.username
+          : (me.name ?? snapshot.username).trim();
+      ApiService.restoreAuth(
+        token: snapshot.token,
+        role: me.role,
+        username: resolvedName,
+      );
+      await AppState.persistSession(
+        token: snapshot.token,
+        role: me.role,
+        username: resolvedName,
+        workspace: snapshot.workspace,
+      );
+
+      switch (snapshot.workspace) {
+        case 'doctor_dashboard':
+          final doctorName = AppState.currentDoctorProfile?.name ?? resolvedName;
+          return DoctorDashboard(username: doctorName);
+        case 'patient_home':
+          return PatientHome(username: resolvedName);
+        case 'role_selection':
+          return RoleSelectionPage(username: resolvedName);
+        default:
+          return me.role == 'patient'
+              ? PatientHome(username: resolvedName)
+              : RoleSelectionPage(username: resolvedName);
+      }
+    } catch (_) {
+      ApiService.clearAuth();
+      await AppState.clearSessionState();
+      return const SplashScreen();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _futureHome,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return snapshot.data ?? const SplashScreen();
       },
     );
   }
@@ -1147,6 +1447,18 @@ class _LoginPageState extends State<LoginPage> {
         mobile: mobile,
         password: password,
       );
+      ApiService.restoreAuth(
+        token: user.token,
+        role: user.role,
+        username: (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim(),
+      );
+      AppState.currentWorkspace = 'role_selection';
+      await AppState.persistSession(
+        token: user.token,
+        role: user.role,
+        username: (user.name ?? mobile).trim().isEmpty ? mobile : (user.name ?? mobile).trim(),
+        workspace: 'role_selection',
+      );
       if (!mounted) return;
       final displayName = (user.name ?? mobile).trim();
       Navigator.pushReplacement(
@@ -1415,16 +1727,36 @@ class _RegisterPageState extends State<RegisterPage> {
         name: name,
         specialty: _role == 'doctor' ? _specialty.text.trim() : null,
       );
-      if (!mounted) return;
-      final displayName = (user.name ?? name).trim().isEmpty
+      final resolvedDisplayName = (user.name ?? name).trim().isEmpty
           ? name
           : (user.name ?? name).trim();
+      ApiService.restoreAuth(
+        token: user.token,
+        role: user.role,
+        username: resolvedDisplayName,
+      );
+      if (!mounted) return;
+      final displayName = resolvedDisplayName;
       if (user.role == 'doctor') {
+        AppState.currentWorkspace = 'role_selection';
+        await AppState.persistSession(
+          token: user.token,
+          role: user.role,
+          username: displayName,
+          workspace: 'role_selection',
+        );
         Navigator.pushReplacement(
           context,
           _fadeRoute(DoctorProfileSetupPage(initialName: displayName)),
         );
       } else {
+        AppState.currentWorkspace = 'patient_home';
+        await AppState.persistSession(
+          token: user.token,
+          role: user.role,
+          username: displayName,
+          workspace: 'patient_home',
+        );
         Navigator.pushReplacement(
           context,
           _fadeRoute(PatientHome(username: displayName)),
@@ -2256,8 +2588,16 @@ class RoleSelectionPage extends StatelessWidget {
                 onTap: () {
                   final doctor = AppState.currentDoctorProfile;
                   if (doctor == null) {
+                    AppState.currentWorkspace = 'role_selection';
+                    unawaited(AppState.persistSession(workspace: 'role_selection'));
                     Navigator.push(context, _fadeRoute(const DoctorProfileSetupPage(initialName: '')));
                   } else {
+                    ApiService.currentUsername = doctor.name;
+                    AppState.currentWorkspace = 'doctor_dashboard';
+                    unawaited(AppState.persistSession(
+                      username: doctor.name,
+                      workspace: 'doctor_dashboard',
+                    ));
                     Navigator.push(context, _fadeRoute(DoctorDashboard(username: doctor.name)));
                   }
                 },
@@ -2269,6 +2609,8 @@ class RoleSelectionPage extends StatelessWidget {
                 sub: _t('Personal monitoring, ECG upload, reports, and care follow-up', 'مراقبة شخصية ورفع ECG والتقارير والمتابعة مع الطبيب'),
                 color: AppColors.success,
                 onTap: () {
+                  AppState.currentWorkspace = 'role_selection';
+                  unawaited(AppState.persistSession(workspace: 'role_selection'));
                   Navigator.push(context, _fadeRoute(const DoctorSelectionPage(username: '')));
                 },
               ),
@@ -2775,6 +3117,12 @@ class _DoctorProfileSetupPageState extends State<DoctorProfileSetupPage> {
           '${_name.text.trim().replaceAll(' ', '.').toLowerCase()}@clinic.com',
       about: 'Cardiac specialist available for follow-ups.',
     );
+    ApiService.currentUsername = doctor.name;
+    AppState.currentWorkspace = 'doctor_dashboard';
+    unawaited(AppState.persistSession(
+      username: doctor.name,
+      workspace: 'doctor_dashboard',
+    ));
     Navigator.pushReplacement(
       context,
       _fadeRoute(DoctorDashboard(username: doctor.name)),
@@ -2928,6 +3276,12 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     AppState.selectedDoctor = _selected;
+    ApiService.currentUsername = _name.text.trim();
+    AppState.currentWorkspace = 'patient_home';
+    unawaited(AppState.persistSession(
+      username: _name.text.trim(),
+      workspace: 'patient_home',
+    ));
     Navigator.pushReplacement(
       context,
       _fadeRoute(PatientHome(username: _name.text.trim())),
@@ -3109,6 +3463,12 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   @override
   void initState() {
     super.initState();
+    ApiService.currentUsername = widget.username;
+    AppState.currentWorkspace = 'doctor_dashboard';
+    unawaited(AppState.persistSession(
+      username: widget.username,
+      workspace: 'doctor_dashboard',
+    ));
     _statsFuture = api.getStats();
   }
 
@@ -6263,8 +6623,20 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _save() {
     AppState.apiBaseUrl.value = _api.text.trim();
+    unawaited(AppState.persistSettings());
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_t('Saved', 'تم الحفظ'))),
+    );
+  }
+
+  Future<void> _signOut() async {
+    ApiService.clearAuth();
+    await AppState.clearSessionState();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      _fadeRoute(const SplashScreen()),
+      (route) => false,
     );
   }
 
@@ -6355,7 +6727,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       builder: (context, isArabic, _) {
                         return SwitchListTile(
                           value: isArabic,
-                          onChanged: (v) => AppState.isArabic.value = v,
+                          onChanged: (v) {
+                            AppState.isArabic.value = v;
+                            unawaited(AppState.persistSettings());
+                          },
                           title: Text(_t('Arabic Language', 'اللغة العربية')),
                           subtitle: Text(
                             _t('Switch interface copy between English and Arabic.', 'التبديل بين اللغة الإنجليزية والعربية.'),
@@ -6369,7 +6744,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       builder: (context, enabled, _) {
                         return SwitchListTile(
                           value: enabled,
-                          onChanged: (v) => AppState.isDarkMode.value = v,
+                          onChanged: (v) {
+                            AppState.isDarkMode.value = v;
+                            unawaited(AppState.persistSettings());
+                          },
                           title: Text(_t('Dark Theme', 'الثيم الداكن')),
                           subtitle: Text(
                             _t('Use the darker visual mode for demos and low-light review.', 'استخدم النمط الداكن للعروض والمراجعة في الإضاءة المنخفضة.'),
@@ -6401,7 +6779,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             SwitchListTile(
                               value: enabled,
-                              onChanged: (v) => AppState.developerMode.value = v,
+                              onChanged: (v) {
+                                AppState.developerMode.value = v;
+                                unawaited(AppState.persistSettings());
+                              },
                               title: Text(_t('Enable advanced connectivity controls', 'تفعيل إعدادات الاتصال المتقدمة')),
                               subtitle: Text(_t('Use this only for demo setup, local server changes, and debugging.', 'استخدم هذا فقط لإعداد العرض أو تغيير الخادم المحلي أو التصحيح.')),
                               contentPadding: EdgeInsets.zero,
@@ -6455,6 +6836,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => Navigator.push(
                     context,
                     _fadeRoute(const SystemEnhancementsPage()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              GlassPanel(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _signOut,
+                    icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
+                    label: Text(
+                      _t('Sign out', 'تسجيل الخروج'),
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -6583,6 +6983,17 @@ class PatientHome extends StatefulWidget {
 
 class _PatientHomeState extends State<PatientHome> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.currentUsername = widget.username;
+    AppState.currentWorkspace = 'patient_home';
+    unawaited(AppState.persistSession(
+      username: widget.username,
+      workspace: 'patient_home',
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9883,7 +10294,27 @@ class ApiService {
   ApiService({required this.baseUrl});
 
   static String? _token;
+  static String? currentRole;
+  static String? currentUsername;
   static const Duration _timeout = Duration(seconds: 15);
+
+  static String? get currentToken => _token;
+
+  static void restoreAuth({
+    required String token,
+    required String role,
+    required String username,
+  }) {
+    _token = token;
+    currentRole = role;
+    currentUsername = username;
+  }
+
+  static void clearAuth() {
+    _token = null;
+    currentRole = null;
+    currentUsername = null;
+  }
 
   Map<String, String> _authHeaders() {
     if (_token == null) return {};
@@ -9949,7 +10380,11 @@ class ApiService {
       throw Exception('API error: ${res.statusCode} ${res.body}');
     }
     final user = AuthUser.fromJson(jsonDecode(res.body));
-    _token = user.token;
+    restoreAuth(
+      token: user.token,
+      role: user.role,
+      username: user.name ?? email,
+    );
     return user;
   }
 
@@ -9968,7 +10403,26 @@ class ApiService {
       throw Exception('API error: ${res.statusCode} ${res.body}');
     }
     final user = AuthUser.fromJson(jsonDecode(res.body));
-    _token = user.token;
+    restoreAuth(
+      token: user.token,
+      role: user.role,
+      username: user.name ?? email,
+    );
+    return user;
+  }
+
+  Future<AuthUser> me() async {
+    final uri = _u('/auth/me');
+    final res = await _get(uri);
+    if (res.statusCode != 200) {
+      throw Exception('API error: ${res.statusCode} ${res.body}');
+    }
+    final user = AuthUser.fromJson(jsonDecode(res.body));
+    restoreAuth(
+      token: _token ?? '',
+      role: user.role,
+      username: user.name ?? currentUsername ?? 'User',
+    );
     return user;
   }
 
