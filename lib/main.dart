@@ -1023,35 +1023,38 @@ TextStyle _inputTextStyle(BuildContext context) {
   );
 }
 
+String _patientLoadMessage(Object? error) {
+  final raw = (error ?? '').toString().toLowerCase();
+  if (raw.contains('404') || raw.contains('not found')) {
+    return _t(
+      "You don't have patients yet. Add your first patient to start the registry.",
+      'لا يوجد مرضى لديك بعد. أضف أول مريض لبدء السجل.',
+    );
+  }
+  if (raw.contains('401') || raw.contains('403') || raw.contains('auth')) {
+    return _t(
+      'Your session expired. Sign in again to load patient records.',
+      'انتهت الجلسة. سجّل الدخول مرة أخرى لتحميل سجلات المرضى.',
+    );
+  }
+  if (raw.contains('network') || raw.contains('socket') || raw.contains('timeout')) {
+    return _t(
+      'Connection problem while loading patients. Check the network or backend and retry.',
+      'مشكلة اتصال أثناء تحميل المرضى. تحقّق من الشبكة أو الخادم ثم أعد المحاولة.',
+    );
+  }
+  return _t(
+    "We couldn't load the patient list right now. Retry in a moment.",
+    'تعذر تحميل قائمة المرضى الآن. أعد المحاولة بعد لحظة.',
+  );
+}
+
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final api = ApiService(baseUrl: _apiBaseUrl());
-    final shortcuts = [
-      (
-        _t('Doctor Reports', 'تقارير الطبيب'),
-        Icons.analytics_outlined,
-        () => Navigator.push(context, _fadeRoute(const DoctorReportsPage())),
-      ),
-      (
-        _t('Patient History', 'سجل المريض'),
-        Icons.history_rounded,
-        () => Navigator.push(context, _fadeRoute(const PatientHistoryPage())),
-      ),
-      (
-        _t('Session Logs', 'سجل الجلسات'),
-        Icons.timeline_rounded,
-        () => Navigator.push(context, _fadeRoute(const SessionLogPage())),
-      ),
-      (
-        _t('Patients', 'المرضى'),
-        Icons.people_alt_outlined,
-        () => Navigator.push(context, _fadeRoute(DoctorPatientsPage(api: api))),
-      ),
-    ];
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -1232,21 +1235,6 @@ class SplashScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 22),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: shortcuts
-                                .map(
-                                  (item) => _splashShortcutCard(
-                                    title: item.$1,
-                                    icon: item.$2,
-                                    onTap: item.$3,
-                                  ),
-                                )
-                                .toList(),
                           ),
                         ],
                       ),
@@ -2664,7 +2652,7 @@ class RoleSelectionPage extends StatelessWidget {
                 icon: Icons.auto_awesome_outlined,
                 title: _t('Guest / demo', 'ضيف / عرض'),
                 sub: _t('Explore the analysis workflow and result experience with real ECG processing', 'استكشف مسار التحليل وتجربة النتائج مع معالجة ECG حقيقية'),
-                color: AppColors.warning,
+                color: AppColors.accentDeep,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -2676,7 +2664,7 @@ class RoleSelectionPage extends StatelessWidget {
                           'Capture, upload, or stream ECG and generate a physician-friendly result page.',
                           'التقاط أو رفع أو بث ECG مع نتيجة منظمة ملائمة للعرض.',
                         ),
-                        accentColor: AppColors.warning,
+                        accentColor: AppColors.accentDeep,
                         sourceLabel: 'Demo',
                       ),
                     ),
@@ -2756,6 +2744,8 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.of(context).size.width >= 920;
+    final isDemo = widget.sourceLabel.toLowerCase() == 'demo';
+    final accent = isDemo ? AppColors.accentDeep : widget.accentColor;
     final workflow = [
       _workflowStage(
         index: '01',
@@ -2787,14 +2777,67 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
             AppHeroBanner(
               title: widget.roleTitle,
               subtitle: widget.roleSubtitle,
-              icon: Icons.auto_graph,
+              icon: isDemo ? Icons.play_circle_outline_rounded : Icons.auto_graph,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primary, widget.accentColor],
+                colors: [AppColors.primary, accent],
               ),
             ),
             const SizedBox(height: 16),
+            if (isDemo) ...[
+              GlassPanel(
+                padding: const EdgeInsets.all(18),
+                radius: BorderRadius.circular(18),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.play_lesson_outlined,
+                        color: AppColors.accentDeep,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _t('Demo workspace', 'مساحة العرض'),
+                            style: GoogleFonts.sora(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _t(
+                              'This guided screen lets you test the ECG pipeline quickly using image capture, WFDB upload, or live monitoring without the doctor dashboard styling.',
+                              'هذه الشاشة مخصصة لتجربة خط تحليل ECG بسرعة باستخدام الصورة أو رفع WFDB أو المراقبة المباشرة بدون طابع لوحة الطبيب.',
+                            ),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             _analysisCard(
               title: _t('Medical workflow', 'المسار الطبي'),
               subtitle: _t(
@@ -2837,7 +2880,7 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: DropdownButtonFormField<String>(
+                      child: DropdownButtonFormField<String>(
                           initialValue: _sex,
                           decoration: InputDecoration(
                             labelText: _t('Sex', 'النوع'),
@@ -2878,42 +2921,42 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
               ),
               child: Column(
                 children: [
-                  _analysisActionTile(
-                    title: _t('ECG image', 'صورة ECG'),
+                    _analysisActionTile(
+                      title: _t('ECG image', 'صورة ECG'),
                     subtitle: _t(
                       'Use camera or gallery with patient context attached.',
                       'استخدم الكاميرا أو المعرض مع إرفاق بيانات المريض.',
                     ),
                     icon: Icons.photo_camera_back_outlined,
-                    color: AppColors.accent,
+                      color: isDemo ? AppColors.accentDeep : AppColors.accent,
                     onTap: () => Navigator.push(
                       context,
                       _fadeRoute(ECGAnalysisPage(api: widget.api, draft: _draft('ECG image'))),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _analysisActionTile(
-                    title: _t('WFDB file upload', 'رفع ملفات WFDB'),
+                    _analysisActionTile(
+                      title: _t('WFDB file upload', 'رفع ملفات WFDB'),
                     subtitle: _t(
                       'Upload `.hea`, `.dat`, or the full pair. Automatic sibling matching is attempted when possible.',
                       'ارفع `.hea` أو `.dat` أو الزوج كاملًا، مع محاولة مطابقة الملف الشقيق تلقائيًا.',
                     ),
                     icon: Icons.file_present_outlined,
-                    color: AppColors.success,
+                      color: isDemo ? AppColors.secondary : AppColors.success,
                     onTap: () => Navigator.push(
                       context,
                       _fadeRoute(FileUploadPage(api: widget.api, draft: _draft('WFDB upload'))),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _analysisActionTile(
-                    title: _t('Live wearable session', 'جلسة جهاز مباشر'),
+                    _analysisActionTile(
+                      title: _t('Live wearable session', 'جلسة جهاز مباشر'),
                     subtitle: _t(
                       'Open the monitoring workstation for ESP32 one-lead streaming.',
                       'افتح منصة المراقبة لجلسات ESP32 أحادية القناة.',
                     ),
                     icon: Icons.monitor_heart_outlined,
-                    color: AppColors.warning,
+                      color: isDemo ? AppColors.primary : AppColors.warning,
                     onTap: () => Navigator.push(
                       context,
                       _fadeRoute(
@@ -3011,6 +3054,7 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return GlassPanel(
       padding: const EdgeInsets.all(18),
+      radius: BorderRadius.circular(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3041,43 +3085,64 @@ class _AnalysisHubPageState extends State<AnalysisHubPage> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return GlassPanel(
       onTap: onTap,
-      padding: const EdgeInsets.all(16),
-      radius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(0),
+      radius: BorderRadius.circular(18),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withAlpha(40), color.withAlpha(dark ? 14 : 8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withAlpha(28), color.withAlpha(dark ? 12 : 6)],
           ),
-          borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border.all(color: color.withAlpha(70)),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withAlpha(52)),
         ),
-        padding: const EdgeInsets.all(2),
-        child: Row(
+        padding: const EdgeInsets.all(18),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: color.withAlpha(30),
-              child: Icon(icon, color: color),
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withAlpha(24),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: dark ? Colors.white60 : AppColors.textSecondary, fontSize: 12)),
-                ],
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                fontSize: 15,
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: color),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: dark ? Colors.white60 : AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Text(
+                  _t('Open', 'فتح'),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.arrow_forward_rounded, size: 18, color: color),
+              ],
+            ),
           ],
         ),
       ),
@@ -9834,7 +9899,7 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
                 padding: const EdgeInsets.all(18),
                 children: [
                   _retryCard(
-                    message: _t('Failed to load patients', 'فشل تحميل المرضى'),
+                    message: _patientLoadMessage(snapshot.error),
                     onRetry: _refresh,
                   ),
                 ],
@@ -10095,16 +10160,16 @@ class _PatientPickerPageState extends State<PatientPickerPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return ListView(
-              padding: const EdgeInsets.all(18),
-              children: [
-                _retryCard(
-                  message: _t('Failed to load patients', 'فشل تحميل المرضى'),
-                  onRetry: _reload,
-                ),
-              ],
-            );
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  _retryCard(
+                    message: _patientLoadMessage(snapshot.error),
+                    onRetry: _reload,
+                  ),
+                ],
+              );
           }
           final items = snapshot.data ?? [];
           if (items.isEmpty) {
