@@ -721,7 +721,9 @@ def _heuristic_model_score(
     bpm: int,
     signal_quality: float,
     measurements: Dict[str, "MeasurementOut"],
+    signal_signature: Optional[Dict[str, float]] = None,
 ) -> float:
+    signature = signal_signature or {}
     score = 0.12
     score += min(abs(float(bpm) - 72.0) / 65.0, 1.0) * 0.16
 
@@ -745,9 +747,92 @@ def _heuristic_model_score(
     if rmssd and rmssd.value is not None:
         score += min(max((float(rmssd.value) - 25.0) / 95.0, 0.0), 1.0) * 0.08
 
+    score += min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.55, 0.0), 1.0) * 0.08
+    score += min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.65, 0.0), 1.0) * 0.12
+    score += min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.30, 0.0), 1.0) * 0.10
+    score += min(max(float(signature.get("spectral_entropy", 0.0)) - 0.55, 0.0) / 0.35, 1.0) * 0.07
+    score += min(max(abs(float(signature.get("dominant_region_margin", 0.0))) / 0.25, 0.0), 1.0) * 0.03
     score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.07
 
     return float(np.clip(score, 0.05, 0.95))
+
+
+def _signal_signature_metrics(
+    raw_signal: np.ndarray,
+    processed_signal: np.ndarray,
+    fs: float,
+    quality: Dict[str, Any],
+    rr: Dict[str, Any],
+) -> Dict[str, float]:
+    raw = ecg_pipeline.ensure_lead_first(raw_signal)
+    processed = ecg_pipeline.ensure_lead_first(processed_signal)
+    usable = processed[: min(12, processed.shape[0])]
+
+    lead_strength = np.asarray(
+        [float(np.std(lead) + 0.35 * np.max(np.abs(lead))) for lead in usable],
+        dtype=np.float32,
+    )
+    lead_strength_mean = float(np.mean(lead_strength)) if lead_strength.size else 0.0
+    lead_strength_cv = (
+        float(np.std(lead_strength) / (lead_strength_mean + 1e-6)) if lead_strength.size else 0.0
+    )
+
+    lead_diversity_index = 0.0
+    if usable.shape[0] >= 2:
+        corr = np.corrcoef(usable)
+        corr = np.nan_to_num(corr, nan=0.0, posinf=0.0, neginf=0.0)
+        upper = corr[np.triu_indices_from(corr, k=1)]
+        if upper.size:
+            lead_diversity_index = float(np.clip(1.0 - np.mean(np.abs(upper)), 0.0, 1.0))
+
+    rep = ecg_pipeline.representative_lead(processed)
+    fft_values = np.abs(fft(rep))
+    half = np.asarray(fft_values[: max(len(fft_values) // 2, 1)], dtype=np.float64)
+    if half.size > 1 and float(np.sum(half)) > 0:
+        power = half / float(np.sum(half))
+        spectral_entropy = float(
+            -np.sum(power * np.log(power + 1e-12)) / np.log(max(len(power), 2))
+        )
+    else:
+        spectral_entropy = 0.0
+
+    rr_mean_ms = float(rr["rr_mean_ms"]) if rr.get("rr_mean_ms") is not None else 0.0
+    rr_std_ms = float(rr["rr_std_ms"]) if rr.get("rr_std_ms") is not None else 0.0
+    rr_irregularity_index = rr_std_ms / max(rr_mean_ms, 1.0) if rr_mean_ms > 0 else 0.0
+
+    region_name = "Undetermined"
+    dominant_region_margin = 0.0
+    if usable.shape[0] >= 12:
+        groups = {
+            "Inferior": [1, 2, 5],
+            "Septal": [6, 7],
+            "Anterior": [8, 9],
+            "Lateral": [0, 4, 10, 11],
+        }
+        region_scores = {
+            name: float(np.mean([lead_strength[idx] for idx in indices if idx < len(lead_strength)]))
+            for name, indices in groups.items()
+        }
+        ordered = sorted(region_scores.items(), key=lambda item: item[1], reverse=True)
+        if ordered:
+            region_name = ordered[0][0]
+            top_score = float(ordered[0][1])
+            second_score = float(ordered[1][1]) if len(ordered) > 1 else 0.0
+            dominant_region_margin = top_score - second_score
+
+    return {
+        "lead_count": float(raw.shape[0]),
+        "lead_strength_mean": round(lead_strength_mean, 4),
+        "lead_strength_cv": round(float(lead_strength_cv), 4),
+        "lead_diversity_index": round(float(lead_diversity_index), 4),
+        "spectral_entropy": round(float(spectral_entropy), 4),
+        "rr_irregularity_index": round(float(rr_irregularity_index), 4),
+        "baseline_wander_ratio": round(float(quality.get("baseline_wander_ratio", 0.0)), 4),
+        "noise_ratio": round(float(quality.get("noise_ratio", 0.0)), 4),
+        "clipping_ratio": round(float(quality.get("clipping_ratio", 0.0)), 4),
+        "dominant_region_margin": round(float(dominant_region_margin), 4),
+        "dominant_region_guess": region_name,
+    }
 
 
 def _butter_bandpass(lowcut: float, highcut: float, fs: float, order: int = 5):
@@ -1433,6 +1518,7 @@ def _run_signal_analysis(
     signal_quality = round(float(quality["signal_quality_score"]) / 100.0, 3)
     signal_quality_label = str(quality["noise_level"]).lower()
     measurements, graph_data = _derive_measurements(processed, fs)
+    signal_signature = _signal_signature_metrics(raw, processed, fs, quality, rr)
     measurements["heart_rate"] = MeasurementOut(
         name="heart_rate",
         value=float(rr["heart_rate_bpm"]) if rr["heart_rate_bpm"] is not None else None,
@@ -1503,6 +1589,12 @@ def _run_signal_analysis(
         unit="mV",
         source="ESTIMATED" if intervals["st_deviation_estimate"] is not None else "UNAVAILABLE",
     )
+    rhythm_label = ecg_pipeline.classify_rhythm(
+        rr.get("heart_rate_bpm"),
+        rr.get("rr_std_ms"),
+        rr.get("pnn50_pct"),
+        float(quality["signal_quality_score"]),
+    ) or "Unclassified rhythm pattern"
 
     features = np.asarray([], dtype=np.float32)
     metadata = _fallback_model_metadata()
@@ -1522,6 +1614,7 @@ def _run_signal_analysis(
             bpm=bpm,
             signal_quality=signal_quality,
             measurements=measurements,
+            signal_signature=signal_signature,
         )
 
     risk = ecg_pipeline.risk_band(score, threshold)
@@ -1530,12 +1623,23 @@ def _run_signal_analysis(
     graph_data["signalQuality"] = signal_quality
     graph_data["signalQualityLabel"] = signal_quality_label
     graph_data["leadNames"] = lead_names or []
+    graph_data["rhythmLabel"] = rhythm_label
+    graph_data["signalSignature"] = signal_signature
     findings = [
         f"AI-assisted screening result: {classification}",
         f"Model-derived score: {score:.3f}",
+        f"Rhythm screening: {rhythm_label}",
         f"Signal quality score: {quality['signal_quality_score']:.2f}",
         f"Noise level: {quality['noise_level']}",
     ]
+    if signal_signature.get("lead_diversity_index", 0.0) > 0:
+        findings.append(
+            f"Lead diversity index: {signal_signature['lead_diversity_index']:.3f}"
+        )
+    if signal_signature.get("spectral_entropy", 0.0) > 0:
+        findings.append(
+            f"Waveform complexity index: {signal_signature['spectral_entropy']:.3f}"
+        )
     if model_error:
         findings.append("Fallback signal-based inference was used because the deploy-time model runtime was unavailable.")
     if recording_id:
