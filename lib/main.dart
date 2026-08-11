@@ -1777,6 +1777,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final isDoctor = _role == 'doctor';
     final intro = GlassPanel(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1795,7 +1796,9 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            _t('Create your clinical workspace', 'أنشئ مساحة العمل الطبية الخاصة بك'),
+            isDoctor
+                ? _t('Create your doctor workspace', 'أنشئ مساحة الطبيب')
+                : _t('Create your patient account', 'أنشئ حساب المريض'),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: dark ? Colors.white : AppColors.ink,
@@ -1803,10 +1806,15 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            _t(
-              'Register once, then unlock doctor dashboards, patient monitoring, AI ECG analysis, and report generation.',
-              'سجل مرة واحدة ثم افتح لوحات الطبيب، ومتابعة المريض، وتحليل الذكاء لرسم القلب، وتوليد التقارير.',
-            ),
+            isDoctor
+                ? _t(
+                    'Register once, then open doctor dashboards, patient review tools, ECG analysis, and report workflows.',
+                    'سجل مرة واحدة ثم افتح لوحات الطبيب وأدوات مراجعة المرضى وتحليل ECG ومسارات التقارير.',
+                  )
+                : _t(
+                    'Register once, then start personal ECG analysis, report access, and independent health tracking.',
+                    'سجل مرة واحدة ثم ابدأ تحليل ECG الشخصي والوصول للتقارير والمتابعة الصحية المستقلة.',
+                  ),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   height: 1.6,
                   color: dark ? AppColors.textSecondary : AppColors.primaryDark,
@@ -1819,10 +1827,14 @@ class _RegisterPageState extends State<RegisterPage> {
             children: [
               _signalChip(Icons.verified_user_outlined,
                   _t('Secure onboarding', 'دخول آمن')),
-              _signalChip(Icons.monitor_heart_outlined,
-                  _t('AI-ready profile', 'ملف جاهز للذكاء')),
-              _signalChip(Icons.assignment_outlined,
-                  _t('Clinical reports', 'تقارير سريرية')),
+              _signalChip(
+                isDoctor ? Icons.dashboard_customize_outlined : Icons.monitor_heart_outlined,
+                isDoctor ? _t('Doctor dashboard', 'لوحة الطبيب') : _t('Personal ECG', 'ECG شخصي'),
+              ),
+              _signalChip(
+                isDoctor ? Icons.assignment_outlined : Icons.insert_chart_outlined_rounded,
+                isDoctor ? _t('Clinical reports', 'تقارير سريرية') : _t('Health tracking', 'متابعة صحية'),
+              ),
             ],
           ),
         ],
@@ -1835,17 +1847,24 @@ class _RegisterPageState extends State<RegisterPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _t('Account setup', 'إعداد الحساب'),
+            isDoctor
+                ? _t('Doctor account setup', 'إعداد حساب الطبيب')
+                : _t('Patient account setup', 'إعداد حساب المريض'),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            _t(
-              'Choose the right access level, complete the identity fields, then continue to your role-specific workflow.',
-              'اختر مستوى الوصول المناسب، وأكمل بيانات الهوية، ثم تابع إلى مسار العمل المناسب لدورك.',
-            ),
+            isDoctor
+                ? _t(
+                    'Choose doctor access, complete your identity fields, then continue to the doctor workflow.',
+                    'اختر حساب الطبيب، وأكمل بياناتك، ثم تابع إلى مسار الطبيب.',
+                  )
+                : _t(
+                    'Choose patient access, complete your identity fields, then continue directly to the patient workspace.',
+                    'اختر حساب المريض، وأكمل بياناتك، ثم تابع مباشرة إلى مساحة المريض.',
+                  ),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.5,
@@ -1948,7 +1967,9 @@ class _RegisterPageState extends State<RegisterPage> {
               label: Text(
                 _loading
                     ? _t('Creating...', 'جارٍ الإنشاء...')
-                    : _t('Create Account', 'إنشاء الحساب'),
+                    : isDoctor
+                        ? _t('Create Doctor Account', 'إنشاء حساب الطبيب')
+                        : _t('Create Patient Account', 'إنشاء حساب المريض'),
               ),
             ),
           ),
@@ -3272,7 +3293,6 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _name = TextEditingController();
   final TextEditingController _phone = TextEditingController();
-  AppDoctor? _selected;
 
   @override
   void dispose() {
@@ -3283,7 +3303,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    AppState.selectedDoctor = _selected;
+    AppState.selectedDoctor = null;
     ApiService.currentUsername = _name.text.trim();
     AppState.currentWorkspace = 'patient_home';
     unawaited(AppState.persistSession(
@@ -3298,7 +3318,6 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final doctors = AppState.doctors;
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: AppBackdrop(
@@ -3339,8 +3358,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                       const SizedBox(height: 10),
                       Text(
                         _t(
-                          'Add patient identity now. Doctor linking is optional and can be done later if needed.',
-                          'أدخل بيانات المريض الآن. ربط طبيب اختياري ويمكن إضافته لاحقًا إذا احتجت.',
+                          'Add patient identity now, then continue directly to the patient workspace.',
+                          'أدخل بيانات المريض الآن، ثم تابع مباشرة إلى مساحة المريض.',
                         ),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               height: 1.55,
@@ -3354,8 +3373,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                           children: [
                             _signalChip(Icons.favorite_outline,
                                 _t('Patient identity', 'هوية المريض')),
-                            _signalChip(Icons.people_outline,
-                                _t('Doctor optional', 'الطبيب اختياري')),
+                            _signalChip(Icons.arrow_forward_rounded,
+                                _t('Direct access', 'دخول مباشر')),
                           ],
                         ),
                       const SizedBox(height: 24),
@@ -3372,27 +3391,6 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                         Icons.phone_outlined,
                         required: true,
                       ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<AppDoctor>(
-                        initialValue: _selected,
-                        decoration: InputDecoration(
-                          labelText: _t('Doctor (Optional)', 'الطبيب (اختياري)'),
-                          prefixIcon: const Icon(Icons.local_hospital_outlined),
-                          helperText: _t(
-                            'You can skip this now and continue independently, or add a doctor later from the patient workspace.',
-                            'يمكنك تخطي هذا الآن والمتابعة بشكل مستقل، أو إضافة طبيب لاحقًا من مساحة المريض.',
-                          ),
-                        ),
-                        items: doctors
-                            .map(
-                              (d) => DropdownMenuItem(
-                                value: d,
-                                child: Text('${d.name} • ${d.specialty}'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _selected = v),
-                      ),
                       const SizedBox(height: 22),
                       SizedBox(
                         height: 54,
@@ -3400,31 +3398,9 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                         child: ElevatedButton.icon(
                           onPressed: _submit,
                           icon: const Icon(Icons.arrow_forward_rounded),
-                          label: Text(_t('Continue to Workspace', 'المتابعة إلى مساحة العمل')),
+                          label: Text(_t('Continue to Patient Workspace', 'المتابعة إلى مساحة المريض')),
                         ),
                       ),
-                      if (doctors.isEmpty) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withOpacity(dark ? 0.18 : 0.12),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.warning.withOpacity(0.28)),
-                          ),
-                          child: Text(
-                            _t(
-                              'No doctor accounts are available yet. The patient can still continue normally and add a doctor later if needed.',
-                              'لا توجد حسابات أطباء متاحة الآن. يمكن للمريض المتابعة بشكل طبيعي وإضافة طبيب لاحقًا إذا احتاج.',
-                            ),
-                            style: const TextStyle(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
