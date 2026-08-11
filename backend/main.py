@@ -722,32 +722,30 @@ def _heuristic_model_score(
     signal_quality: float,
     measurements: Dict[str, "MeasurementOut"],
 ) -> float:
-    score = 0.18
-    if bpm < 50 or bpm > 110:
-        score += 0.18
+    score = 0.12
+    score += min(abs(float(bpm) - 72.0) / 65.0, 1.0) * 0.16
 
     qrs = measurements.get("qrs_duration")
-    if qrs and qrs.value is not None and qrs.value >= 120:
-        score += 0.18
+    if qrs and qrs.value is not None:
+        score += min(max((float(qrs.value) - 92.0) / 55.0, 0.0), 1.0) * 0.18
 
     qtc = measurements.get("qtc")
-    if qtc and qtc.value is not None and qtc.value >= 470:
-        score += 0.12
+    if qtc and qtc.value is not None:
+        score += min(max((float(qtc.value) - 415.0) / 95.0, 0.0), 1.0) * 0.14
 
     st_dev = measurements.get("st_deviation")
-    if st_dev and st_dev.value is not None and abs(float(st_dev.value)) >= 0.2:
-        score += 0.18
+    if st_dev and st_dev.value is not None:
+        score += min(abs(float(st_dev.value)) / 0.35, 1.0) * 0.20
 
     sdnn = measurements.get("sdnn")
-    if sdnn and sdnn.value is not None and sdnn.value >= 140:
-        score += 0.08
+    if sdnn and sdnn.value is not None:
+        score += min(max((float(sdnn.value) - 40.0) / 120.0, 0.0), 1.0) * 0.08
 
     rmssd = measurements.get("rmssd")
-    if rmssd and rmssd.value is not None and rmssd.value >= 120:
-        score += 0.08
+    if rmssd and rmssd.value is not None:
+        score += min(max((float(rmssd.value) - 25.0) / 95.0, 0.0), 1.0) * 0.08
 
-    if signal_quality < 0.35:
-        score += 0.05
+    score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.07
 
     return float(np.clip(score, 0.05, 0.95))
 
@@ -984,6 +982,104 @@ def _image_to_signal_simple(image_path: str, target_width: int = 1000) -> np.nda
     return np.vstack([signal] * 12).astype(np.float32)
 
 
+def _normalize_lead_signal(signal: np.ndarray) -> np.ndarray:
+    arr = np.asarray(signal, dtype=np.float32).copy()
+    arr -= float(np.mean(arr))
+    std = float(np.std(arr))
+    if std > 1e-6:
+        arr /= std
+    return np.clip(arr, -6.0, 6.0).astype(np.float32)
+
+
+def _resample_signal_1d(signal: np.ndarray, target_width: int) -> np.ndarray:
+    if signal.size == target_width:
+        return signal.astype(np.float32)
+    src_x = np.linspace(0.0, 1.0, num=signal.size, dtype=np.float32)
+    dst_x = np.linspace(0.0, 1.0, num=target_width, dtype=np.float32)
+    return np.interp(dst_x, src_x, signal).astype(np.float32)
+
+
+def _extract_trace_from_mask(mask: np.ndarray) -> Optional[np.ndarray]:
+    if mask.ndim != 2 or mask.size == 0:
+        return None
+    h, w = mask.shape
+    if h < 8 or w < 32:
+        return None
+    y_indices: List[int] = []
+    last_y = h // 2
+    for x in range(w):
+        col = np.where(mask[:, x] > 0)[0]
+        if col.size == 0:
+            y_indices.append(last_y)
+            continue
+        y = int(np.median(col))
+        y_indices.append(y)
+        last_y = y
+    signal = (h - 1 - np.asarray(y_indices, dtype=np.float32)).astype(np.float32)
+    if float(np.std(signal)) < 1e-3:
+        return None
+    return signal
+
+
+def _extract_multilead_from_image_mask(trace: np.ndarray, target_width: int) -> Optional[np.ndarray]:
+    h, w = trace.shape
+    row_energy = np.mean(trace > 0, axis=1).astype(np.float32)
+    if float(np.max(row_energy, initial=0.0)) <= 0.0:
+        return None
+
+    kernel = np.ones(max(5, h // 80), dtype=np.float32)
+    kernel /= float(kernel.size)
+    smooth_energy = np.convolve(row_energy, kernel, mode="same")
+    min_distance = max(h // 8, 18)
+    prominence = max(float(np.std(smooth_energy)) * 0.35, 0.002)
+    peaks, _ = find_peaks(smooth_energy, distance=min_distance, prominence=prominence)
+
+    if peaks.size < 3:
+        return None
+
+    peak_order = sorted(peaks.tolist(), key=lambda idx: smooth_energy[idx], reverse=True)
+    selected = sorted(peak_order[: min(4, len(peak_order))])
+    if len(selected) < 3:
+        return None
+
+    row_boundaries = [0]
+    for left_peak, right_peak in zip(selected, selected[1:]):
+        row_boundaries.append(int((left_peak + right_peak) // 2))
+    row_boundaries.append(h)
+
+    leads: List[np.ndarray] = []
+    n_cols = 4
+    col_edges = np.linspace(0, w, n_cols + 1, dtype=int)
+    for row_idx in range(len(selected)):
+        top = max(row_boundaries[row_idx] - 6, 0)
+        bottom = min(row_boundaries[row_idx + 1] + 6, h)
+        if bottom - top < 10:
+            continue
+        row_mask = trace[top:bottom, :]
+        for col_idx in range(n_cols):
+            left = int(col_edges[col_idx])
+            right = int(col_edges[col_idx + 1])
+            if right - left < 24:
+                continue
+            cell_mask = row_mask[:, left:right]
+            cell_signal = _extract_trace_from_mask(cell_mask)
+            if cell_signal is None:
+                continue
+            cell_signal = _resample_signal_1d(cell_signal, target_width)
+            cell_signal = _normalize_lead_signal(cell_signal)
+            if float(np.std(cell_signal)) < 0.08:
+                continue
+            leads.append(cell_signal)
+
+    if len(leads) < 6:
+        return None
+
+    if len(leads) > 12:
+        ranked = sorted(leads, key=lambda lead: float(np.std(lead)), reverse=True)
+        leads = ranked[:12]
+    return np.vstack(leads).astype(np.float32)
+
+
 def _image_to_signal(image_path: str, target_width: int = 1200) -> np.ndarray:
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
@@ -1019,14 +1115,14 @@ def _image_to_signal(image_path: str, target_width: int = 1200) -> np.ndarray:
     if not y_indices:
         return _image_to_signal_simple(image_path, target_width=target_width)
 
+    multilead = _extract_multilead_from_image_mask(trace, target_width)
+    if multilead is not None:
+        return multilead
+
     signal = (h - 1 - np.array(y_indices, dtype=np.float32)).astype(np.float32)
-    signal -= np.mean(signal)
-    std = np.std(signal)
-    if std > 0:
-        signal /= std
+    signal = _normalize_lead_signal(signal)
     if np.std(signal) < 0.05:
         return _image_to_signal_simple(image_path, target_width=target_width)
-    signal = np.clip(signal, -6.0, 6.0)
     return np.vstack([signal] * 12).astype(np.float32)
 
 
@@ -1673,9 +1769,8 @@ def _report_context_from_analysis(analysis: AnalysisResponse) -> Dict[str, Any]:
 
 
 def _build_report_file(analysis: AnalysisResponse) -> Path:
-    workspace_dir = BASE_DIR.parent.parent
-    if str(workspace_dir) not in sys.path:
-        sys.path.append(str(workspace_dir))
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.append(str(PROJECT_ROOT))
     from new_report import generate_report_variant
 
     report_uid = uuid.uuid4().hex
