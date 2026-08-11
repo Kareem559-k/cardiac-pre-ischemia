@@ -1217,7 +1217,7 @@ def _image_to_signal_simple(image_path: str, target_width: int = 1000) -> np.nda
     std = np.std(signal)
     if std > 0:
         signal /= std
-    return np.vstack([signal] * 12).astype(np.float32)
+    return signal.reshape(1, -1).astype(np.float32)
 
 
 def _normalize_lead_signal(signal: np.ndarray) -> np.ndarray:
@@ -1427,7 +1427,7 @@ def _image_to_signal(image_path: str, target_width: int = 1200) -> np.ndarray:
     signal = _normalize_lead_signal(signal)
     if np.std(signal) < 0.05:
         return _image_to_signal_simple(image_path, target_width=target_width)
-    return np.vstack([signal] * 12).astype(np.float32)
+    return signal.reshape(1, -1).astype(np.float32)
 
 
 def _write_temp_record(
