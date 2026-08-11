@@ -5367,6 +5367,14 @@ class AnalysisResultPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final api = ApiService(baseUrl: _apiBaseUrl());
     final confidencePct = (result.confidence * 100).toStringAsFixed(1);
+    final qrs = result.measurements['qrs_duration']?.value;
+    final qtc = result.measurements['qtc']?.value;
+    final pr = result.measurements['pr_interval']?.value;
+    final rr = result.measurements['rr_interval']?.value;
+    final st = result.measurements['st_deviation']?.value;
+    final sdnn = result.measurements['sdnn']?.value;
+    final rmssd = result.measurements['rmssd']?.value;
+    final pnn50 = result.measurements['pnn50']?.value;
     final source = draft?.analysisSource ?? 'Direct analysis';
     final patientName = draft?.patientName.trim().isNotEmpty == true
         ? draft!.patientName
@@ -5417,7 +5425,7 @@ class AnalysisResultPage extends StatelessWidget {
       _ReportRow('Heart Rhythm Signal', result.riskLevel == 'High' ? 'Needs urgent physician review' : result.riskLevel == 'Medium' ? 'Monitor and compare with context' : 'Lower screening concern', 'Risk-linked review cue'),
       _ReportRow('Report Readiness', result.analysisId.isEmpty ? 'Session summary only' : 'PDF-ready analysis record', 'Export capability'),
     ];
-    final summaryTiles = [
+    final summaryTiles = <AppMetricTile>[
       AppMetricTile(
         label: 'Risk',
         value: result.riskLevel,
@@ -5447,6 +5455,120 @@ class AnalysisResultPage extends StatelessWidget {
         icon: Icons.graphic_eq_rounded,
       ),
     ];
+    final dynamicTiles = <AppMetricTile>[];
+    if (qtc != null) {
+      final qtcAccent = qtc >= 470 || qtc <= 330 ? AppColors.danger : AppColors.accent;
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'QTc',
+          value: '${qtc.toStringAsFixed(0)} ms',
+          caption: qtcAccent == AppColors.danger ? 'Outlying repolarization estimate' : 'Corrected QT estimate',
+          accent: qtcAccent,
+          icon: Icons.timelapse_rounded,
+        ),
+      );
+    }
+    if (st != null) {
+      final stAccent = st.abs() >= 0.2 ? AppColors.danger : AppColors.success;
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'ST Shift',
+          value: st.toStringAsFixed(2),
+          caption: stAccent == AppColors.danger ? 'Noticeable ST deviation estimate' : 'Minimal ST deviation',
+          accent: stAccent,
+          icon: Icons.show_chart_rounded,
+        ),
+      );
+    }
+    if (qrs != null) {
+      final qrsAccent = qrs >= 120 ? AppColors.warning : AppColors.primary;
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'QRS',
+          value: '${qrs.toStringAsFixed(0)} ms',
+          caption: qrsAccent == AppColors.warning ? 'Widened depolarization window' : 'Depolarization duration estimate',
+          accent: qrsAccent,
+          icon: Icons.square_foot_rounded,
+        ),
+      );
+    }
+    if (rr != null) {
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'RR Interval',
+          value: '${rr.toStringAsFixed(0)} ms',
+          caption: 'Beat-to-beat interval from detected peaks',
+          accent: AppColors.accentDeep,
+          icon: Icons.swap_horiz_rounded,
+        ),
+      );
+    }
+    if (sdnn != null) {
+      final accent = sdnn >= 120 ? AppColors.warning : AppColors.success;
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'SDNN',
+          value: '${sdnn.toStringAsFixed(0)} ms',
+          caption: accent == AppColors.warning ? 'Higher rhythm variability' : 'Short-term rhythm variability',
+          accent: accent,
+          icon: Icons.multiline_chart_rounded,
+        ),
+      );
+    }
+    if (rmssd != null) {
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'RMSSD',
+          value: '${rmssd.toStringAsFixed(0)} ms',
+          caption: 'Beat-to-beat variability estimate',
+          accent: AppColors.success,
+          icon: Icons.insights_rounded,
+        ),
+      );
+    }
+    if (pnn50 != null) {
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'pNN50',
+          value: '${pnn50.toStringAsFixed(0)}%',
+          caption: 'RR interval variability proportion',
+          accent: AppColors.primary,
+          icon: Icons.percent_rounded,
+        ),
+      );
+    }
+    if (pr != null) {
+      dynamicTiles.add(
+        AppMetricTile(
+          label: 'PR',
+          value: '${pr.toStringAsFixed(0)} ms',
+          caption: 'Atrioventricular conduction estimate',
+          accent: AppColors.accent,
+          icon: Icons.route_rounded,
+        ),
+      );
+    }
+    final visibleTiles = [
+      ...summaryTiles,
+      ...dynamicTiles.take(4),
+    ];
+    final headlineMetrics = [
+      _headlineMetric('Risk Level', result.riskLevel, result.riskColor),
+      _headlineMetric('Confidence', '$confidencePct%', Colors.white),
+      _headlineMetric('Estimated BPM', '${result.bpm}', Colors.white),
+      _headlineMetric('Review', reviewLabel, Colors.white),
+      if (qtc != null) _headlineMetric('QTc', '${qtc.toStringAsFixed(0)} ms', Colors.white),
+      if (st != null) _headlineMetric('ST Shift', st.toStringAsFixed(2), Colors.white),
+      if (qrs != null) _headlineMetric('QRS', '${qrs.toStringAsFixed(0)} ms', Colors.white),
+      if (sdnn != null) _headlineMetric('SDNN', '${sdnn.toStringAsFixed(0)} ms', Colors.white),
+    ];
+    final caseFingerprint = [
+      if (qtc != null) 'QTc ${qtc.toStringAsFixed(0)}',
+      if (st != null) 'ST ${st.toStringAsFixed(2)}',
+      if (qrs != null) 'QRS ${qrs.toStringAsFixed(0)}',
+      if (rr != null) 'RR ${rr.toStringAsFixed(0)}',
+      if (sdnn != null) 'SDNN ${sdnn.toStringAsFixed(0)}',
+    ].join(' • ');
 
     return Scaffold(
       appBar: AppBar(title: const Text('ECG Screening Report')),
@@ -5491,16 +5613,18 @@ class AnalysisResultPage extends StatelessWidget {
                   'Source: $source',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
+                if (caseFingerprint.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    caseFingerprint,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
-                  children: [
-                    _headlineMetric('Risk Level', result.riskLevel, result.riskColor),
-                    _headlineMetric('Confidence', '$confidencePct%', Colors.white),
-                    _headlineMetric('Estimated BPM', '${result.bpm}', Colors.white),
-                    _headlineMetric('Review', reviewLabel, Colors.white),
-                  ],
+                  children: headlineMetrics,
                 ),
               ],
             ),
@@ -5513,7 +5637,7 @@ class AnalysisResultPage extends StatelessWidget {
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             childAspectRatio: 1.18,
-            children: summaryTiles,
+            children: visibleTiles,
           ),
           const SizedBox(height: 14),
           _ReportActionPanel(
