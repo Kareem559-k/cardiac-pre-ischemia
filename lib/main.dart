@@ -2610,7 +2610,7 @@ class RoleSelectionPage extends StatelessWidget {
               _roleCard(
                 icon: Icons.favorite_outline,
                 title: _t('Patient workspace', 'مساحة المريض'),
-                sub: _t('Personal monitoring, ECG upload, reports, and care follow-up', 'مراقبة شخصية ورفع ECG والتقارير والمتابعة مع الطبيب'),
+                sub: _t('Personal monitoring, ECG upload, reports, and independent health tracking', 'مراقبة شخصية ورفع ECG والتقارير والمتابعة الصحية المستقلة'),
                 color: AppColors.success,
                 onTap: () {
                   ApiService.currentUsername = username;
@@ -3331,7 +3331,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _t('Create the patient monitoring profile', 'أنشئ ملف متابعة المريض'),
+                        _t('Create the patient profile', 'أنشئ ملف المريض'),
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),
@@ -3339,8 +3339,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                       const SizedBox(height: 10),
                       Text(
                         _t(
-                          'Add patient identity now. Linking a supervising doctor is optional and can be done later.',
-                          'أدخل بيانات المريض الآن. ربط طبيب متابع اختياري ويمكن إضافته لاحقًا.',
+                          'Add patient identity now. Doctor linking is optional and can be done later if needed.',
+                          'أدخل بيانات المريض الآن. ربط طبيب اختياري ويمكن إضافته لاحقًا إذا احتجت.',
                         ),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               height: 1.55,
@@ -3376,11 +3376,11 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                       DropdownButtonFormField<AppDoctor>(
                         initialValue: _selected,
                         decoration: InputDecoration(
-                          labelText: _t('Supervising Doctor (Optional)', 'الطبيب المتابع (اختياري)'),
+                          labelText: _t('Doctor (Optional)', 'الطبيب (اختياري)'),
                           prefixIcon: const Icon(Icons.local_hospital_outlined),
                           helperText: _t(
-                            'You can skip this now and add a doctor later from the patient workspace.',
-                            'يمكنك تخطي هذا الآن وإضافة الطبيب لاحقًا من مساحة المريض.',
+                            'You can skip this now and continue independently, or add a doctor later from the patient workspace.',
+                            'يمكنك تخطي هذا الآن والمتابعة بشكل مستقل، أو إضافة طبيب لاحقًا من مساحة المريض.',
                           ),
                         ),
                         items: doctors
@@ -3415,8 +3415,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                           ),
                           child: Text(
                             _t(
-                              'No doctor accounts are available yet. The patient can still continue and link a doctor later.',
-                              'لا توجد حسابات أطباء متاحة الآن. يمكن للمريض المتابعة وربط طبيب لاحقًا.',
+                              'No doctor accounts are available yet. The patient can still continue normally and add a doctor later if needed.',
+                              'لا توجد حسابات أطباء متاحة الآن. يمكن للمريض المتابعة بشكل طبيعي وإضافة طبيب لاحقًا إذا احتاج.',
                             ),
                             style: const TextStyle(
                               color: AppColors.warning,
@@ -8885,7 +8885,7 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
           IconButton(
             onPressed: _pickDoctor,
             icon: const Icon(Icons.add_rounded),
-            tooltip: _t('Link doctor', 'ربط طبيب'),
+            tooltip: _t('Add doctor optionally', 'إضافة طبيب بشكل اختياري'),
           ),
           _settingsAction(context),
         ],
@@ -8976,21 +8976,21 @@ class _PatientProfilePageState extends State<PatientProfilePage> {
             ),
           ),
           const SizedBox(height: 16),
-          _sectionTitle(_t('Assigned Clinician', 'المتابع السريري')),
+          _sectionTitle(_t('Doctor Connection', 'ربط طبيب')),
           const SizedBox(height: 10),
           _doctorCard(context),
           const SizedBox(height: 16),
           _sectionTitle(_t('Emergency Contacts', 'جهات الطوارئ')),
           const SizedBox(height: 10),
           _contactTile(
-            _t('Primary clinical contact', 'جهة الاتصال الأساسية'),
-            AppState.selectedDoctor?.name ?? _t('Not assigned', 'غير محدد'),
+            _t('Selected doctor', 'الطبيب المختار'),
+            AppState.selectedDoctor?.name ?? _t('Not linked', 'غير مرتبط'),
             AppState.selectedDoctor?.phone ?? _t('Not available', 'غير متاح'),
           ),
           _contactTile(
             _t('Emergency contact', 'جهة اتصال للطوارئ'),
             _t('Not set', 'غير محددة'),
-            _t('Add from care team', 'أضفها من فريق الرعاية'),
+            _t('Add manually later', 'أضفها يدويًا لاحقًا'),
           ),
           const SizedBox(height: 16),
           _sectionTitle(_t('Preferences', 'التفضيلات')),
