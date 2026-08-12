@@ -21,6 +21,7 @@ RUN apt-get update \
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app/backend
+COPY new_report /app/new_report
 COPY build/web /app/build/web
 COPY ECG_MODEL_V15_FINAL /app/ECG_MODEL_V15_FINAL
 COPY 00001_lr_approved.pdf /app/00001_lr_approved.pdf
