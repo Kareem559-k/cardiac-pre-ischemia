@@ -1266,6 +1266,189 @@ def _measurement_source(
     return "ESTIMATED" if estimated else "MEASURED"
 
 
+def _sanitize_measurement_value(
+    name: str,
+    value: Optional[float],
+) -> Optional[float]:
+    if value is None or not np.isfinite(float(value)):
+        return None
+    numeric = float(value)
+    ranges = {
+        "pr_interval": (70.0, 320.0),
+        "qrs_duration": (40.0, 220.0),
+        "qt_interval": (180.0, 700.0),
+        "qtc": (250.0, 650.0),
+        "st_deviation": (-0.80, 0.80),
+        "rr_interval": (300.0, 2200.0),
+        "heart_rate": (25.0, 240.0),
+        "sdnn": (0.0, 400.0),
+        "rmssd": (0.0, 400.0),
+        "pnn50": (0.0, 100.0),
+    }
+    low, high = ranges.get(name, (-np.inf, np.inf))
+    if numeric < low or numeric > high:
+        return None
+    return numeric
+
+
+def _usable_measurement(
+    measurements: Dict[str, "MeasurementOut"],
+    key: str,
+    *,
+    allow_estimated: bool = True,
+) -> Optional[float]:
+    item = measurements.get(key)
+    if item is None or item.value is None:
+        return None
+    if item.source in {"UNAVAILABLE", "UNRELIABLE"}:
+        return None
+    if not allow_estimated and item.source == "ESTIMATED":
+        return None
+    return _sanitize_measurement_value(key, item.value)
+
+
+def _physiology_consistency_score(
+    *,
+    bpm: int,
+    signal_quality: float,
+    measurements: Dict[str, "MeasurementOut"],
+    signal_signature: Optional[Dict[str, float]] = None,
+) -> float:
+    signature = signal_signature or {}
+    components: List[Tuple[float, float]] = []
+
+    def add_component(value: Optional[float], weight: float) -> None:
+        if value is None or not np.isfinite(float(value)):
+            return
+        components.append((float(np.clip(value, 0.0, 1.0)), weight))
+
+    hr_component = min(abs(float(bpm) - 72.0) / 58.0, 1.0)
+    add_component(hr_component, 0.14)
+
+    rr_ms = _usable_measurement(measurements, "rr_interval", allow_estimated=False)
+    if rr_ms is not None:
+        add_component(min(abs(rr_ms - 820.0) / 520.0, 1.0), 0.08)
+
+    qrs_ms = _usable_measurement(measurements, "qrs_duration")
+    if qrs_ms is not None:
+        add_component(min(max((qrs_ms - 100.0) / 55.0, 0.0), 1.0), 0.14)
+
+    qtc_ms = _usable_measurement(measurements, "qtc")
+    if qtc_ms is not None:
+        qtc_abnormal = 0.0
+        if qtc_ms < 340.0:
+            qtc_abnormal = min((340.0 - qtc_ms) / 80.0, 1.0)
+        elif qtc_ms > 460.0:
+            qtc_abnormal = min((qtc_ms - 460.0) / 120.0, 1.0)
+        add_component(qtc_abnormal, 0.15)
+
+    st_mv = _usable_measurement(measurements, "st_deviation")
+    if st_mv is not None:
+        add_component(min(abs(st_mv) / 0.25, 1.0), 0.18)
+
+    sdnn_ms = _usable_measurement(measurements, "sdnn", allow_estimated=False)
+    if sdnn_ms is not None:
+        add_component(min(max((sdnn_ms - 55.0) / 110.0, 0.0), 1.0), 0.07)
+
+    rmssd_ms = _usable_measurement(measurements, "rmssd", allow_estimated=False)
+    if rmssd_ms is not None:
+        add_component(min(max((rmssd_ms - 35.0) / 110.0, 0.0), 1.0), 0.07)
+
+    pnn50_pct = _usable_measurement(measurements, "pnn50", allow_estimated=False)
+    if pnn50_pct is not None:
+        add_component(min(pnn50_pct / 70.0, 1.0), 0.05)
+
+    add_component(min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.28, 0.0), 1.0), 0.05)
+    add_component(min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.68, 0.0), 1.0), 0.04)
+    add_component(
+        min(max(float(signature.get("spectral_entropy", 0.0)) - 0.55, 0.0) / 0.30, 1.0),
+        0.03,
+    )
+
+    if not components:
+        return 0.50
+
+    weights = np.asarray([weight for _, weight in components], dtype=np.float32)
+    values = np.asarray([value for value, _ in components], dtype=np.float32)
+    abnormality_index = float(np.average(values, weights=weights))
+    coverage = min(len(components) / 7.0, 1.0)
+    score = 0.50 + ((abnormality_index - 0.50) * (0.40 + 0.60 * coverage))
+    score = 0.50 + ((score - 0.50) * (0.50 + 0.50 * float(np.clip(signal_quality, 0.0, 1.0))))
+    return float(np.clip(score, 0.10, 0.90))
+
+
+def _fuse_model_probability(
+    *,
+    calibrated_probability: float,
+    raw_probability: Optional[float],
+    threshold: float,
+    bpm: int,
+    signal_quality: float,
+    measurements: Dict[str, "MeasurementOut"],
+    signal_signature: Optional[Dict[str, float]],
+    interval_reliable: bool,
+) -> Tuple[float, str, Dict[str, float]]:
+    heuristic_score = _heuristic_model_score(
+        bpm=bpm,
+        signal_quality=signal_quality,
+        measurements=measurements,
+        signal_signature=signal_signature,
+    )
+    physiology_score = _physiology_consistency_score(
+        bpm=bpm,
+        signal_quality=signal_quality,
+        measurements=measurements,
+        signal_signature=signal_signature,
+    )
+    support_score = 0.5 * heuristic_score + 0.5 * physiology_score
+
+    model_weight = 0.72
+    score_gap = abs(float(calibrated_probability) - support_score)
+    saturated = float(calibrated_probability) >= 0.985 or float(calibrated_probability) <= 0.015
+
+    if saturated:
+        model_weight *= 0.72
+    if not interval_reliable:
+        model_weight *= 0.86
+    if signal_quality < 0.72:
+        model_weight *= 0.84
+    if score_gap >= 0.30:
+        model_weight *= 0.68
+    if score_gap >= 0.45:
+        model_weight *= 0.62
+    if float(calibrated_probability) >= 0.995 and support_score <= 0.62:
+        model_weight *= 0.46
+    elif float(calibrated_probability) >= 0.985 and support_score <= 0.68:
+        model_weight *= 0.58
+    if raw_probability is not None and abs(float(raw_probability) - float(calibrated_probability)) >= 0.15:
+        model_weight *= 0.85
+
+    model_weight = float(np.clip(model_weight, 0.15, 0.82))
+    fused = (model_weight * float(calibrated_probability)) + ((1.0 - model_weight) * support_score)
+
+    if float(calibrated_probability) >= 0.995 and support_score <= 0.55:
+        fused = min(fused, max(threshold + 0.09, support_score + 0.10))
+    elif float(calibrated_probability) >= 0.985 and support_score <= 0.62:
+        fused = min(fused, max(threshold + 0.12, support_score + 0.11))
+    elif float(calibrated_probability) <= 0.015 and support_score >= 0.45:
+        fused = max(fused, min(threshold - 0.05, support_score - 0.08))
+
+    fused = float(np.clip(fused, 0.04, 0.96))
+    mode = "calibrated_model"
+    if abs(fused - float(calibrated_probability)) >= 0.08:
+        mode = "guardrailed_model_fusion"
+
+    diagnostics = {
+        "heuristic_score": round(float(heuristic_score), 6),
+        "physiology_score": round(float(physiology_score), 6),
+        "support_score": round(float(support_score), 6),
+        "model_weight": round(float(model_weight), 6),
+        "score_gap": round(float(score_gap), 6),
+        "final_score": round(float(fused), 6),
+    }
+    return fused, mode, diagnostics
+
+
 def _analysis_confidence(
     *,
     input_type: str,
@@ -1945,11 +2128,11 @@ def _run_signal_analysis(
         qtc_candidates.append(lead_intervals["qtc_bazett_ms_estimate"])
         st_candidates.append(lead_intervals["st_deviation_estimate"])
 
-    qrs_ms = _median_non_null(qrs_candidates)
-    pr_ms = _median_non_null(pr_candidates)
-    qt_ms = _median_non_null(qt_candidates)
-    qtc_ms = _median_non_null(qtc_candidates)
-    st_mv = _median_non_null(st_candidates)
+    qrs_ms = _sanitize_measurement_value("qrs_duration", _median_non_null(qrs_candidates))
+    pr_ms = _sanitize_measurement_value("pr_interval", _median_non_null(pr_candidates))
+    qt_ms = _sanitize_measurement_value("qt_interval", _median_non_null(qt_candidates))
+    qtc_ms = _sanitize_measurement_value("qtc", _median_non_null(qtc_candidates))
+    st_mv = _sanitize_measurement_value("st_deviation", _median_non_null(st_candidates))
     interval_reliable = (
         float(quality["signal_quality_score"]) >= 55.0
         and int(graph_data.get("detectedPeakCount", 0)) >= 3
@@ -2017,8 +2200,10 @@ def _run_signal_analysis(
     threshold = float(metadata["threshold"])
     model_error: Optional[str] = None
     raw_probability: Optional[float] = None
+    calibrated_model_probability: Optional[float] = None
     inference_mode = "heuristic_fallback"
     analysis_confidence: Optional[float] = None
+    fusion_diagnostics: Optional[Dict[str, float]] = None
     if input_type == "image":
         metadata = {
             "model_version": "image_signal_screening_v2",
@@ -2052,10 +2237,23 @@ def _run_signal_analysis(
             x_scaled = model_bundle.qt.transform(x_imputed)
             probability_details = model_bundle.predict_details(x_scaled)
             raw_probability = float(probability_details["raw_probability"])
-            score = float(probability_details["calibrated_probability"])
+            calibrated_model_probability = float(probability_details["calibrated_probability"])
             metadata = model_bundle.metadata
             threshold = float(model_bundle.threshold)
-            inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
+            if probability_details["calibration_applied"]:
+                score, inference_mode, fusion_diagnostics = _fuse_model_probability(
+                    calibrated_probability=calibrated_model_probability,
+                    raw_probability=raw_probability,
+                    threshold=threshold,
+                    bpm=bpm,
+                    signal_quality=signal_quality,
+                    measurements=measurements,
+                    signal_signature=signal_signature,
+                    interval_reliable=interval_reliable,
+                )
+            else:
+                score = calibrated_model_probability
+                inference_mode = "raw_model"
             analysis_confidence = _analysis_confidence(
                 input_type=input_type,
                 signal_quality=signal_quality,
@@ -2083,7 +2281,7 @@ def _run_signal_analysis(
                 used_fallback=True,
             )
 
-    risk = ecg_pipeline.risk_band(score, threshold)
+    risk = _derive_risk_level(score, threshold, bpm, signal_quality, measurements)
     region, coils = ecg_pipeline.region_and_coils(processed, risk)
     classification = _risk_to_classification(risk)
     graph_data["signalQuality"] = signal_quality
@@ -2094,7 +2292,7 @@ def _run_signal_analysis(
     findings = [
         f"AI-assisted screening result: {classification}",
         f"Inference mode: {inference_mode}",
-        f"Model-derived score: {score:.3f}",
+        f"Final screening score: {score:.3f}",
         f"Rhythm screening: {rhythm_label}",
         f"Signal quality score: {quality['signal_quality_score']:.2f}",
         f"Noise level: {quality['noise_level']}",
@@ -2107,7 +2305,15 @@ def _run_signal_analysis(
         )
     if raw_probability is not None:
         findings.append(f"Raw probability before calibration: {raw_probability:.3f}")
-        findings.append(f"Calibrated probability: {score:.3f}")
+        if fusion_diagnostics is not None and calibrated_model_probability is not None:
+            findings.append(
+                f"Calibrated model probability before guardrail fusion: {calibrated_model_probability:.3f}"
+            )
+            findings.append(
+                f"Physiology-consistency score: {fusion_diagnostics['physiology_score']:.3f}"
+            )
+        else:
+            findings.append(f"Calibrated probability: {score:.3f}")
     findings.append(f"Analysis support confidence: {float(analysis_confidence or 0.0):.3f}")
     if signal_signature.get("lead_diversity_index", 0.0) > 0:
         findings.append(
@@ -2154,8 +2360,10 @@ def _run_signal_analysis(
             "fallbackReason": model_error,
             "inferenceMode": inference_mode,
             "rawProbability": raw_probability,
-            "calibratedProbability": score,
+            "calibratedProbability": calibrated_model_probability if calibrated_model_probability is not None else score,
+            "finalScore": score,
             "analysisConfidence": float(analysis_confidence or 0.0),
+            "fusionDiagnostics": fusion_diagnostics,
         },
         measurements=measurements,
         graph_data=graph_data,
@@ -2497,6 +2705,7 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
     metadata = _fallback_model_metadata()
     threshold = float(metadata["threshold"])
     raw_probability: Optional[float] = None
+    calibrated_probability: Optional[float] = None
     inference_mode = "heuristic_fallback"
     model_error: Optional[str] = None
     try:
@@ -2508,7 +2717,22 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
         calibrated_probability = float(probability_details["calibrated_probability"])
         threshold = float(model_bundle.threshold)
         metadata = model_bundle.metadata
-        inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
+        if probability_details["calibration_applied"]:
+            calibrated_probability, inference_mode, _ = _fuse_model_probability(
+                calibrated_probability=calibrated_probability,
+                raw_probability=raw_probability,
+                threshold=threshold,
+                bpm=int(round(rr["heart_rate_bpm"])) if rr["heart_rate_bpm"] is not None else 0,
+                signal_quality=round(float(quality["signal_quality_score"]) / 100.0, 3),
+                measurements=measurements,
+                signal_signature=signal_signature,
+                interval_reliable=(
+                    float(quality["signal_quality_score"]) >= 55.0
+                    and len(ecg_pipeline.detect_r_peaks(representative, fs)) >= 3
+                ),
+            )
+        else:
+            inference_mode = "raw_model"
     except HTTPException as exc:
         model_error = str(exc.detail)
         calibrated_probability = _heuristic_model_score(
@@ -2518,7 +2742,14 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
             signal_signature=signal_signature,
         )
 
-    predicted_class = _risk_to_classification(ecg_pipeline.risk_band(calibrated_probability, threshold))
+    derived_risk = _derive_risk_level(
+        calibrated_probability,
+        threshold,
+        int(round(rr["heart_rate_bpm"])) if rr["heart_rate_bpm"] is not None else 0,
+        round(float(quality["signal_quality_score"]) / 100.0, 3),
+        measurements,
+    )
+    predicted_class = _risk_to_classification(derived_risk)
     if model_error:
         metadata = _fallback_model_metadata()
 
