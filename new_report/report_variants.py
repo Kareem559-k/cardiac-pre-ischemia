@@ -276,6 +276,58 @@ def _medical_note_rows(measurements: dict[str, Any], ai: dict[str, Any], quality
     return notes[:7]
 
 
+def _clinical_interpretation_rows(measurements: dict[str, Any], ai: dict[str, Any], quality: dict[str, Any], findings: list[dict[str, str]]) -> list[list[str]]:
+    rows = [["Section", "Interpretation"]]
+    rows.append(
+        [
+            "Overall impression",
+            f"Current AI-assisted screening output is {ai.get('classification') or '-'} with risk band {ai.get('screening_status') or '-'} and score {_fmt(ai.get('model_score_pct'), '%')}.",
+        ]
+    )
+    hr = measurements.get("heart_rate_bpm")
+    if hr is not None:
+        rows.append(
+            [
+                "Rate interpretation",
+                "Tachycardic pattern requires rhythm correlation."
+                if float(hr) > 100
+                else "Lower-rate pattern should be correlated with symptoms."
+                if float(hr) < 60
+                else "Rate does not independently suggest marked instability.",
+            ]
+        )
+    qtc = measurements.get("qtc_bazett_ms_estimate")
+    if qtc is not None:
+        rows.append(
+            [
+                "Repolarization review",
+                f"QTc estimate is {_fmt(qtc, ' ms')}; verify on raw tracing before any clinical escalation.",
+            ]
+        )
+    st = measurements.get("st_deviation_estimate")
+    if st is not None:
+        rows.append(
+            [
+                "ST review",
+                f"Estimated ST deviation is {_fmt(st)} and should be interpreted in lead context rather than isolation.",
+            ]
+        )
+    rows.append(
+        [
+            "Signal confidence",
+            f"Signal quality is {_fmt(quality.get('score'))} with noise label {quality.get('noise_level') or '-'}; lower quality reduces confidence in finer interval interpretation.",
+        ]
+    )
+    if findings:
+        rows.append(
+            [
+                "Primary evidence",
+                findings[0].get("finding") or "-",
+            ]
+        )
+    return rows[:7]
+
+
 def _build_story_summary_focus(report_data: dict[str, Any], charts: dict[str, bytes]) -> list[object]:
     s = _styles()
     patient = report_data["patient_information"]
@@ -563,24 +615,37 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
 
     story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 7), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
     story.extend([Paragraph("OVERALL ASSESSMENT", s["section"]), _assessment_block(ai, findings, report_data["priority"]), Spacer(1, 3)])
-    story.extend([Paragraph("LIMITATIONS", s["section"]), _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm])), Spacer(1, 3)])
+
+    story.append(PageBreak())
+    story.extend([Paragraph("CLINICAL INTERPRETATION SHEET", s["title"]), Spacer(1, 3)])
+    if "physiology_ai" in charts:
+        story.extend([Paragraph("PHYSIOLOGY / AI OVERVIEW", s["section"]), Image(io.BytesIO(charts["physiology_ai"]), width=184 * mm, height=72 * mm), Spacer(1, 3)])
+    if "interval_profile" in charts:
+        story.extend([Paragraph("INTERVAL REVIEW VISUALS", s["section"]), Image(io.BytesIO(charts["interval_profile"]), width=184 * mm, height=70 * mm), Spacer(1, 3)])
     story.extend(
         [
+            Paragraph("CLINICAL INTERPRETATION", s["section"]),
+            _styled(Table(_clinical_interpretation_rows(measurements, ai, quality, findings), colWidths=[42 * mm, 142 * mm]), fontsize=7),
+            Spacer(1, 3),
+            Paragraph("LIMITATIONS", s["section"]),
+            _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm])),
+            Spacer(1, 3),
             Paragraph("CASE SUMMARY / ملخص الحالة", s["section"]),
             _styled(
                 Table(
                     [
                         ["English", case_summary_en or "-"],
-                        ["العربية", case_summary_ar or "-"],
+                        ["Arabic", case_summary_ar or "-"],
                     ],
                     colWidths=[28 * mm, 156 * mm],
                 ),
                 header_bg="#ffffff",
             ),
             Spacer(1, 3),
+            Paragraph("CLINICAL DISCLAIMER", s["section"]),
+            Paragraph("Research-use AI-assisted ECG screening report. Automated measurements and model-derived scores require independent clinical review.", s["tiny"]),
         ]
     )
-    story.extend([Paragraph("CLINICAL DISCLAIMER", s["section"]), Paragraph("Research-use AI-assisted ECG screening report. Automated measurements and model-derived scores require independent clinical review.", s["tiny"])])
     return story
 
 

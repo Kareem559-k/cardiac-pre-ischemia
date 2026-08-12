@@ -266,4 +266,65 @@ def build_report_charts(context: dict[str, Any], report_data: dict[str, Any]) ->
         fig.tight_layout()
         charts["risk_profile"] = _png_bytes(fig)
 
+    hr_value = clinical.get("heart_rate_bpm")
+    sdnn_value = report_data["hrv"].get("sdnn_ms")
+    rmssd_value = report_data["hrv"].get("rmssd_ms")
+    if any(value is not None for value in [hr_value, sdnn_value, rmssd_value]):
+        fig = Figure(figsize=(10, 4.8), facecolor="white")
+        ax1 = fig.add_subplot(121)
+        ai_bars = [
+            ("Heart Rate", float(hr_value)) if hr_value is not None else None,
+            ("SDNN", float(sdnn_value)) if sdnn_value is not None else None,
+            ("RMSSD", float(rmssd_value)) if rmssd_value is not None else None,
+        ]
+        ai_bars = [row for row in ai_bars if row is not None]
+        if ai_bars:
+            ax1.bar(
+                [label for label, _ in ai_bars],
+                [value for _, value in ai_bars],
+                color=[PRIMARY, ACCENT, WARNING][: len(ai_bars)],
+            )
+        ax1.set_title("Physiology Snapshot", fontsize=10)
+        ax1.grid(axis="y", color=GRID_MINOR)
+        ax2 = fig.add_subplot(122)
+        if risk_pairs:
+            ax2.plot(
+                np.arange(len(risk_pairs)),
+                [value for _, value in risk_pairs],
+                color=DANGER,
+                marker="o",
+                linewidth=1.5,
+            )
+            ax2.set_xticks(np.arange(len(risk_pairs)))
+            ax2.set_xticklabels([label for label, _ in risk_pairs], rotation=20, ha="right", fontsize=8)
+        ax2.set_ylim(0, 100)
+        ax2.set_title("AI Probability Profile", fontsize=10)
+        ax2.grid(color=GRID_MINOR)
+        fig.tight_layout()
+        charts["physiology_ai"] = _png_bytes(fig)
+
+    if interval_pairs:
+        fig = Figure(figsize=(10, 4.8), facecolor="white")
+        ax1 = fig.add_subplot(121)
+        ax1.bar(
+            [label for label, _ in interval_pairs],
+            [value for _, value in interval_pairs],
+            color=[PRIMARY, ACCENT, WARNING, DANGER][: len(interval_pairs)],
+        )
+        ax1.set_title("Interval Profile", fontsize=10)
+        ax1.grid(axis="y", color=GRID_MINOR)
+        ax2 = fig.add_subplot(122)
+        ax2.plot(
+            [value for _, value in interval_pairs],
+            marker="o",
+            color=PRIMARY,
+            linewidth=1.4,
+        )
+        ax2.set_xticks(np.arange(len(interval_pairs)))
+        ax2.set_xticklabels([label for label, _ in interval_pairs], fontsize=8)
+        ax2.set_title("Interval Trend Line", fontsize=10)
+        ax2.grid(color=GRID_MINOR)
+        fig.tight_layout()
+        charts["interval_profile"] = _png_bytes(fig)
+
     return charts
