@@ -109,11 +109,12 @@ def preprocess_signal(signal: np.ndarray, fs: float, apply_notch: bool = True) -
     return ((filtered - mean) / std).astype(np.float32)
 
 
-def representative_lead(signal: np.ndarray) -> np.ndarray:
+def representative_lead(signal: np.ndarray, fs: float | None = None) -> np.ndarray:
     lead_first = ensure_lead_first(signal)
     if lead_first.shape[0] == 1:
         return lead_first[0]
 
+    effective_fs = float(fs) if fs and fs > 0 else DEFAULT_FS
     best_idx = 0
     best_score = -np.inf
     for idx, lead in enumerate(lead_first):
@@ -122,7 +123,7 @@ def representative_lead(signal: np.ndarray) -> np.ndarray:
             continue
         peaks, props = find_peaks(
             lead,
-            distance=max(int(0.25 * DEFAULT_FS), 1),
+            distance=max(int(0.25 * effective_fs), 1),
             prominence=max(0.30 * lead_std, 0.12),
         )
         peak_count = float(len(peaks))
@@ -313,8 +314,8 @@ def estimate_wave_intervals(signal_1d: np.ndarray, peaks: np.ndarray, fs: float)
 def signal_quality_metrics(raw_signal: np.ndarray, processed_signal: np.ndarray, fs: float) -> dict[str, Any]:
     raw = ensure_lead_first(raw_signal)
     processed = ensure_lead_first(processed_signal)
-    rep_raw = representative_lead(raw)
-    rep_proc = representative_lead(processed)
+    rep_raw = representative_lead(raw, fs)
+    rep_proc = representative_lead(processed, fs)
 
     kernel = max(int(fs * 0.8), 3)
     if kernel % 2 == 0:
@@ -334,20 +335,34 @@ def signal_quality_metrics(raw_signal: np.ndarray, processed_signal: np.ndarray,
     score -= nan_ratio * 100.0
     score = float(np.clip(score, 0.0, 100.0))
 
+    quality_reasons: list[str] = []
+    if baseline_ratio > 0.35:
+        quality_reasons.append("elevated baseline wander")
+    if noise_ratio > 0.45:
+        quality_reasons.append("high-frequency noise contamination")
+    if clipping_ratio > 0.02:
+        quality_reasons.append("possible clipping or saturation")
+    if nan_ratio > 0.0:
+        quality_reasons.append("missing or invalid samples detected")
+
     if score >= 80:
         noise_level = "Low"
     elif score >= 55:
         noise_level = "Medium"
     else:
         noise_level = "High"
+        if not quality_reasons:
+            quality_reasons.append("overall signal quality below reliable interval-analysis threshold")
 
     return {
         "signal_quality_score": round(score, 2),
+        "signal_quality_class": noise_level.upper(),
         "noise_level": noise_level,
         "baseline_wander_ratio": round(baseline_ratio, 4),
         "noise_ratio": round(noise_ratio, 4),
         "clipping_ratio": round(clipping_ratio, 4),
         "nan_ratio": round(nan_ratio, 4),
+        "quality_reasons": quality_reasons,
     }
 
 
@@ -387,7 +402,7 @@ def extract_model_features(signal: np.ndarray, fs: float) -> np.ndarray:
             fft_subset = np.pad(fft_subset, (0, 20 - len(fft_subset)), mode="constant")
         features.extend(float(x) for x in fft_subset)
 
-    rep = representative_lead(lead_first)
+    rep = representative_lead(lead_first, fs)
     peaks = detect_r_peaks(rep, fs)
     features.append(float(len(peaks)))
     rr = compute_rr_hrv(peaks, fs)

@@ -1,0 +1,2 @@
+case_id,input_type,record_id,model_version,pipeline_version,feature_version,threshold,fs,heart_rate_bpm,qrs_ms,qtc_ms,raw_probability,calibrated_probability,risk_level,status,notes
+failure_case_pending,unknown,unknown,ECG_MODEL_V15_FINAL,wfdb_v15_verified_inference,300_feature_vector_v1,0.52,NOT_VERIFIED,NOT_VERIFIED,NOT_VERIFIED,NOT_VERIFIED,NOT_VERIFIED,NOT_VERIFIED,NOT_VERIFIED,PENDING,Exact failure ECG payload was not available in a version-matched runnable local environment during this audit stage.

@@ -973,7 +973,7 @@ def _signal_signature_metrics(
         if upper.size:
             lead_diversity_index = float(np.clip(1.0 - np.mean(np.abs(upper)), 0.0, 1.0))
 
-    rep = ecg_pipeline.representative_lead(processed)
+    rep = ecg_pipeline.representative_lead(processed, fs)
     zero_crossings = float(np.mean(np.diff(np.signbit(rep)).astype(np.float32))) if rep.size > 1 else 0.0
     slope_energy = float(np.mean(np.abs(np.diff(rep)))) if rep.size > 1 else 0.0
     fft_values = np.abs(fft(rep))
@@ -1122,7 +1122,7 @@ def _compute_signal_quality(signal: np.ndarray) -> Tuple[float, str]:
 
 
 def _derive_measurements(signal: np.ndarray, fs: float) -> Tuple[Dict[str, MeasurementOut], Dict[str, Any]]:
-    representative = ecg_pipeline.representative_lead(signal)
+    representative = ecg_pipeline.representative_lead(signal, fs)
     peaks, _ = find_peaks(representative, distance=max(int(0.2 * fs), 1), prominence=0.5)
     rr_ms: List[float] = []
     bpm = 0
@@ -1180,6 +1180,7 @@ def _derive_measurements(signal: np.ndarray, fs: float) -> Tuple[Dict[str, Measu
         "waveform": [round(float(v), 4) for v in representative[:1000]],
         "rPeaks": [int(v) for v in peaks[:100]],
         "rrIntervalsMs": rr_ms[:100],
+        "detectedPeakCount": int(len(peaks)),
     }
     return measurements, graph_data
 
@@ -1199,6 +1200,20 @@ def _median_non_null(values: List[Optional[float]]) -> Optional[float]:
     if not filtered:
         return None
     return float(np.median(np.asarray(filtered, dtype=np.float32)))
+
+
+def _measurement_source(
+    value: Optional[float],
+    *,
+    quality_score: float,
+    reliable: bool,
+    estimated: bool = True,
+) -> str:
+    if value is None:
+        return "UNAVAILABLE"
+    if not reliable or quality_score < 55.0:
+        return "UNRELIABLE"
+    return "ESTIMATED" if estimated else "MEASURED"
 
 
 def _estimate_region_and_coils(signal: np.ndarray, risk: str) -> Tuple[str, List[str]]:
@@ -1789,7 +1804,10 @@ def _run_signal_analysis(
 ) -> AnalysisResponse:
     processed = ecg_pipeline.ensure_lead_first(processed_signal)
     raw = ecg_pipeline.ensure_lead_first(raw_signal)
-    rr = ecg_pipeline.compute_rr_hrv(ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs), fs)
+    rr = ecg_pipeline.compute_rr_hrv(
+        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed, fs), fs),
+        fs,
+    )
     bpm = int(round(rr["heart_rate_bpm"])) if rr["heart_rate_bpm"] is not None else 0
     quality = ecg_pipeline.signal_quality_metrics(raw, processed, fs)
     signal_quality = round(float(quality["signal_quality_score"]) / 100.0, 3)
@@ -1846,35 +1864,60 @@ def _run_signal_analysis(
     qt_ms = _median_non_null(qt_candidates)
     qtc_ms = _median_non_null(qtc_candidates)
     st_mv = _median_non_null(st_candidates)
+    interval_reliable = (
+        float(quality["signal_quality_score"]) >= 55.0
+        and int(graph_data.get("detectedPeakCount", 0)) >= 3
+        and len(candidate_leads) >= 2
+    )
     measurements["qrs_duration"] = MeasurementOut(
         name="qrs_duration",
         value=qrs_ms,
         unit="ms",
-        source="ESTIMATED" if qrs_ms is not None else "UNAVAILABLE",
+        source=_measurement_source(
+            qrs_ms,
+            quality_score=float(quality["signal_quality_score"]),
+            reliable=interval_reliable,
+        ),
     )
     measurements["pr_interval"] = MeasurementOut(
         name="pr_interval",
         value=pr_ms,
         unit="ms",
-        source="ESTIMATED" if pr_ms is not None else "UNAVAILABLE",
+        source=_measurement_source(
+            pr_ms,
+            quality_score=float(quality["signal_quality_score"]),
+            reliable=interval_reliable,
+        ),
     )
     measurements["qt_interval"] = MeasurementOut(
         name="qt_interval",
         value=qt_ms,
         unit="ms",
-        source="ESTIMATED" if qt_ms is not None else "UNAVAILABLE",
+        source=_measurement_source(
+            qt_ms,
+            quality_score=float(quality["signal_quality_score"]),
+            reliable=interval_reliable,
+        ),
     )
     measurements["qtc"] = MeasurementOut(
         name="qtc",
         value=qtc_ms,
         unit="ms",
-        source="ESTIMATED" if qtc_ms is not None else "UNAVAILABLE",
+        source=_measurement_source(
+            qtc_ms,
+            quality_score=float(quality["signal_quality_score"]),
+            reliable=interval_reliable,
+        ),
     )
     measurements["st_deviation"] = MeasurementOut(
         name="st_deviation",
         value=st_mv,
         unit="mV",
-        source="ESTIMATED" if st_mv is not None else "UNAVAILABLE",
+        source=_measurement_source(
+            st_mv,
+            quality_score=float(quality["signal_quality_score"]),
+            reliable=interval_reliable,
+        ),
     )
     rhythm_label = ecg_pipeline.classify_rhythm(
         rr.get("heart_rate_bpm"),
@@ -1942,6 +1985,12 @@ def _run_signal_analysis(
         f"Signal quality score: {quality['signal_quality_score']:.2f}",
         f"Noise level: {quality['noise_level']}",
     ]
+    for reason in quality.get("quality_reasons", []):
+        findings.append(f"Signal quality reason: {reason}")
+    if not interval_reliable:
+        findings.append(
+            "Interval reliability insufficient for confident PR/QRS/QT/QTc/ST interpretation; verify on the original ECG."
+        )
     if raw_probability is not None:
         findings.append(f"Raw probability before calibration: {raw_probability:.3f}")
         findings.append(f"Calibrated probability: {score:.3f}")
@@ -1957,6 +2006,9 @@ def _run_signal_analysis(
         findings.append("Fallback signal-based inference was used because the deploy-time model runtime was unavailable.")
     if input_type == "image":
         findings.append("Image upload used signal-only ECG screening because the packaged V15 classifier is validated for WFDB multi-lead records, not paper/screenshot ECG inputs.")
+        findings.append(
+            "Image-derived screening is experimental and should not be interpreted as equivalent to a calibrated WFDB model result."
+        )
     if recording_id:
         findings.append(f"Recording ID: {recording_id}")
     recommendations = [
@@ -2316,12 +2368,12 @@ def _probe_analysis_from_record(record_path: Path) -> ModelProbeRow:
     signal, fs, lead_names = ecg_pipeline.load_wfdb_record(str(record_path))
     processed = ecg_pipeline.preprocess_signal(signal, fs)
     rr = ecg_pipeline.compute_rr_hrv(
-        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed), fs), fs
+        ecg_pipeline.detect_r_peaks(ecg_pipeline.representative_lead(processed, fs), fs), fs
     )
     measurements, _ = _derive_measurements(processed, fs)
     quality = ecg_pipeline.signal_quality_metrics(signal, processed, fs)
     signal_signature = _signal_signature_metrics(signal, processed, fs, quality, rr)
-    representative = ecg_pipeline.representative_lead(processed)
+    representative = ecg_pipeline.representative_lead(processed, fs)
     feature_vector = ecg_pipeline.extract_model_features(processed, fs)
     feature_hash = hashlib.sha256(feature_vector.astype(np.float32).tobytes()).hexdigest()
 

@@ -1,0 +1,11 @@
+feature_name,feature_group,expected_order,source,unit,status,notes
+mean,per_lead,1,feature_schema.json,normalized_amplitude,VERIFIED,Per-lead mean is part of the ordered 24-feature lead block.
+std,per_lead,2,feature_schema.json,normalized_amplitude,VERIFIED,Per-lead standard deviation is part of the ordered 24-feature lead block.
+skew,per_lead,3,feature_schema.json,unitless,VERIFIED,Per-lead skew is included in both training and inference schema.
+kurtosis,per_lead,4,feature_schema.json,unitless,VERIFIED,Per-lead kurtosis is included in both training and inference schema.
+fft_bin_0_to_19,per_lead,5_to_24,feature_schema.json,fft_amplitude,VERIFIED,First 20 FFT magnitude bins are included per lead.
+representative_lead_r_peak_count,global,after_all_leads_1,feature_schema.json,count,VERIFIED,Derived from representative lead peak count.
+rr_mean_seconds,global,after_all_leads_2,feature_schema.json,seconds,VERIFIED,Derived from RR intervals.
+rr_std_seconds,global,after_all_leads_3,feature_schema.json,seconds,VERIFIED,Derived from RR intervals.
+rmssd_seconds,global,after_all_leads_4,feature_schema.json,seconds,VERIFIED,Derived from RR interval differences.
+pnn50_percent,global,after_all_leads_5,feature_schema.json,percent,VERIFIED,Derived from RR interval differences.

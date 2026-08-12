@@ -1,0 +1,35 @@
+{
+  "audit_created_on": "2026-08-12",
+  "project": "CARDIAC PRE-ISCHEMIA",
+  "status": "partial_baseline_frozen",
+  "active_model": {
+    "model_version": "ECG_MODEL_V15_FINAL",
+    "base_model_source": "KIMO_ECG_ULTRA_V14_PLUS",
+    "pipeline_version": "wfdb_v15_verified_inference",
+    "feature_version": "300_feature_vector_v1",
+    "feature_count": 300,
+    "threshold": 0.52,
+    "input_format": "WFDB multi-lead ECG record"
+  },
+  "artifacts": {
+    "model_v15_final.pkl": "EDB0513CA90C1FE74EB8115052BE21BDD760590128F81466C303CD52D6987ED5",
+    "imputer_v15_final.pkl": "C855B080814822631B8565AEBE5677479839DFDC3143D69FE848BE06B7E31FB7",
+    "scaler_v15_final.pkl": "BCFFCE83F8BF0F35492BFF07351169350573A0A6663B2AE682F0BEA7A84A99F7",
+    "threshold_v15_final.npy": "A52A36802BD16592B8EEC882C9F79AF36C08AF096A84DD277A326E7A8A136C61",
+    "feature_schema.json": "959FA74A210458027A0A919B57DC0900C81B988DE7D5D03643855B4B3D8A3ABE",
+    "preprocessing_config.json": "D84A706C667DA522742658F7E857002C951810B2C744CE8ED8ABD5A3EA56D69E",
+    "backend/ecg_pipeline.py": "184333CCD26CC4F761B094AECE9AD949EED1B6A00B74355E306C1DCADF058AB5",
+    "backend/main.py": "EC4032F8AAF7F0F8AF5119A871CFA3BBCE78B86BA49D53F1B4309C30A17050F0"
+  },
+  "confirmed_observations": [
+    "WFDB input path uses ECG_MODEL_V15_FINAL through imputer + scaler + stack_model + optional Platt scaler.",
+    "Image input path does not use ECG_MODEL_V15_FINAL and instead routes through image_signal_screening_v2 heuristic scoring.",
+    "Image input path assigns fs=100.0 by construction for synthetic traces exported from image extraction.",
+    "Representative lead selection previously used DEFAULT_FS=100.0 internally during peak-based lead scoring."
+  ],
+  "environment_limitations": [
+    "Local Python 3.11 runtime tied to WindowsApps could not be executed reliably from the current shell.",
+    "Local Python 3.14 runtime can execute analysis code but cannot safely unpickle scikit-learn 1.5.0 preprocessing artifacts for full model audit.",
+    "No local persisted analyses were present in backend/app.db to compute production probability-distribution statistics."
+  ]
+}
