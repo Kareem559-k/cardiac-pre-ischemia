@@ -571,12 +571,8 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
         story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=74 * mm), Spacer(1, 3)])
     if "morphology" in charts:
         story.extend([Paragraph("REPRESENTATIVE MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=62 * mm), Spacer(1, 3)])
-    story.extend(
-        [
-            Paragraph("VISUAL INTERPRETATION NOTES", s["section"]),
-            _styled(Table(_medical_note_rows(measurements, ai, quality), colWidths=[38 * mm, 146 * mm]), fontsize=7),
-        ]
-    )
+    if "clinical_metrics" in charts:
+        story.extend([Paragraph("CLINICAL METRICS OVERVIEW", s["section"]), Image(io.BytesIO(charts["clinical_metrics"]), width=184 * mm, height=66 * mm)])
 
     story.append(PageBreak())
     story.extend([Paragraph("HRV + INTERVAL + AI VISUALS", s["title"]), Spacer(1, 3)])
@@ -626,6 +622,9 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
         [
             Paragraph("CLINICAL INTERPRETATION", s["section"]),
             _styled(Table(_clinical_interpretation_rows(measurements, ai, quality, findings), colWidths=[42 * mm, 142 * mm]), fontsize=7),
+            Spacer(1, 3),
+            Paragraph("VISUAL INTERPRETATION NOTES", s["section"]),
+            _styled(Table(_medical_note_rows(measurements, ai, quality), colWidths=[38 * mm, 146 * mm]), fontsize=7),
             Spacer(1, 3),
             Paragraph("LIMITATIONS", s["section"]),
             _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm])),
