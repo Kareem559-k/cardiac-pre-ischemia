@@ -579,27 +579,27 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     )
 
     story.append(PageBreak())
-    story.extend([Paragraph("SIGNAL QUALITY & VARIABILITY", s["title"]), Spacer(1, 3)])
+    story.extend([Paragraph("HRV + INTERVAL + AI VISUALS", s["title"]), Spacer(1, 3)])
     if "hrv_graphs" in charts:
-        story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=76 * mm), Spacer(1, 3)])
-    if "clinical_metrics" in charts:
+        story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=80 * mm), Spacer(1, 3)])
+    if "interval_profile" in charts:
+        story.extend([Paragraph("INTERVAL PROFILE", s["section"]), Image(io.BytesIO(charts["interval_profile"]), width=184 * mm, height=70 * mm), Spacer(1, 3)])
+    if "physiology_ai" in charts:
+        story.extend([Paragraph("AI / PHYSIOLOGY VISUALS", s["section"]), Image(io.BytesIO(charts["physiology_ai"]), width=184 * mm, height=72 * mm), Spacer(1, 3)])
+    elif "clinical_metrics" in charts:
         story.extend([Paragraph("CLINICAL METRICS OVERVIEW", s["section"]), Image(io.BytesIO(charts["clinical_metrics"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
-    if "frequency" in charts:
-        freq_block = Table(
-            [[Image(io.BytesIO(charts["frequency"]), width=108 * mm, height=52 * mm), _styled(Table(_frequency_rows(frequency), colWidths=[46 * mm, 30 * mm]))]],
-            colWidths=[112 * mm, 72 * mm],
-        )
-        freq_block.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-        story.extend([Paragraph("FREQUENCY ANALYSIS", s["section"]), freq_block, Spacer(1, 3)])
-    detail_metrics = Table(
-        [[
-            _styled(Table(_interval_rows(measurements), colWidths=[24 * mm, 24 * mm, 42 * mm, 30 * mm]), fontsize=7),
-            _styled(Table(_quality_rows(quality), colWidths=[50 * mm, 38 * mm]), fontsize=7),
-        ]],
-        colWidths=[92 * mm, 92 * mm],
-    )
-    detail_metrics.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    story.extend([detail_metrics])
+    if "risk_profile" in charts or "threshold" in charts:
+        ai_visuals: list[object] = []
+        if "risk_profile" in charts:
+            ai_visuals.append(Image(io.BytesIO(charts["risk_profile"]), width=88 * mm, height=42 * mm))
+        if "threshold" in charts:
+            ai_visuals.append(Image(io.BytesIO(charts["threshold"]), width=88 * mm, height=30 * mm))
+        if len(ai_visuals) == 2:
+            ai_panel = Table([[ai_visuals[0], ai_visuals[1]]], colWidths=[92 * mm, 92 * mm])
+            ai_panel.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+            story.extend([Paragraph("AI DECISION VISUALS", s["section"]), ai_panel])
+        elif ai_visuals:
+            story.extend([Paragraph("AI DECISION VISUALS", s["section"]), ai_visuals[0]])
 
     story.append(PageBreak())
     story.extend([Paragraph("AI & EVIDENCE ANALYSIS", s["title"]), Spacer(1, 3)])
