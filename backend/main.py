@@ -839,37 +839,58 @@ def _heuristic_model_score(
     signal_signature: Optional[Dict[str, float]] = None,
 ) -> float:
     signature = signal_signature or {}
-    score = 0.12
-    score += min(abs(float(bpm) - 72.0) / 65.0, 1.0) * 0.16
+    components: List[Tuple[float, float]] = []
+
+    def add_component(value: Optional[float], weight: float) -> None:
+        if value is None or not np.isfinite(float(value)):
+            return
+        components.append((float(np.clip(value, 0.0, 1.0)), weight))
+
+    add_component(min(abs(float(bpm) - 72.0) / 65.0, 1.0), 0.16)
 
     qrs = measurements.get("qrs_duration")
     if qrs and qrs.value is not None:
-        score += min(max((float(qrs.value) - 92.0) / 55.0, 0.0), 1.0) * 0.18
+        add_component(min(max((float(qrs.value) - 92.0) / 55.0, 0.0), 1.0), 0.18)
 
     qtc = measurements.get("qtc")
     if qtc and qtc.value is not None:
-        score += min(max((float(qtc.value) - 415.0) / 95.0, 0.0), 1.0) * 0.14
+        add_component(min(max((float(qtc.value) - 415.0) / 95.0, 0.0), 1.0), 0.14)
 
     st_dev = measurements.get("st_deviation")
     if st_dev and st_dev.value is not None:
-        score += min(abs(float(st_dev.value)) / 0.35, 1.0) * 0.20
+        add_component(min(abs(float(st_dev.value)) / 0.35, 1.0), 0.20)
 
     sdnn = measurements.get("sdnn")
     if sdnn and sdnn.value is not None:
-        score += min(max((float(sdnn.value) - 40.0) / 120.0, 0.0), 1.0) * 0.08
+        add_component(min(max((float(sdnn.value) - 40.0) / 120.0, 0.0), 1.0), 0.08)
 
     rmssd = measurements.get("rmssd")
     if rmssd and rmssd.value is not None:
-        score += min(max((float(rmssd.value) - 25.0) / 95.0, 0.0), 1.0) * 0.08
+        add_component(min(max((float(rmssd.value) - 25.0) / 95.0, 0.0), 1.0), 0.08)
 
-    score += min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.55, 0.0), 1.0) * 0.08
-    score += min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.65, 0.0), 1.0) * 0.12
-    score += min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.30, 0.0), 1.0) * 0.10
-    score += min(max(float(signature.get("spectral_entropy", 0.0)) - 0.55, 0.0) / 0.35, 1.0) * 0.07
-    score += min(max(abs(float(signature.get("dominant_region_margin", 0.0))) / 0.25, 0.0), 1.0) * 0.03
-    score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.07
+    add_component(min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.55, 0.0), 1.0), 0.08)
+    add_component(min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.65, 0.0), 1.0), 0.12)
+    add_component(min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.30, 0.0), 1.0), 0.10)
+    add_component(
+        min(max(float(signature.get("spectral_entropy", 0.0)) - 0.55, 0.0) / 0.35, 1.0),
+        0.07,
+    )
+    add_component(
+        min(max(abs(float(signature.get("dominant_region_margin", 0.0))) / 0.25, 0.0), 1.0),
+        0.03,
+    )
 
-    return float(np.clip(score, 0.05, 0.95))
+    if not components:
+        return 0.50
+
+    weights = np.asarray([weight for _, weight in components], dtype=np.float32)
+    values = np.asarray([value for value, _ in components], dtype=np.float32)
+    abnormality_index = float(np.average(values, weights=weights))
+    support = min(len(components) / 8.0, 1.0)
+    quality_support = float(np.clip(signal_quality, 0.0, 1.0))
+    score = 0.50 + ((abnormality_index - 0.50) * (0.55 + 0.45 * support))
+    score = 0.50 + ((score - 0.50) * (0.60 + 0.40 * quality_support))
+    return float(np.clip(score, 0.08, 0.92))
 
 
 def _image_signal_screening_score(
@@ -880,60 +901,89 @@ def _image_signal_screening_score(
     signal_signature: Optional[Dict[str, float]] = None,
 ) -> float:
     signature = signal_signature or {}
-    score = 0.10
+    components: List[Tuple[float, float]] = []
+
+    def add_component(value: Optional[float], weight: float) -> None:
+        if value is None or not np.isfinite(float(value)):
+            return
+        components.append((float(np.clip(value, 0.0, 1.0)), weight))
 
     rr = measurements.get("rr_interval")
     if rr and rr.value is not None:
-        score += min(abs(float(rr.value) - 800.0) / 550.0, 1.0) * 0.08
+        add_component(min(abs(float(rr.value) - 800.0) / 550.0, 1.0), 0.08)
 
-    score += min(abs(float(bpm) - 72.0) / 70.0, 1.0) * 0.16
+    add_component(min(abs(float(bpm) - 72.0) / 70.0, 1.0), 0.16)
 
     pr = measurements.get("pr_interval")
     if pr and pr.value is not None:
         pr_val = float(pr.value)
         if pr_val < 110 or pr_val > 220:
-            score += min(abs(pr_val - 165.0) / 120.0, 1.0) * 0.06
+            add_component(min(abs(pr_val - 165.0) / 120.0, 1.0), 0.06)
 
     qrs = measurements.get("qrs_duration")
     if qrs and qrs.value is not None:
         qrs_val = float(qrs.value)
-        score += min(abs(qrs_val - 95.0) / 70.0, 1.0) * 0.17
+        add_component(min(abs(qrs_val - 95.0) / 70.0, 1.0), 0.17)
 
     qt = measurements.get("qt_interval")
     if qt and qt.value is not None:
-        score += min(abs(float(qt.value) - 380.0) / 170.0, 1.0) * 0.06
+        add_component(min(abs(float(qt.value) - 380.0) / 170.0, 1.0), 0.06)
 
     qtc = measurements.get("qtc")
     if qtc and qtc.value is not None:
         qtc_val = float(qtc.value)
-        score += min(abs(qtc_val - 420.0) / 140.0, 1.0) * 0.15
+        add_component(min(abs(qtc_val - 420.0) / 140.0, 1.0), 0.15)
 
     st_dev = measurements.get("st_deviation")
     if st_dev and st_dev.value is not None:
-        score += min(abs(float(st_dev.value)) / 0.30, 1.0) * 0.18
+        add_component(min(abs(float(st_dev.value)) / 0.30, 1.0), 0.18)
 
     sdnn = measurements.get("sdnn")
     if sdnn and sdnn.value is not None:
-        score += min(float(sdnn.value) / 180.0, 1.0) * 0.06
+        add_component(min(float(sdnn.value) / 180.0, 1.0), 0.06)
 
     rmssd = measurements.get("rmssd")
     if rmssd and rmssd.value is not None:
-        score += min(float(rmssd.value) / 220.0, 1.0) * 0.05
+        add_component(min(float(rmssd.value) / 220.0, 1.0), 0.05)
 
     pnn50 = measurements.get("pnn50")
     if pnn50 and pnn50.value is not None:
-        score += min(float(pnn50.value) / 100.0, 1.0) * 0.04
+        add_component(min(float(pnn50.value) / 100.0, 1.0), 0.04)
 
-    score += min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.60, 0.0), 1.0) * 0.07
-    score += min(max(float(signature.get("raw_lead_strength_cv", 0.0)) / 0.70, 0.0), 1.0) * 0.08
-    score += min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.70, 0.0), 1.0) * 0.08
-    score += min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.35, 0.0), 1.0) * 0.08
-    score += min(max(float(signature.get("slope_energy", 0.0)) / 0.35, 0.0), 1.0) * 0.05
-    score += min(max(float(signature.get("zero_crossing_rate", 0.0)) / 0.20, 0.0), 1.0) * 0.04
-    score += min(max(float(signature.get("spectral_entropy", 0.0)) - 0.50, 0.0) / 0.40, 1.0) * 0.05
-    score += min(max(1.0 - float(signal_quality), 0.0), 1.0) * 0.06
+    add_component(min(max(float(signature.get("lead_strength_cv", 0.0)) / 0.60, 0.0), 1.0), 0.07)
+    add_component(
+        min(max(float(signature.get("raw_lead_strength_cv", 0.0)) / 0.70, 0.0), 1.0),
+        0.08,
+    )
+    add_component(
+        min(max(float(signature.get("lead_diversity_index", 0.0)) / 0.70, 0.0), 1.0),
+        0.08,
+    )
+    add_component(
+        min(max(float(signature.get("rr_irregularity_index", 0.0)) / 0.35, 0.0), 1.0),
+        0.08,
+    )
+    add_component(min(max(float(signature.get("slope_energy", 0.0)) / 0.35, 0.0), 1.0), 0.05)
+    add_component(
+        min(max(float(signature.get("zero_crossing_rate", 0.0)) / 0.20, 0.0), 1.0),
+        0.04,
+    )
+    add_component(
+        min(max(float(signature.get("spectral_entropy", 0.0)) - 0.50, 0.0) / 0.40, 1.0),
+        0.05,
+    )
 
-    return float(np.clip(score, 0.03, 0.97))
+    if not components:
+        return 0.50
+
+    weights = np.asarray([weight for _, weight in components], dtype=np.float32)
+    values = np.asarray([value for value, _ in components], dtype=np.float32)
+    abnormality_index = float(np.average(values, weights=weights))
+    support = min(len(components) / 10.0, 1.0)
+    quality_support = float(np.clip(signal_quality, 0.0, 1.0))
+    score = 0.50 + ((abnormality_index - 0.50) * (0.45 + 0.55 * support))
+    score = 0.50 + ((score - 0.50) * (0.55 + 0.45 * quality_support))
+    return float(np.clip(score, 0.12, 0.88))
 
 
 def _signal_signature_metrics(
@@ -1214,6 +1264,41 @@ def _measurement_source(
     if not reliable or quality_score < 55.0:
         return "UNRELIABLE"
     return "ESTIMATED" if estimated else "MEASURED"
+
+
+def _analysis_confidence(
+    *,
+    input_type: str,
+    signal_quality: float,
+    detected_peak_count: int,
+    candidate_lead_count: int,
+    measurements: Dict[str, "MeasurementOut"],
+    interval_reliable: bool,
+    used_fallback: bool,
+) -> float:
+    quality_factor = float(np.clip(signal_quality, 0.0, 1.0))
+    peak_factor = float(np.clip(detected_peak_count / 8.0, 0.0, 1.0))
+    lead_factor = float(np.clip(candidate_lead_count / 4.0, 0.0, 1.0))
+    measured_count = sum(
+        1 for item in measurements.values() if item.value is not None and item.source != "UNAVAILABLE"
+    )
+    measurement_factor = float(np.clip(measured_count / 8.0, 0.0, 1.0))
+
+    support = (
+        (quality_factor * 0.42)
+        + (peak_factor * 0.22)
+        + (lead_factor * 0.18)
+        + (measurement_factor * 0.18)
+    )
+    if not interval_reliable:
+        support *= 0.82
+    if used_fallback:
+        support = min(support, 0.66)
+    if input_type == "image":
+        support = min(support * 0.88, 0.58)
+    else:
+        support = min(max(support, 0.18), 0.96)
+    return float(np.clip(support, 0.12, 0.96))
 
 
 def _estimate_region_and_coils(signal: np.ndarray, risk: str) -> Tuple[str, List[str]]:
@@ -1726,6 +1811,7 @@ def _save_analysis(
     classification: str,
     region: str,
     confidence: float,
+    model_score: float,
     bpm: int,
     signal_quality: Optional[float],
     signal_quality_label: Optional[str],
@@ -1763,7 +1849,7 @@ def _save_analysis(
                 classification,
                 region,
                 confidence,
-                confidence,
+                model_score,
                 bpm,
                 signal_quality,
                 signal_quality_label,
@@ -1932,6 +2018,7 @@ def _run_signal_analysis(
     model_error: Optional[str] = None
     raw_probability: Optional[float] = None
     inference_mode = "heuristic_fallback"
+    analysis_confidence: Optional[float] = None
     if input_type == "image":
         metadata = {
             "model_version": "image_signal_screening_v2",
@@ -1948,6 +2035,15 @@ def _run_signal_analysis(
             measurements=measurements,
             signal_signature=signal_signature,
         )
+        analysis_confidence = _analysis_confidence(
+            input_type=input_type,
+            signal_quality=signal_quality,
+            detected_peak_count=int(graph_data.get("detectedPeakCount", 0)),
+            candidate_lead_count=len(candidate_leads),
+            measurements=measurements,
+            interval_reliable=interval_reliable,
+            used_fallback=False,
+        )
     else:
         try:
             model_bundle = _ensure_model()
@@ -1960,6 +2056,15 @@ def _run_signal_analysis(
             metadata = model_bundle.metadata
             threshold = float(model_bundle.threshold)
             inference_mode = "calibrated_model" if probability_details["calibration_applied"] else "raw_model"
+            analysis_confidence = _analysis_confidence(
+                input_type=input_type,
+                signal_quality=signal_quality,
+                detected_peak_count=int(graph_data.get("detectedPeakCount", 0)),
+                candidate_lead_count=len(candidate_leads),
+                measurements=measurements,
+                interval_reliable=interval_reliable,
+                used_fallback=False,
+            )
         except HTTPException as exc:
             model_error = str(exc.detail)
             score = _heuristic_model_score(
@@ -1967,6 +2072,15 @@ def _run_signal_analysis(
                 signal_quality=signal_quality,
                 measurements=measurements,
                 signal_signature=signal_signature,
+            )
+            analysis_confidence = _analysis_confidence(
+                input_type=input_type,
+                signal_quality=signal_quality,
+                detected_peak_count=int(graph_data.get("detectedPeakCount", 0)),
+                candidate_lead_count=len(candidate_leads),
+                measurements=measurements,
+                interval_reliable=interval_reliable,
+                used_fallback=True,
             )
 
     risk = ecg_pipeline.risk_band(score, threshold)
@@ -1994,6 +2108,7 @@ def _run_signal_analysis(
     if raw_probability is not None:
         findings.append(f"Raw probability before calibration: {raw_probability:.3f}")
         findings.append(f"Calibrated probability: {score:.3f}")
+    findings.append(f"Analysis support confidence: {float(analysis_confidence or 0.0):.3f}")
     if signal_signature.get("lead_diversity_index", 0.0) > 0:
         findings.append(
             f"Lead diversity index: {signal_signature['lead_diversity_index']:.3f}"
@@ -2025,7 +2140,8 @@ def _run_signal_analysis(
         risk=risk,
         classification=classification,
         region=region,
-        confidence=score,
+        confidence=float(analysis_confidence or 0.0),
+        model_score=score,
         bpm=bpm,
         signal_quality=signal_quality,
         signal_quality_label=signal_quality_label,
@@ -2039,6 +2155,7 @@ def _run_signal_analysis(
             "inferenceMode": inference_mode,
             "rawProbability": raw_probability,
             "calibratedProbability": score,
+            "analysisConfidence": float(analysis_confidence or 0.0),
         },
         measurements=measurements,
         graph_data=graph_data,

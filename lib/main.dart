@@ -1178,7 +1178,7 @@ AiInsightBundle _buildAiInsightBundle(AnalysisResult result) {
       : 'Signal quality is ${qualityPct.toStringAsFixed(0)}% and labeled ${result.signalQualityLabel ?? quality}.';
 
   final confidenceSummary =
-      'Model confidence is ${(result.confidence * 100).toStringAsFixed(1)}% with threshold ${result.threshold.toStringAsFixed(3)}.';
+      'Analysis reliability is ${(result.confidence * 100).toStringAsFixed(1)}% with threshold ${result.threshold.toStringAsFixed(3)}.';
 
   return AiInsightBundle(
     triage: triage,
@@ -8379,7 +8379,8 @@ class AnalysisResultPage extends StatelessWidget {
               : result.classification,
           'AI-assisted output'),
       _ReportRow('AI Risk Level', result.riskLevel, 'Screening priority'),
-      _ReportRow('Model Confidence', '$confidencePct%', 'Probability output'),
+      _ReportRow('Analysis Confidence', '$confidencePct%',
+          'Reliability of this ECG screening session'),
       _ReportRow('Estimated Heart Rate', '${result.bpm} bpm',
           'Derived display metric'),
       _ReportRow('Regional Pattern', result.region, 'Localization output'),
@@ -8438,7 +8439,7 @@ class AnalysisResultPage extends StatelessWidget {
       AppMetricTile(
         label: 'Confidence',
         value: '$confidencePct%',
-        caption: 'Probability output from the backend',
+        caption: 'Analysis reliability from backend support checks',
         accent: AppColors.accent,
         icon: Icons.analytics_rounded,
       ),
@@ -9037,7 +9038,7 @@ class AnalysisResultPage extends StatelessWidget {
     required String source,
   }) {
     final parts = <String>[
-      'This case was analyzed from $source and is currently categorized as ${result.riskLevel.toLowerCase()} risk with ${result.confidence.toStringAsFixed(1)}% confidence.',
+      'This case was analyzed from $source and is currently categorized as ${result.riskLevel.toLowerCase()} risk with ${(result.confidence * 100).toStringAsFixed(1)}% analysis confidence.',
       'Estimated heart rate is ${bpm.toStringAsFixed(0)} bpm.',
       if (qrs != null || qtc != null || st != null)
         'Key ECG markers: ${[
