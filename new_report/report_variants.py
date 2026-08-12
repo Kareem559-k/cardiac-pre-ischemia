@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import arabic_reshaper
+import matplotlib
+from bidi.algorithm import get_display
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib import colors
@@ -24,11 +27,22 @@ BG_SOFT = "#f7fbfc"
 HEADER_BG = "#eaf2f5"
 
 
+def _rtl(text: str) -> str:
+    if not text:
+        return text
+    try:
+        if any("\u0600" <= ch <= "\u06FF" for ch in text):
+            return get_display(arabic_reshaper.reshape(text))
+    except Exception:
+        return text
+    return text
+
+
 def _font_names() -> tuple[str, str]:
     regular = "Helvetica"
     bold = "Helvetica-Bold"
     try:
-        font_root = Path(__file__).resolve().parent.parent / "backend" / ".venv" / "Lib" / "site-packages" / "matplotlib" / "mpl-data" / "fonts" / "ttf"
+        font_root = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
         regular_path = font_root / "DejaVuSans.ttf"
         bold_path = font_root / "DejaVuSans-Bold.ttf"
         if regular_path.exists() and bold_path.exists():
@@ -748,7 +762,7 @@ def _build_story_approved_v2(report_data: dict[str, Any], charts: dict[str, byte
     top_clinical = Table([[disposition_block, interpretation_block]], colWidths=[92 * mm, 92 * mm])
     top_clinical.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
     notes_block = _styled(Table(_medical_note_rows(measurements, ai, quality), colWidths=[36 * mm, 148 * mm]), fontsize=7)
-    summary_block = _styled(Table([["English", case_summary_en or "-"], ["Arabic", case_summary_ar or "-"]], colWidths=[28 * mm, 156 * mm]), header_bg="#ffffff", fontsize=7)
+    summary_block = _styled(Table([["English", case_summary_en or "-"], ["Arabic", _rtl(case_summary_ar or "-")]], colWidths=[28 * mm, 156 * mm]), header_bg="#ffffff", fontsize=7)
     limitations_block = _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm]), fontsize=7)
     story.extend(
         [

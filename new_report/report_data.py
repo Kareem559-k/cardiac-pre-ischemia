@@ -67,12 +67,16 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
         "recording_id": analysis.get("record_id"),
         "recording_date": meta.get("recording_date"),
         "recording_time": meta.get("recording_time"),
-        "duration": _duration(analysis.get("num_samples"), analysis.get("sampling_rate_hz")),
+        "duration": _duration(
+            analysis.get("num_samples"), analysis.get("sampling_rate_hz")
+        ),
         "sampling_rate_hz": analysis.get("sampling_rate_hz"),
         "num_leads": analysis.get("num_leads"),
         "lead_names": list(meta.get("lead_names") or []),
         "signal_quality": clinical.get("signal_quality_score"),
-        "signal_quality_status": _quality_status(clinical.get("signal_quality_score")),
+        "signal_quality_status": _quality_status(
+            clinical.get("signal_quality_score")
+        ),
     }
     measurements = {
         "heart_rate_bpm": clinical.get("heart_rate_bpm"),
@@ -82,7 +86,9 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
         "qt_interval_ms_estimate": clinical.get("qt_interval_ms_estimate"),
         "qtc_bazett_ms_estimate": clinical.get("qtc_bazett_ms_estimate"),
         "st_deviation_estimate": clinical.get("st_deviation_estimate"),
-        "heart_rhythm_classification": clinical.get("heart_rhythm_classification"),
+        "heart_rhythm_classification": clinical.get(
+            "heart_rhythm_classification"
+        ),
     }
     hrv = {
         "sdnn_ms": clinical.get("heart_rate_variability", {}).get("sdnn_ms"),
@@ -107,7 +113,9 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
         "power": list(freq.get("power", [])),
     }
     explainability = {
-        "top_features": list(model.get("explainable_ai", {}).get("top_features", [])),
+        "top_features": list(
+            model.get("explainable_ai", {}).get("top_features", [])
+        ),
     }
     ai_result = {
         "classification": model.get("disease_classification"),
@@ -129,6 +137,7 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
         f"Main findings: HR {_fmt(measurements['heart_rate_bpm'], ' BPM')}, rhythm {_fmt(measurements['heart_rhythm_classification'])}, QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' ms')}.",
         f"Next action: {_fmt(ai_result['recommended_action'])}.",
     ]
+
     case_summary_en = " ".join(
         [
             f"This ECG case is currently categorized as {_fmt(model.get('risk_level'))} risk with model score {_fmt(ai_result['model_score_pct'], '%')}.",
@@ -139,9 +148,17 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
                     [
                         part
                         for part in [
-                            f"QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' ms')}" if measurements.get("qrs_duration_ms_estimate") is not None else None,
-                            f"QTc {_fmt(measurements['qtc_bazett_ms_estimate'], ' ms')}" if measurements.get("qtc_bazett_ms_estimate") is not None else None,
-                            f"ST {_fmt(measurements['st_deviation_estimate'])}" if measurements.get("st_deviation_estimate") is not None else None,
+                            f"QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' ms')}"
+                            if measurements.get("qrs_duration_ms_estimate")
+                            is not None
+                            else None,
+                            f"QTc {_fmt(measurements['qtc_bazett_ms_estimate'], ' ms')}"
+                            if measurements.get("qtc_bazett_ms_estimate")
+                            is not None
+                            else None,
+                            f"ST {_fmt(measurements['st_deviation_estimate'])}"
+                            if measurements.get("st_deviation_estimate") is not None
+                            else None,
                         ]
                         if part
                     ]
@@ -151,9 +168,16 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
             f"Recommended action: {_fmt(ai_result['recommended_action'])}.",
         ]
     )
+
+    risk_label_ar = {
+        "High": "مرتفع",
+        "Medium": "متوسط",
+        "Low": "منخفض",
+    }.get(str(model.get("risk_level") or ""), _fmt(model.get("risk_level")))
+
     case_summary_ar = " ".join(
         [
-            f"تصنف هذه الحالة حاليًا كمستوى خطورة {_fmt(model.get('risk_level'))} مع درجة نموذجية {_fmt(ai_result['model_score_pct'], '%')}.",
+            f"تُصنَّف هذه الحالة حاليًا كمستوى خطورة {risk_label_ar} مع درجة نموذجية {_fmt(ai_result['model_score_pct'], '%')}.",
             f"معدل القلب التقديري هو {_fmt(measurements['heart_rate_bpm'], ' نبضة/دقيقة')}.",
             (
                 "أهم المؤشرات الآلية تشمل "
@@ -161,9 +185,17 @@ def build_report_data(context: dict[str, Any]) -> dict[str, Any]:
                     [
                         part
                         for part in [
-                            f"QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' مللي ثانية')}" if measurements.get("qrs_duration_ms_estimate") is not None else None,
-                            f"QTc {_fmt(measurements['qtc_bazett_ms_estimate'], ' مللي ثانية')}" if measurements.get("qtc_bazett_ms_estimate") is not None else None,
-                            f"ST {_fmt(measurements['st_deviation_estimate'])}" if measurements.get("st_deviation_estimate") is not None else None,
+                            f"QRS {_fmt(measurements['qrs_duration_ms_estimate'], ' مللي ثانية')}"
+                            if measurements.get("qrs_duration_ms_estimate")
+                            is not None
+                            else None,
+                            f"QTc {_fmt(measurements['qtc_bazett_ms_estimate'], ' مللي ثانية')}"
+                            if measurements.get("qtc_bazett_ms_estimate")
+                            is not None
+                            else None,
+                            f"ST {_fmt(measurements['st_deviation_estimate'])}"
+                            if measurements.get("st_deviation_estimate") is not None
+                            else None,
                         ]
                         if part
                     ]

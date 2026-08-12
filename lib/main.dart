@@ -1964,22 +1964,6 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = ApiService(baseUrl: _apiBaseUrl());
-    final englishCaseSummary = _buildEnglishCaseSummary(
-      result: result,
-      bpm: result.bpm.toDouble(),
-      qtc: qtc,
-      qrs: qrs,
-      st: st,
-      source: source,
-    );
-    final arabicCaseSummary = _buildArabicCaseSummary(
-      result: result,
-      bpm: result.bpm.toDouble(),
-      qtc: qtc,
-      qrs: qrs,
-      st: st,
-      source: source,
-    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -8601,6 +8585,23 @@ class AnalysisResultPage extends StatelessWidget {
       if (sdnn != null) 'SDNN ${sdnn.toStringAsFixed(0)}',
     ].join(' • ');
 
+    final englishCaseSummary = _buildEnglishCaseSummary(
+      result: result,
+      bpm: result.bpm.toDouble(),
+      qtc: qtc,
+      qrs: qrs,
+      st: st,
+      source: source,
+    );
+    final arabicCaseSummary = _buildArabicCaseSummaryClean(
+      result: result,
+      bpm: result.bpm.toDouble(),
+      qtc: qtc,
+      qrs: qrs,
+      st: st,
+      source: source,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ECG Screening Report'),
@@ -8735,6 +8736,20 @@ class AnalysisResultPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   ...aiBundle.nextSteps
                       .map((item) => _bulletInfoRow(item, AppColors.primary)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Case Summary / Bilingual',
+              subtitle:
+                  'Short bilingual summary generated from the current ECG screening result',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _infoBlock('English summary', englishCaseSummary),
+                  const SizedBox(height: 10),
+                  _infoBlock('Arabic summary', arabicCaseSummary),
                 ],
               ),
             ),
@@ -9007,20 +9022,6 @@ class AnalysisResultPage extends StatelessWidget {
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),
-            const SizedBox(height: 14),
-            _sectionCard(
-              title: 'Case Summary / ملخص الحالة',
-              subtitle:
-                  'Short bilingual summary generated from the current ECG screening result',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _infoBlock('English summary', englishCaseSummary),
-                  const SizedBox(height: 10),
-                  _infoBlock('الملخص العربي', arabicCaseSummary),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -9078,6 +9079,44 @@ class AnalysisResultPage extends StatelessWidget {
   }
 
   static String _riskArabicLabel(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'high':
+        return 'مرتفع';
+      case 'medium':
+        return 'متوسط';
+      case 'low':
+        return 'منخفض';
+      default:
+        return risk;
+    }
+  }
+
+  static String _buildArabicCaseSummaryClean({
+    required AnalysisResult result,
+    required double bpm,
+    required double? qtc,
+    required double? qrs,
+    required double? st,
+    required String source,
+  }) {
+    final parts = <String>[
+      'تم تحليل هذه الحالة من مصدر $source، ويُصنَّف الفحص الحالي كمستوى خطورة ${_riskArabicLabelClean(result.riskLevel)} بنسبة ثقة ${result.confidence.toStringAsFixed(1)}٪.',
+      'معدل القلب التقديري الحالي هو ${bpm.toStringAsFixed(0)} نبضة في الدقيقة.',
+      if (qrs != null || qtc != null || st != null)
+        'أهم المؤشرات الكهربائية الحالية: ${[
+          if (qrs != null) 'QRS ${qrs.toStringAsFixed(0)} مللي ثانية',
+          if (qtc != null) 'QTc ${qtc.toStringAsFixed(0)} مللي ثانية',
+          if (st != null) 'انزياح ST بمقدار ${st.toStringAsFixed(2)}',
+        ].join('، ')}.',
+      if (result.findings.isNotEmpty)
+        'أهم ملاحظة في التحليل: ${result.findings.first}.',
+      if (result.recommendations.isNotEmpty)
+        'الخطوة التالية المقترحة: ${result.recommendations.first}.',
+    ];
+    return parts.join(' ');
+  }
+
+  static String _riskArabicLabelClean(String risk) {
     switch (risk.toLowerCase()) {
       case 'high':
         return 'مرتفع';
@@ -15121,6 +15160,9 @@ class AnalysisResult {
     if (riskLevel == 'Medium') return AppColors.warning;
     return AppColors.success;
   }
+
+  String get rhythmLabel =>
+      classification.isEmpty ? 'AI screening output' : classification;
 
   static AnalysisResult demo(String region) {
     final rnd = math.Random();
