@@ -1964,6 +1964,23 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final api = ApiService(baseUrl: _apiBaseUrl());
+    final englishCaseSummary = _buildEnglishCaseSummary(
+      result: result,
+      bpm: result.bpm.toDouble(),
+      qtc: qtc,
+      qrs: qrs,
+      st: st,
+      source: source,
+    );
+    final arabicCaseSummary = _buildArabicCaseSummary(
+      result: result,
+      bpm: result.bpm.toDouble(),
+      qtc: qtc,
+      qrs: qrs,
+      st: st,
+      source: source,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -8967,10 +8984,87 @@ class AnalysisResultPage extends StatelessWidget {
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),
+            const SizedBox(height: 14),
+            _sectionCard(
+              title: 'Case Summary / ملخص الحالة',
+              subtitle:
+                  'Short bilingual summary generated from the current ECG screening result',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _infoBlock('English summary', englishCaseSummary),
+                  const SizedBox(height: 10),
+                  _infoBlock('الملخص العربي', arabicCaseSummary),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  static String _buildEnglishCaseSummary({
+    required AnalysisResult result,
+    required double bpm,
+    required double? qtc,
+    required double? qrs,
+    required double? st,
+    required String source,
+  }) {
+    final parts = <String>[
+      'This case was analyzed from $source and is currently categorized as ${result.riskLevel.toLowerCase()} risk with ${result.confidence.toStringAsFixed(1)}% confidence.',
+      'Estimated heart rate is ${bpm.toStringAsFixed(0)} bpm.',
+      if (qrs != null || qtc != null || st != null)
+        'Key ECG markers: ${[
+          if (qrs != null) 'QRS ${qrs.toStringAsFixed(0)} ms',
+          if (qtc != null) 'QTc ${qtc.toStringAsFixed(0)} ms',
+          if (st != null) 'ST shift ${st.toStringAsFixed(2)}',
+        ].join(', ')}.',
+      if (result.findings.isNotEmpty)
+        'Primary interpretation point: ${result.findings.first}.',
+      if (result.recommendations.isNotEmpty)
+        'Suggested next step: ${result.recommendations.first}.',
+    ];
+    return parts.join(' ');
+  }
+
+  static String _buildArabicCaseSummary({
+    required AnalysisResult result,
+    required double bpm,
+    required double? qtc,
+    required double? qrs,
+    required double? st,
+    required String source,
+  }) {
+    final parts = <String>[
+      'تم تحليل هذه الحالة من مصدر $source، ويصنف الفحص الحالي كمستوى خطورة ${_riskArabicLabel(result.riskLevel)} بنسبة ثقة ${result.confidence.toStringAsFixed(1)}٪.',
+      'معدل القلب التقديري الحالي هو ${bpm.toStringAsFixed(0)} نبضة في الدقيقة.',
+      if (qrs != null || qtc != null || st != null)
+        'أهم المؤشرات الكهربائية الحالية: ${[
+          if (qrs != null) 'QRS ${qrs.toStringAsFixed(0)} مللي ثانية',
+          if (qtc != null) 'QTc ${qtc.toStringAsFixed(0)} مللي ثانية',
+          if (st != null) 'انزياح ST بمقدار ${st.toStringAsFixed(2)}',
+        ].join('، ')}.',
+      if (result.findings.isNotEmpty)
+        'أهم ملاحظة في التحليل: ${result.findings.first}.',
+      if (result.recommendations.isNotEmpty)
+        'الخطوة التالية المقترحة: ${result.recommendations.first}.',
+    ];
+    return parts.join(' ');
+  }
+
+  static String _riskArabicLabel(String risk) {
+    switch (risk.toLowerCase()) {
+      case 'high':
+        return 'مرتفع';
+      case 'medium':
+        return 'متوسط';
+      case 'low':
+        return 'منخفض';
+      default:
+        return risk;
+    }
   }
 
   static Widget _headlineMetric(String label, String value, Color valueColor) {

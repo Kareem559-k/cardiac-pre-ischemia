@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -22,6 +24,25 @@ BG_SOFT = "#f7fbfc"
 HEADER_BG = "#eaf2f5"
 
 
+def _font_names() -> tuple[str, str]:
+    regular = "Helvetica"
+    bold = "Helvetica-Bold"
+    try:
+        font_root = Path(__file__).resolve().parent.parent / "backend" / ".venv" / "Lib" / "site-packages" / "matplotlib" / "mpl-data" / "fonts" / "ttf"
+        regular_path = font_root / "DejaVuSans.ttf"
+        bold_path = font_root / "DejaVuSans-Bold.ttf"
+        if regular_path.exists() and bold_path.exists():
+            if "DejaVuSans" not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont("DejaVuSans", str(regular_path)))
+            if "DejaVuSans-Bold" not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", str(bold_path)))
+            regular = "DejaVuSans"
+            bold = "DejaVuSans-Bold"
+    except Exception:
+        pass
+    return regular, bold
+
+
 def _fmt(value: object, suffix: str = "", digits: int = 2) -> str:
     if value is None:
         return "-"
@@ -36,12 +57,13 @@ def _fmt(value: object, suffix: str = "", digits: int = 2) -> str:
 
 def _styles() -> dict[str, ParagraphStyle]:
     styles = getSampleStyleSheet()
+    regular_font, bold_font = _font_names()
     return {
-        "title": ParagraphStyle("title", parent=styles["Heading1"], fontSize=16, textColor=colors.HexColor(PRIMARY), spaceAfter=4),
-        "subtitle": ParagraphStyle("subtitle", parent=styles["Heading2"], fontSize=10.5, textColor=colors.HexColor(TEXT_MUTED), spaceAfter=4),
-        "section": ParagraphStyle("section", parent=styles["Heading3"], fontSize=10.2, textColor=colors.HexColor(PRIMARY), spaceBefore=4, spaceAfter=3),
-        "body": ParagraphStyle("body", parent=styles["BodyText"], fontSize=8.0, leading=9.2, textColor=colors.black),
-        "tiny": ParagraphStyle("tiny", parent=styles["BodyText"], fontSize=7.1, leading=8.2, textColor=colors.HexColor(TEXT_MUTED)),
+        "title": ParagraphStyle("title", parent=styles["Heading1"], fontName=bold_font, fontSize=16, textColor=colors.HexColor(PRIMARY), spaceAfter=4),
+        "subtitle": ParagraphStyle("subtitle", parent=styles["Heading2"], fontName=bold_font, fontSize=10.5, textColor=colors.HexColor(TEXT_MUTED), spaceAfter=4),
+        "section": ParagraphStyle("section", parent=styles["Heading3"], fontName=bold_font, fontSize=10.2, textColor=colors.HexColor(PRIMARY), spaceBefore=4, spaceAfter=3),
+        "body": ParagraphStyle("body", parent=styles["BodyText"], fontName=regular_font, fontSize=8.0, leading=9.2, textColor=colors.black),
+        "tiny": ParagraphStyle("tiny", parent=styles["BodyText"], fontName=regular_font, fontSize=7.1, leading=8.2, textColor=colors.HexColor(TEXT_MUTED)),
     }
 
 
@@ -438,6 +460,8 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     findings = report_data["findings"]
     recommendations = report_data["recommendations"]
     limitations = report_data["limitations"]
+    case_summary_en = report_data.get("case_summary_en", "")
+    case_summary_ar = report_data.get("case_summary_ar", "")
 
     story: list[object] = []
     _header(story, s["title"], s["subtitle"], s["body"], report_data, "Approved")
@@ -448,51 +472,53 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     )
     top_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
     story.extend([top_row, Spacer(1, 4)])
-    story.extend([Paragraph("CLINICAL SUMMARY", s["section"]), _summary_box(report_data, s["body"]), Spacer(1, 4)])
-    if "main_ecg" in charts:
-        story.extend([Paragraph("MAIN ECG VISUALIZATION", s["section"]), Image(io.BytesIO(charts["main_ecg"]), width=184 * mm, height=92 * mm), Spacer(1, 3)])
+    story.extend([Paragraph("EXECUTIVE SUMMARY", s["section"]), _summary_box(report_data, s["body"]), Spacer(1, 4)])
 
-    page1_bottom = Table(
+    summary_kpis = Table(
         [[
-            _styled(Table(_measurement_rows(measurements), colWidths=[28 * mm, 26 * mm, 34 * mm])),
-            _styled(Table(_findings_rows(findings, 4), colWidths=[40 * mm, 34 * mm, 18 * mm]), fontsize=7),
+            _styled(Table(_measurement_rows(measurements)[:4], colWidths=[26 * mm, 24 * mm, 32 * mm])),
+            _styled(Table(_findings_rows(findings, 4), colWidths=[42 * mm, 32 * mm, 16 * mm]), fontsize=7),
         ]],
-        colWidths=[88 * mm, 96 * mm],
+        colWidths=[84 * mm, 100 * mm],
     )
-    page1_bottom.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    story.extend([page1_bottom, Spacer(1, 3)])
+    summary_kpis.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([summary_kpis, Spacer(1, 3)])
     story.extend([Paragraph("RECOMMENDED NEXT STEPS", s["section"]), _styled(Table(_recommendation_rows(recommendations, 4), colWidths=[58 * mm, 126 * mm]))])
 
     story.append(PageBreak())
     story.extend([Paragraph("DETAILED ECG ANALYSIS", s["title"]), Spacer(1, 3)])
+    if "main_ecg" in charts:
+        story.extend([Paragraph("MAIN ECG VISUALIZATION", s["section"]), Image(io.BytesIO(charts["main_ecg"]), width=184 * mm, height=88 * mm), Spacer(1, 3)])
     if "supporting_graphs" in charts:
-        story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
+        story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=64 * mm), Spacer(1, 3)])
+    if "morphology" in charts:
+        story.extend([Paragraph("REPRESENTATIVE MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=58 * mm), Spacer(1, 3)])
+    story.extend([
+        _styled(Table(_interval_rows(measurements), colWidths=[24 * mm, 26 * mm, 46 * mm, 44 * mm])),
+        Spacer(1, 3),
+        _styled(Table(_phys_rows(measurements, hrv), colWidths=[44 * mm, 28 * mm, 18 * mm])),
+    ])
 
-    top_detail = Table(
-        [[
-            _styled(Table(_phys_rows(measurements, hrv), colWidths=[42 * mm, 24 * mm, 18 * mm])),
-            _styled(Table(_interval_rows(measurements), colWidths=[22 * mm, 24 * mm, 42 * mm, 32 * mm])),
-        ]],
-        colWidths=[86 * mm, 98 * mm],
-    )
-    top_detail.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    story.extend([top_detail, Spacer(1, 3)])
-
+    story.append(PageBreak())
+    story.extend([Paragraph("SIGNAL QUALITY & VARIABILITY", s["title"]), Spacer(1, 3)])
     if "hrv_graphs" in charts:
         story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
-
-    bottom_row_items: list[object] = [
-        Paragraph("SIGNAL QUALITY", s["section"]),
-        _styled(Table(_quality_rows(quality), colWidths=[72 * mm, 40 * mm])),
-    ]
+    quality_block = Table(
+        [[
+            _styled(Table(_quality_rows(quality), colWidths=[56 * mm, 32 * mm])),
+            _styled(Table(_phys_rows(measurements, hrv), colWidths=[40 * mm, 22 * mm, 18 * mm])),
+        ]],
+        colWidths=[90 * mm, 94 * mm],
+    )
+    quality_block.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([quality_block, Spacer(1, 3)])
     if "frequency" in charts:
         freq_block = Table(
             [[Image(io.BytesIO(charts["frequency"]), width=108 * mm, height=48 * mm), _styled(Table(_frequency_rows(frequency), colWidths=[46 * mm, 30 * mm]))]],
             colWidths=[112 * mm, 72 * mm],
         )
         freq_block.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-        bottom_row_items.extend([Spacer(1, 3), Paragraph("FREQUENCY ANALYSIS", s["section"]), freq_block])
-    story.extend(bottom_row_items)
+        story.extend([Paragraph("FREQUENCY ANALYSIS", s["section"]), freq_block])
 
     story.append(PageBreak())
     story.extend([Paragraph("AI & EVIDENCE ANALYSIS", s["title"]), Spacer(1, 3)])
@@ -508,16 +534,23 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 7), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
     story.extend([Paragraph("OVERALL ASSESSMENT", s["section"]), _assessment_block(ai, findings, report_data["priority"]), Spacer(1, 3)])
     story.extend([Paragraph("LIMITATIONS", s["section"]), _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm])), Spacer(1, 3)])
+    story.extend(
+        [
+            Paragraph("CASE SUMMARY / ملخص الحالة", s["section"]),
+            _styled(
+                Table(
+                    [
+                        ["English", case_summary_en or "-"],
+                        ["العربية", case_summary_ar or "-"],
+                    ],
+                    colWidths=[28 * mm, 156 * mm],
+                ),
+                header_bg="#ffffff",
+            ),
+            Spacer(1, 3),
+        ]
+    )
     story.extend([Paragraph("CLINICAL DISCLAIMER", s["section"]), Paragraph("Research-use AI-assisted ECG screening report. Automated measurements and model-derived scores require independent clinical review.", s["tiny"])])
-
-    add_page4 = ("morphology" in charts and "explainability" in charts) or len(findings) > 7
-    if add_page4:
-        story.append(PageBreak())
-        story.extend([Paragraph("ADDITIONAL TECHNICAL VISUALIZATION", s["title"]), Spacer(1, 3)])
-        if "morphology" in charts:
-            story.extend([Paragraph("ECG MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=70 * mm), Spacer(1, 3)])
-        if "frequency" in charts and "supporting_graphs" in charts:
-            story.extend([Paragraph("ADDITIONAL ECG / SPECTRAL REVIEW", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=58 * mm)])
     return story
 
 

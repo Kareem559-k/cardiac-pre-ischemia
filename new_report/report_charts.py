@@ -193,4 +193,77 @@ def build_report_charts(context: dict[str, Any], report_data: dict[str, Any]) ->
         fig.tight_layout()
         charts["explainability"] = _png_bytes(fig)
 
+    clinical = report_data["measurements"]
+    quality = report_data["signal_quality"]
+    interval_pairs = [
+        ("PR", clinical.get("pr_interval_ms_estimate")),
+        ("QRS", clinical.get("qrs_duration_ms_estimate")),
+        ("QT", clinical.get("qt_interval_ms_estimate")),
+        ("QTc", clinical.get("qtc_bazett_ms_estimate")),
+    ]
+    interval_pairs = [(label, float(value)) for label, value in interval_pairs if value is not None]
+    quality_pairs = [
+        ("Signal", quality.get("score")),
+        ("Baseline", quality.get("baseline_wander_ratio")),
+        ("Noise", quality.get("noise_ratio")),
+        ("Clipping", quality.get("clipping_ratio")),
+    ]
+    quality_pairs = [
+        (label, float(value))
+        for label, value in quality_pairs
+        if value is not None and np.isfinite(float(value))
+    ]
+    if interval_pairs or quality_pairs:
+        fig = Figure(figsize=(10, 4.6), facecolor="white")
+        ax1 = fig.add_subplot(121)
+        if interval_pairs:
+            ax1.bar(
+                [label for label, _ in interval_pairs],
+                [value for _, value in interval_pairs],
+                color=[PRIMARY, ACCENT, WARNING, DANGER][: len(interval_pairs)],
+            )
+        ax1.set_title("Interval Metrics", fontsize=10)
+        ax1.set_ylabel("Milliseconds")
+        ax1.grid(axis="y", color=GRID_MINOR)
+        ax2 = fig.add_subplot(122)
+        if quality_pairs:
+            ax2.bar(
+                [label for label, _ in quality_pairs],
+                [value for _, value in quality_pairs],
+                color=[ACCENT, PRIMARY, WARNING, DANGER][: len(quality_pairs)],
+            )
+        ax2.set_title("Signal Quality Metrics", fontsize=10)
+        ax2.grid(axis="y", color=GRID_MINOR)
+        fig.tight_layout()
+        charts["clinical_metrics"] = _png_bytes(fig)
+
+    raw_probability = model.get("raw_probability")
+    calibrated_probability = model.get("calibrated_probability")
+    threshold_probability = model.get("decision_threshold")
+    score_probability = model.get("model_score_pct")
+    risk_pairs = [
+        ("Raw Prob.", raw_probability * 100.0 if raw_probability is not None else None),
+        ("Calibrated", calibrated_probability * 100.0 if calibrated_probability is not None else None),
+        ("Threshold", threshold_probability * 100.0 if threshold_probability is not None else None),
+        ("Risk Score", score_probability if score_probability is not None else None),
+    ]
+    risk_pairs = [
+        (label, float(value))
+        for label, value in risk_pairs
+        if value is not None and np.isfinite(float(value))
+    ]
+    if risk_pairs:
+        fig = Figure(figsize=(6.6, 3.0), facecolor="white")
+        ax = fig.add_subplot(111)
+        labels = [label for label, _ in risk_pairs][::-1]
+        values = [value for _, value in risk_pairs][::-1]
+        colors_list = [DANGER if value >= 70 else WARNING if value >= 40 else ACCENT for value in values]
+        ax.barh(labels, values, color=colors_list)
+        ax.set_xlim(0, 100)
+        ax.set_title("AI Risk Profile", fontsize=10)
+        ax.set_xlabel("Percent scale")
+        ax.grid(axis="x", color=GRID_MINOR)
+        fig.tight_layout()
+        charts["risk_profile"] = _png_bytes(fig)
+
     return charts
