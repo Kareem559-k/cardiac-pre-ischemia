@@ -1125,8 +1125,8 @@ def _extract_300_features(signal: np.ndarray, fs: float) -> np.ndarray:
             fft_subset = np.pad(fft_subset, (0, 20 - len(fft_subset)), "constant")
         features.extend(fft_subset)
 
-    representative_lead = signal[1] if signal.shape[0] > 1 else signal[0]
-    peaks, _ = find_peaks(representative_lead, distance=max(int(0.2 * fs), 1), prominence=0.5)
+    representative_lead = ecg_pipeline.representative_lead(signal, fs)
+    peaks = ecg_pipeline.detect_r_peaks(representative_lead, fs)
     features.append(len(peaks))
 
     if len(peaks) > 1:
@@ -1173,7 +1173,7 @@ def _compute_signal_quality(signal: np.ndarray) -> Tuple[float, str]:
 
 def _derive_measurements(signal: np.ndarray, fs: float) -> Tuple[Dict[str, MeasurementOut], Dict[str, Any]]:
     representative = ecg_pipeline.representative_lead(signal, fs)
-    peaks, _ = find_peaks(representative, distance=max(int(0.2 * fs), 1), prominence=0.5)
+    peaks = ecg_pipeline.detect_r_peaks(representative, fs)
     rr_ms: List[float] = []
     bpm = 0
     if len(peaks) > 1:

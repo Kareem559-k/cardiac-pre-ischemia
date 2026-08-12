@@ -137,10 +137,49 @@ def representative_lead(signal: np.ndarray, fs: float | None = None) -> np.ndarr
 
 
 def detect_r_peaks(signal_1d: np.ndarray, fs: float) -> np.ndarray:
-    distance = max(int(0.25 * fs), 1)
-    prominence = max(0.35 * float(np.std(signal_1d)), 0.15)
-    peaks, _ = find_peaks(signal_1d, distance=distance, prominence=prominence)
-    return peaks.astype(int)
+    signal_1d = np.asarray(signal_1d, dtype=np.float32).reshape(-1)
+    if signal_1d.size < 3:
+        return np.asarray([], dtype=int)
+
+    signal_std = float(np.std(signal_1d))
+    candidate_distance = max(int(0.18 * fs), 1)
+    prominence = max(0.20 * signal_std, 0.10)
+    candidates, props = find_peaks(
+        signal_1d,
+        distance=candidate_distance,
+        prominence=prominence,
+    )
+    if len(candidates) == 0:
+        return np.asarray([], dtype=int)
+
+    widths, _, _, _ = peak_widths(signal_1d, candidates, rel_height=0.5)
+    prominences = np.asarray(props.get("prominences", np.zeros(len(candidates))), dtype=np.float32)
+    peak_score = prominences / np.sqrt(np.maximum(widths, 1e-3))
+    score_threshold = max(float(np.percentile(peak_score, 65)), float(np.median(peak_score)))
+    keep_mask = peak_score >= score_threshold
+    filtered_peaks = candidates[keep_mask]
+    filtered_scores = peak_score[keep_mask]
+    if filtered_peaks.size == 0:
+        filtered_peaks = candidates
+        filtered_scores = peak_score
+
+    order = np.argsort(filtered_peaks)
+    filtered_peaks = filtered_peaks[order]
+    filtered_scores = filtered_scores[order]
+
+    refractory = max(int(0.30 * fs), 1)
+    selected: list[int] = []
+    selected_scores: list[float] = []
+    for peak, score in zip(filtered_peaks, filtered_scores):
+        if not selected or int(peak) - selected[-1] > refractory:
+            selected.append(int(peak))
+            selected_scores.append(float(score))
+            continue
+        if float(score) > selected_scores[-1]:
+            selected[-1] = int(peak)
+            selected_scores[-1] = float(score)
+
+    return np.asarray(selected, dtype=int)
 
 
 def compute_rr_hrv(peaks: np.ndarray, fs: float) -> dict[str, float | None]:
@@ -154,8 +193,21 @@ def compute_rr_hrv(peaks: np.ndarray, fs: float) -> dict[str, float | None]:
             "pnn50_pct": None,
         }
     rr_sec = np.diff(peaks) / fs
+    valid_rr = rr_sec[(rr_sec >= 0.30) & (rr_sec <= 2.00)]
+    if valid_rr.size >= 3:
+        rr_median = float(np.median(valid_rr))
+        band = max(rr_median * 0.35, 0.08)
+        robust_rr = valid_rr[np.abs(valid_rr - rr_median) <= band]
+        if robust_rr.size >= 2:
+            rr_sec = robust_rr
+        else:
+            rr_sec = valid_rr
+    elif valid_rr.size >= 2:
+        rr_sec = valid_rr
+
     rr_diff_sec = np.diff(rr_sec)
-    heart_rate = 60.0 / np.mean(rr_sec) if np.mean(rr_sec) > 0 else None
+    rr_central = float(np.median(rr_sec)) if rr_sec.size else 0.0
+    heart_rate = 60.0 / rr_central if rr_central > 0 else None
     pnn50 = float(np.mean(np.abs(rr_diff_sec) > 0.05) * 100.0) if len(rr_diff_sec) else 0.0
     rmssd = float(np.sqrt(np.mean(rr_diff_sec**2))) * 1000.0 if len(rr_diff_sec) else 0.0
     return {
