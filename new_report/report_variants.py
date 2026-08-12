@@ -250,6 +250,32 @@ def _assessment_block(ai: dict[str, Any], findings: list[dict[str, str]], priori
     return Table([[left, right]], colWidths=[92 * mm, 92 * mm])
 
 
+def _medical_note_rows(measurements: dict[str, Any], ai: dict[str, Any], quality: dict[str, Any]) -> list[list[str]]:
+    notes = [["Focus", "Clinical note"]]
+    hr = measurements.get("heart_rate_bpm")
+    qtc = measurements.get("qtc_bazett_ms_estimate")
+    qrs = measurements.get("qrs_duration_ms_estimate")
+    st = measurements.get("st_deviation_estimate")
+    signal = quality.get("score")
+    if hr is not None:
+        if float(hr) > 100:
+            notes.append(["Heart rate", f"Rate is elevated at {_fmt(hr, ' bpm')} and should be interpreted with rhythm context."])
+        elif float(hr) < 60:
+            notes.append(["Heart rate", f"Rate is below 60 bpm at {_fmt(hr, ' bpm')}; correlate with symptoms and baseline."])
+        else:
+            notes.append(["Heart rate", f"Rate is within an expected resting range at {_fmt(hr, ' bpm')}."])
+    if qrs is not None:
+        notes.append(["QRS", f"Automated QRS estimate is {_fmt(qrs, ' ms')}; compare with morphology and conduction pattern."])
+    if qtc is not None:
+        notes.append(["QTc", f"QTc estimate is {_fmt(qtc, ' ms')} and should be verified clinically before interpretation."])
+    if st is not None:
+        notes.append(["ST segment", f"Estimated ST deviation is {_fmt(st)}; confirm on raw ECG and lead distribution."])
+    if signal is not None:
+        notes.append(["Signal quality", f"Signal quality score is {_fmt(signal)} with noise label {quality.get('noise_level') or '-'}."])
+    notes.append(["AI output", f"Model classification is {ai.get('classification') or '-'} with score {_fmt(ai.get('model_score_pct'), '%')}."])
+    return notes[:7]
+
+
 def _build_story_summary_focus(report_data: dict[str, Any], charts: dict[str, bytes]) -> list[object]:
     s = _styles()
     patient = report_data["patient_information"]
@@ -488,48 +514,52 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     story.append(PageBreak())
     story.extend([Paragraph("DETAILED ECG ANALYSIS", s["title"]), Spacer(1, 3)])
     if "main_ecg" in charts:
-        story.extend([Paragraph("MAIN ECG VISUALIZATION", s["section"]), Image(io.BytesIO(charts["main_ecg"]), width=184 * mm, height=88 * mm), Spacer(1, 3)])
+        story.extend([Paragraph("MAIN ECG VISUALIZATION", s["section"]), Image(io.BytesIO(charts["main_ecg"]), width=184 * mm, height=98 * mm), Spacer(1, 3)])
     if "supporting_graphs" in charts:
-        story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=64 * mm), Spacer(1, 3)])
+        story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=74 * mm), Spacer(1, 3)])
     if "morphology" in charts:
-        story.extend([Paragraph("REPRESENTATIVE MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=58 * mm), Spacer(1, 3)])
-    story.extend([
-        _styled(Table(_interval_rows(measurements), colWidths=[24 * mm, 26 * mm, 46 * mm, 44 * mm])),
-        Spacer(1, 3),
-        _styled(Table(_phys_rows(measurements, hrv), colWidths=[44 * mm, 28 * mm, 18 * mm])),
-    ])
+        story.extend([Paragraph("REPRESENTATIVE MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=62 * mm), Spacer(1, 3)])
+    story.extend(
+        [
+            Paragraph("VISUAL INTERPRETATION NOTES", s["section"]),
+            _styled(Table(_medical_note_rows(measurements, ai, quality), colWidths=[38 * mm, 146 * mm]), fontsize=7),
+        ]
+    )
 
     story.append(PageBreak())
     story.extend([Paragraph("SIGNAL QUALITY & VARIABILITY", s["title"]), Spacer(1, 3)])
     if "hrv_graphs" in charts:
-        story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
-    quality_block = Table(
-        [[
-            _styled(Table(_quality_rows(quality), colWidths=[56 * mm, 32 * mm])),
-            _styled(Table(_phys_rows(measurements, hrv), colWidths=[40 * mm, 22 * mm, 18 * mm])),
-        ]],
-        colWidths=[90 * mm, 94 * mm],
-    )
-    quality_block.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    story.extend([quality_block, Spacer(1, 3)])
+        story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=76 * mm), Spacer(1, 3)])
+    if "clinical_metrics" in charts:
+        story.extend([Paragraph("CLINICAL METRICS OVERVIEW", s["section"]), Image(io.BytesIO(charts["clinical_metrics"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
     if "frequency" in charts:
         freq_block = Table(
-            [[Image(io.BytesIO(charts["frequency"]), width=108 * mm, height=48 * mm), _styled(Table(_frequency_rows(frequency), colWidths=[46 * mm, 30 * mm]))]],
+            [[Image(io.BytesIO(charts["frequency"]), width=108 * mm, height=52 * mm), _styled(Table(_frequency_rows(frequency), colWidths=[46 * mm, 30 * mm]))]],
             colWidths=[112 * mm, 72 * mm],
         )
         freq_block.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-        story.extend([Paragraph("FREQUENCY ANALYSIS", s["section"]), freq_block])
+        story.extend([Paragraph("FREQUENCY ANALYSIS", s["section"]), freq_block, Spacer(1, 3)])
+    detail_metrics = Table(
+        [[
+            _styled(Table(_interval_rows(measurements), colWidths=[24 * mm, 24 * mm, 42 * mm, 30 * mm]), fontsize=7),
+            _styled(Table(_quality_rows(quality), colWidths=[50 * mm, 38 * mm]), fontsize=7),
+        ]],
+        colWidths=[92 * mm, 92 * mm],
+    )
+    detail_metrics.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([detail_metrics])
 
     story.append(PageBreak())
     story.extend([Paragraph("AI & EVIDENCE ANALYSIS", s["title"]), Spacer(1, 3)])
     ai_table = _styled(Table(_ai_rows(ai), colWidths=[56 * mm, 34 * mm]))
-    threshold = Image(io.BytesIO(charts["threshold"]), width=90 * mm, height=30 * mm) if "threshold" in charts else _styled(Table([["Score", _fmt(ai.get("model_score_pct"), "%")], ["Threshold", _fmt(ai.get("decision_threshold"), "", 3)]], colWidths=[40 * mm, 40 * mm]))
-    top_ai = Table([[ai_table, threshold]], colWidths=[92 * mm, 92 * mm])
+    threshold = Image(io.BytesIO(charts["threshold"]), width=88 * mm, height=30 * mm) if "threshold" in charts else _styled(Table([["Score", _fmt(ai.get("model_score_pct"), "%")], ["Threshold", _fmt(ai.get("decision_threshold"), "", 3)]], colWidths=[40 * mm, 40 * mm]))
+    risk_profile = Image(io.BytesIO(charts["risk_profile"]), width=88 * mm, height=40 * mm) if "risk_profile" in charts else _styled(Table([["Raw", _fmt(ai.get("raw_probability"))], ["Calibrated", _fmt(ai.get("calibrated_probability"))]], colWidths=[40 * mm, 40 * mm]))
+    top_ai = Table([[ai_table, Table([[threshold], [risk_profile]], colWidths=[88 * mm])]], colWidths=[92 * mm, 92 * mm])
     top_ai.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
     story.extend([top_ai, Spacer(1, 3)])
 
     if "explainability" in charts:
-        story.extend([Paragraph("MODEL EXPLAINABILITY", s["section"]), Image(io.BytesIO(charts["explainability"]), width=150 * mm, height=46 * mm), Spacer(1, 3)])
+        story.extend([Paragraph("MODEL EXPLAINABILITY", s["section"]), Image(io.BytesIO(charts["explainability"]), width=164 * mm, height=52 * mm), Spacer(1, 3)])
 
     story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 7), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
     story.extend([Paragraph("OVERALL ASSESSMENT", s["section"]), _assessment_block(ai, findings, report_data["priority"]), Spacer(1, 3)])
