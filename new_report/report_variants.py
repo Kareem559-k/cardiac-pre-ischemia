@@ -328,6 +328,17 @@ def _clinical_interpretation_rows(measurements: dict[str, Any], ai: dict[str, An
     return rows[:7]
 
 
+def _clinical_disposition_rows(ai: dict[str, Any], report_data: dict[str, Any]) -> list[list[str]]:
+    return [
+        ["Disposition", "Current status"],
+        ["Screening status", ai.get("screening_status") or "-"],
+        ["Classification", ai.get("classification") or "-"],
+        ["Priority", report_data.get("priority") or "-"],
+        ["Recommended action", ai.get("recommended_action") or "-"],
+        ["Model score", _fmt(ai.get("model_score_pct"), "%")],
+    ]
+
+
 def _build_story_summary_focus(report_data: dict[str, Any], charts: dict[str, bytes]) -> list[object]:
     s = _styles()
     patient = report_data["patient_information"]
@@ -648,7 +659,123 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     return story
 
 
-VARIANT_BUILDERS["approved"] = _build_story_approved
+def _build_story_approved_v2(report_data: dict[str, Any], charts: dict[str, bytes]) -> list[object]:
+    s = _styles()
+    patient = report_data["patient_information"]
+    recording = report_data["recording_information"]
+    measurements = report_data["measurements"]
+    quality = report_data["signal_quality"]
+    ai = report_data["ai_result"]
+    findings = report_data["findings"]
+    recommendations = report_data["recommendations"]
+    limitations = report_data["limitations"]
+    case_summary_en = report_data.get("case_summary_en", "")
+    case_summary_ar = report_data.get("case_summary_ar", "")
+
+    story: list[object] = []
+    _header(story, s["title"], s["subtitle"], s["body"], report_data, "Approved")
+
+    top_row = Table(
+        [[_patient_table(patient, recording, small=True), _styled(Table(_ai_rows(ai), colWidths=[34 * mm, 40 * mm]))]],
+        colWidths=[106 * mm, 78 * mm],
+    )
+    top_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([top_row, Spacer(1, 4)])
+    story.extend([Paragraph("EXECUTIVE SUMMARY", s["section"]), _summary_box(report_data, s["body"]), Spacer(1, 4)])
+
+    summary_kpis = Table(
+        [[
+            _styled(Table(_measurement_rows(measurements)[:4], colWidths=[26 * mm, 24 * mm, 32 * mm])),
+            _styled(Table(_findings_rows(findings, 4), colWidths=[42 * mm, 32 * mm, 16 * mm]), fontsize=7),
+        ]],
+        colWidths=[84 * mm, 100 * mm],
+    )
+    summary_kpis.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([summary_kpis, Spacer(1, 3)])
+    story.extend([Paragraph("RECOMMENDED NEXT STEPS", s["section"]), _styled(Table(_recommendation_rows(recommendations, 4), colWidths=[58 * mm, 126 * mm]))])
+
+    story.append(PageBreak())
+    story.extend([Paragraph("DETAILED ECG ANALYSIS", s["title"]), Spacer(1, 3)])
+    if "main_ecg" in charts:
+        story.extend([Paragraph("MAIN ECG VISUALIZATION", s["section"]), Image(io.BytesIO(charts["main_ecg"]), width=184 * mm, height=98 * mm), Spacer(1, 3)])
+    if "supporting_graphs" in charts:
+        story.extend([Paragraph("SUPPORTING ECG GRAPHS", s["section"]), Image(io.BytesIO(charts["supporting_graphs"]), width=184 * mm, height=74 * mm), Spacer(1, 3)])
+    if "morphology" in charts:
+        story.extend([Paragraph("REPRESENTATIVE MORPHOLOGY", s["section"]), Image(io.BytesIO(charts["morphology"]), width=184 * mm, height=62 * mm), Spacer(1, 3)])
+    if "clinical_metrics" in charts:
+        story.extend([Paragraph("CLINICAL METRICS OVERVIEW", s["section"]), Image(io.BytesIO(charts["clinical_metrics"]), width=184 * mm, height=66 * mm)])
+
+    story.append(PageBreak())
+    story.extend([Paragraph("HRV + INTERVAL + AI VISUALS", s["title"]), Spacer(1, 3)])
+    if "hrv_graphs" in charts:
+        story.extend([Paragraph("HEART RATE / HRV ANALYSIS", s["section"]), Image(io.BytesIO(charts["hrv_graphs"]), width=184 * mm, height=80 * mm), Spacer(1, 3)])
+    if "interval_profile" in charts:
+        story.extend([Paragraph("INTERVAL PROFILE", s["section"]), Image(io.BytesIO(charts["interval_profile"]), width=184 * mm, height=70 * mm), Spacer(1, 3)])
+    if "physiology_ai" in charts:
+        story.extend([Paragraph("AI / PHYSIOLOGY VISUALS", s["section"]), Image(io.BytesIO(charts["physiology_ai"]), width=184 * mm, height=72 * mm), Spacer(1, 3)])
+    elif "clinical_metrics" in charts:
+        story.extend([Paragraph("CLINICAL METRICS OVERVIEW", s["section"]), Image(io.BytesIO(charts["clinical_metrics"]), width=184 * mm, height=68 * mm), Spacer(1, 3)])
+    if "risk_profile" in charts or "threshold" in charts:
+        ai_visuals: list[object] = []
+        if "risk_profile" in charts:
+            ai_visuals.append(Image(io.BytesIO(charts["risk_profile"]), width=88 * mm, height=42 * mm))
+        if "threshold" in charts:
+            ai_visuals.append(Image(io.BytesIO(charts["threshold"]), width=88 * mm, height=30 * mm))
+        if len(ai_visuals) == 2:
+            ai_panel = Table([[ai_visuals[0], ai_visuals[1]]], colWidths=[92 * mm, 92 * mm])
+            ai_panel.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+            story.extend([Paragraph("AI DECISION VISUALS", s["section"]), ai_panel])
+        elif ai_visuals:
+            story.extend([Paragraph("AI DECISION VISUALS", s["section"]), ai_visuals[0]])
+
+    story.append(PageBreak())
+    story.extend([Paragraph("AI & EVIDENCE ANALYSIS", s["title"]), Spacer(1, 3)])
+    ai_table = _styled(Table(_ai_rows(ai), colWidths=[56 * mm, 34 * mm]))
+    threshold = Image(io.BytesIO(charts["threshold"]), width=88 * mm, height=30 * mm) if "threshold" in charts else _styled(Table([["Score", _fmt(ai.get("model_score_pct"), "%")], ["Threshold", _fmt(ai.get("decision_threshold"), "", 3)]], colWidths=[40 * mm, 40 * mm]))
+    risk_profile = Image(io.BytesIO(charts["risk_profile"]), width=88 * mm, height=40 * mm) if "risk_profile" in charts else _styled(Table([["Raw", _fmt(ai.get("raw_probability"))], ["Calibrated", _fmt(ai.get("calibrated_probability"))]], colWidths=[40 * mm, 40 * mm]))
+    top_ai = Table([[ai_table, Table([[threshold], [risk_profile]], colWidths=[88 * mm])]], colWidths=[92 * mm, 92 * mm])
+    top_ai.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.extend([top_ai, Spacer(1, 3)])
+    if "explainability" in charts:
+        story.extend([Paragraph("MODEL EXPLAINABILITY", s["section"]), Image(io.BytesIO(charts["explainability"]), width=164 * mm, height=52 * mm), Spacer(1, 3)])
+    story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 7), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
+    story.extend([Paragraph("OVERALL ASSESSMENT", s["section"]), _assessment_block(ai, findings, report_data["priority"]), Spacer(1, 3)])
+
+    story.append(PageBreak())
+    story.extend([Paragraph("CLINICAL INTERPRETATION SHEET", s["title"]), Spacer(1, 3)])
+    if "physiology_ai" in charts:
+        story.extend([Paragraph("PHYSIOLOGY / AI OVERVIEW", s["section"]), Image(io.BytesIO(charts["physiology_ai"]), width=184 * mm, height=72 * mm), Spacer(1, 3)])
+    if "interval_profile" in charts:
+        story.extend([Paragraph("INTERVAL REVIEW VISUALS", s["section"]), Image(io.BytesIO(charts["interval_profile"]), width=184 * mm, height=70 * mm), Spacer(1, 3)])
+    disposition_block = _styled(Table(_clinical_disposition_rows(ai, report_data), colWidths=[44 * mm, 48 * mm]), fontsize=7)
+    interpretation_block = _styled(Table(_clinical_interpretation_rows(measurements, ai, quality, findings), colWidths=[32 * mm, 60 * mm]), fontsize=7)
+    top_clinical = Table([[disposition_block, interpretation_block]], colWidths=[92 * mm, 92 * mm])
+    top_clinical.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    notes_block = _styled(Table(_medical_note_rows(measurements, ai, quality), colWidths=[36 * mm, 148 * mm]), fontsize=7)
+    summary_block = _styled(Table([["English", case_summary_en or "-"], ["Arabic", case_summary_ar or "-"]], colWidths=[28 * mm, 156 * mm]), header_bg="#ffffff", fontsize=7)
+    limitations_block = _styled(Table(_limitations_rows(limitations), colWidths=[60 * mm, 124 * mm]), fontsize=7)
+    story.extend(
+        [
+            Paragraph("CLINICAL REVIEW STATUS", s["section"]),
+            top_clinical,
+            Spacer(1, 3),
+            Paragraph("VISUAL INTERPRETATION NOTES", s["section"]),
+            notes_block,
+            Spacer(1, 3),
+            Paragraph("CASE SUMMARY / BILINGUAL", s["section"]),
+            summary_block,
+            Spacer(1, 3),
+            Paragraph("LIMITATIONS", s["section"]),
+            limitations_block,
+            Spacer(1, 3),
+            Paragraph("CLINICAL DISCLAIMER", s["section"]),
+            Paragraph("Research-use AI-assisted ECG screening report. Automated measurements and model-derived scores require independent clinical review.", s["tiny"]),
+        ]
+    )
+    return story
+
+
+VARIANT_BUILDERS["approved"] = _build_story_approved_v2
 
 
 def generate_report_variant(report_path: Path, context: dict[str, Any], variant: str) -> dict[str, Any]:
