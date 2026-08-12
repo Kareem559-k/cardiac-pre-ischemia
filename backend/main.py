@@ -6,6 +6,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+import traceback
 import uuid
 import hashlib
 import zipfile
@@ -2278,7 +2279,9 @@ def _build_report_file(analysis: AnalysisResponse) -> Path:
         context = _report_context_from_analysis(analysis)
         _ = MASTER_REPORT_TEMPLATE
         generate_report_variant(report_path, context, "approved")
-    except Exception:
+    except Exception as exc:
+        print(f"[report-builder] visual report generation failed: {exc}", file=sys.stderr)
+        traceback.print_exc()
         _build_basic_report_pdf(report_path, analysis)
     return report_path
 
