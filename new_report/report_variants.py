@@ -620,11 +620,9 @@ def _build_story_approved(report_data: dict[str, Any], charts: dict[str, bytes])
     if "explainability" in charts:
         story.extend([Paragraph("MODEL EXPLAINABILITY", s["section"]), Image(io.BytesIO(charts["explainability"]), width=164 * mm, height=52 * mm), Spacer(1, 3)])
 
-    story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 7), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
+    story.extend([Paragraph("EVIDENCE SUMMARY", s["section"]), _styled(Table(_evidence_rows(findings, 5), colWidths=[34 * mm, 24 * mm, 28 * mm, 52 * mm, 46 * mm]), fontsize=7), Spacer(1, 3)])
     story.extend([Paragraph("OVERALL ASSESSMENT", s["section"]), _assessment_block(ai, findings, report_data["priority"]), Spacer(1, 3)])
-
-    story.append(PageBreak())
-    story.extend([Paragraph("CLINICAL INTERPRETATION SHEET", s["title"]), Spacer(1, 3)])
+    story.extend([Paragraph("CLINICAL INTERPRETATION SHEET", s["section"]), Spacer(1, 3)])
     if "physiology_ai" in charts:
         story.extend([Paragraph("PHYSIOLOGY / AI OVERVIEW", s["section"]), Image(io.BytesIO(charts["physiology_ai"]), width=184 * mm, height=72 * mm), Spacer(1, 3)])
     if "interval_profile" in charts:

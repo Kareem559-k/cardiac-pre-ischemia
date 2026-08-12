@@ -8676,6 +8676,29 @@ class AnalysisResultPage extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _sectionCard(
+              title: 'Clinical Command Board',
+              subtitle:
+                  'Report-style triage overview aligned with the physician-ready PDF layout',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _statusStrip('Triage Status', aiBundle.triage, aiBundle.triageColor),
+                  const SizedBox(height: 10),
+                  _statusStrip('Source & Session', '$source • $reviewLabel', AppColors.primary),
+                  const SizedBox(height: 10),
+                  _statusStrip(
+                      'Signal & Rhythm',
+                      '${result.signalQualityLabel ?? 'Unavailable'} • ${result.rhythmLabel}',
+                      AppColors.accent),
+                  const SizedBox(height: 12),
+                  _infoBlock('Clinical summary', englishCaseSummary),
+                  const SizedBox(height: 10),
+                  _infoBlock('Arabic summary', arabicCaseSummary),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _sectionCard(
               title: 'AI Copilot Summary',
               subtitle:
                   'Clinician-facing interpretation generated from model outputs and computed ECG measurements',
