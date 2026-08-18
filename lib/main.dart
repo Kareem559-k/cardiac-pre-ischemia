@@ -2156,6 +2156,132 @@ class SplashScreen extends StatelessWidget {
                                     );
                                   },
                                 ),
+                                const SizedBox(height: 16),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      _fadeRoute(
+                                        const PatientLiveScreen(
+                                          username: 'Prototype Patient',
+                                          prototypeDemo: true,
+                                        ),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(22),
+                                    child: Ink(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            AppColors.primary,
+                                            AppColors.accentDeep,
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(22),
+                                        boxShadow: AppShadows.lift,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 52,
+                                            height: 52,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withAlpha(24),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color:
+                                                    Colors.white.withAlpha(45),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.sensors_rounded,
+                                              color: Colors.white,
+                                              size: 28,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 7,
+                                                      height: 7,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color:
+                                                            AppColors.success,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 7),
+                                                    Text(
+                                                      _t(
+                                                        'PROTOTYPE LIVE DEMO',
+                                                        'عرض النموذج الحي',
+                                                      ),
+                                                      style: const TextStyle(
+                                                        color: AppColors
+                                                            .accentSoft,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        letterSpacing: .7,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 5),
+                                                Text(
+                                                  _t(
+                                                    'Live Patient Monitor',
+                                                    'مراقبة المريض لحظيًا',
+                                                  ),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 17,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  _t(
+                                                    'ESP32 + one-lead ECG simulation, BLE/Wi-Fi setup, and live signal status.',
+                                                    'محاكاة ESP32 ومستشعر ECG أحادي القناة مع إعداد BLE وWi-Fi وحالة الإشارة الحية.',
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: Colors.white
+                                                        .withAlpha(180),
+                                                    fontSize: 11,
+                                                    height: 1.35,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          const Icon(
+                                            Icons.arrow_forward_rounded,
+                                            color: Colors.white,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -8684,9 +8810,11 @@ class AnalysisResultPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _statusStrip('Triage Status', aiBundle.triage, aiBundle.triageColor),
+                  _statusStrip(
+                      'Triage Status', aiBundle.triage, aiBundle.triageColor),
                   const SizedBox(height: 10),
-                  _statusStrip('Source & Session', '$source • $reviewLabel', AppColors.primary),
+                  _statusStrip('Source & Session', '$source • $reviewLabel',
+                      AppColors.primary),
                   const SizedBox(height: 10),
                   _statusStrip(
                       'Signal & Rhythm',
@@ -10731,7 +10859,12 @@ class _PatientDashboardPageState extends State<PatientDashboardPage> {
 
 class PatientLiveScreen extends StatefulWidget {
   final String username;
-  const PatientLiveScreen({super.key, required this.username});
+  final bool prototypeDemo;
+  const PatientLiveScreen({
+    super.key,
+    required this.username,
+    this.prototypeDemo = false,
+  });
 
   @override
   State<PatientLiveScreen> createState() => _PatientLiveScreenState();
@@ -10791,7 +10924,10 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
           (math.Random().nextDouble() * 0.12);
       _applyEcgSample(value);
     });
-    _setStatus('Demo', 'Demo stream');
+    _setStatus(
+      widget.prototypeDemo ? 'Prototype Demo' : 'Demo',
+      'Simulated stream',
+    );
     _recordLiveEvent(
       title: 'Demo monitoring started',
       detail:
@@ -10904,16 +11040,23 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     setState(() {
       ecgPoints.removeAt(0);
       ecgPoints.add(value);
-      riskLevel = (0.15 + (value.abs() * 0.12)).clamp(0.0, 1.0);
-      if (riskLevel > 0.62) {
-        region = 'Anterior';
-      } else if (riskLevel > 0.45) {
-        region = 'Lateral';
-      } else {
+      if (widget.prototypeDemo) {
+        riskLevel = 0;
         region = 'Low';
+        activeCoils = const [];
+      } else {
+        riskLevel = (0.15 + (value.abs() * 0.12)).clamp(0.0, 1.0);
+        if (riskLevel > 0.62) {
+          region = 'Anterior';
+        } else if (riskLevel > 0.45) {
+          region = 'Lateral';
+        } else {
+          region = 'Low';
+        }
+        activeCoils = region == 'Low' ? [] : CoilLogic.coilsForRegion(region);
       }
-      activeCoils = region == 'Low' ? [] : CoilLogic.coilsForRegion(region);
     });
+    if (widget.prototypeDemo) return;
     final newRiskBand =
         riskLevel > 0.62 ? 'high' : (riskLevel > 0.35 ? 'medium' : 'low');
     if (newRiskBand != _lastRiskBand) {
@@ -10963,12 +11106,12 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     _recordLiveEvent(
       title: '$mode connection update',
       detail: status,
-      color: status.toLowerCase().contains('connected')
-          ? AppColors.success
-          : status.toLowerCase().contains('error') ||
-                  status.toLowerCase().contains('failed') ||
-                  status.toLowerCase().contains('not')
-              ? AppColors.danger
+      color: status.toLowerCase().contains('error') ||
+              status.toLowerCase().contains('failed') ||
+              status.toLowerCase().contains('not')
+          ? AppColors.danger
+          : status.toLowerCase().contains('connected')
+              ? AppColors.success
               : AppColors.warning,
     );
   }
@@ -11217,6 +11360,123 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     }
   }
 
+  Widget _prototypeSystemCard({
+    required bool hardwareConnected,
+    required Color statusColor,
+  }) {
+    final source = hardwareConnected
+        ? '$_connectionMode hardware stream'
+        : 'Internal synthetic ECG generator';
+    return _card(
+      title: 'Prototype Session',
+      icon: Icons.developer_board_rounded,
+      iconColor: AppColors.accent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: statusColor.withAlpha(14),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: statusColor.withAlpha(45)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hardwareConnected
+                            ? 'Wearable hardware connected'
+                            : 'Prototype simulation active',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        hardwareConnected
+                            ? 'Samples are arriving from the selected connection.'
+                            : 'A synthetic waveform is used until ESP32 connects over BLE or Wi-Fi.',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _snapshotRow('Target controller', 'ESP32', AppColors.primary),
+          const SizedBox(height: 9),
+          _snapshotRow(
+            'ECG acquisition',
+            'One-lead analog ECG sensor',
+            AppColors.accentDeep,
+          ),
+          const SizedBox(height: 9),
+          _snapshotRow('Current source', source, statusColor),
+          const SizedBox(height: 9),
+          _snapshotRow(
+            'Signal buffer',
+            '${ecgPoints.length} display samples',
+            AppColors.primary,
+          ),
+          const SizedBox(height: 9),
+          _snapshotRow(
+            'Clinical inference',
+            'Disabled for prototype demo',
+            AppColors.warning,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _prototypeBoundariesCard() {
+    return _card(
+      title: 'Prototype Boundaries',
+      icon: Icons.verified_user_outlined,
+      iconColor: AppColors.warning,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          SafetyRow(label: 'Demo waveform', value: 'Synthetic'),
+          SafetyRow(label: 'Risk prediction', value: 'Not calculated'),
+          SafetyRow(label: 'Medical diagnosis', value: 'Not provided'),
+          SafetyRow(label: 'Hardware route', value: 'BLE or Wi-Fi'),
+          SizedBox(height: 10),
+          Text(
+            'Connect the ESP32 to replace the simulator with device samples. '
+            'Clinical analysis requires a saved ECG segment and the validated inference pipeline.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final riskText = riskLevel > 0.6
@@ -11226,12 +11486,16 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
         ? AppColors.danger
         : (riskLevel > 0.35 ? AppColors.warning : AppColors.success);
     final statusLower = _connectionStatus.toLowerCase();
-    final statusColor = statusLower.contains('connected')
-        ? AppColors.success
-        : (statusLower.contains('error') ||
-                statusLower.contains('failed') ||
-                statusLower.contains('not'))
-            ? AppColors.danger
+    final hasConnectionError = statusLower.contains('error') ||
+        statusLower.contains('failed') ||
+        statusLower.contains('not');
+    final hardwareConnected = !hasConnectionError &&
+        statusLower == 'connected' &&
+        (_connectionMode == 'BLE' || _connectionMode == 'Wi-Fi');
+    final statusColor = hasConnectionError
+        ? AppColors.danger
+        : hardwareConnected
+            ? AppColors.success
             : AppColors.warning;
     final liveAi = _buildLiveMonitoringAiBrief(
       riskLevel: riskLevel,
@@ -11245,7 +11509,11 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_t('Live Cardiac Monitoring', 'المراقبة القلبية الحية')),
+        title: Text(
+          widget.prototypeDemo
+              ? _t('Prototype Live Monitor', 'مراقبة النموذج الحية')
+              : _t('Live Cardiac Monitoring', 'المراقبة القلبية الحية'),
+        ),
         actions: [
           _workspaceAction(context),
           _settingsAction(context),
@@ -11257,12 +11525,17 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
-              children: const [
-                Icon(Icons.circle, color: AppColors.success, size: 12),
-                SizedBox(width: 5),
+              children: [
+                Icon(
+                  Icons.circle,
+                  color:
+                      hardwareConnected ? AppColors.success : AppColors.warning,
+                  size: 12,
+                ),
+                const SizedBox(width: 5),
                 Text(
-                  'LIVE',
-                  style: TextStyle(
+                  hardwareConnected ? 'LIVE' : 'DEMO',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -11278,6 +11551,13 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              if (widget.prototypeDemo) ...[
+                _prototypeSystemCard(
+                  hardwareConnected: hardwareConnected,
+                  statusColor: statusColor,
+                ),
+                const SizedBox(height: 18),
+              ],
               _card(
                 title: 'Wearable Connectivity',
                 icon: Icons.wifi,
@@ -11364,130 +11644,154 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                     _snapshotRow(
                         'Connection Status', _connectionStatus, statusColor),
                     const SizedBox(height: 10),
-                    _snapshotRow('Estimated Risk', riskText, riskColor),
-                    const SizedBox(height: 10),
-                    _snapshotRow(
+                    if (widget.prototypeDemo) ...[
+                      _snapshotRow(
+                        'Session Type',
+                        hardwareConnected
+                            ? 'Prototype hardware stream'
+                            : 'Synthetic prototype demo',
+                        hardwareConnected
+                            ? AppColors.success
+                            : AppColors.warning,
+                      ),
+                      const SizedBox(height: 10),
+                      _snapshotRow(
+                        'Clinical AI',
+                        'Not running in demo mode',
+                        AppColors.warning,
+                      ),
+                      const SizedBox(height: 10),
+                    ] else ...[
+                      _snapshotRow('Estimated Risk', riskText, riskColor),
+                      const SizedBox(height: 10),
+                      _snapshotRow(
                         'Detected Region',
                         region == 'Low' ? 'No dominant alert region' : region,
-                        AppColors.accent),
-                    const SizedBox(height: 10),
+                        AppColors.accent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     _snapshotRow('Window Samples', ecgPoints.length.toString(),
                         AppColors.primary),
-                    const SizedBox(height: 10),
-                    _snapshotRow(
-                        'Active Coil Targets',
-                        activeCoils.isEmpty ? 'None' : activeCoils.join(', '),
-                        AppColors.warning),
+                    if (!widget.prototypeDemo) ...[
+                      const SizedBox(height: 10),
+                      _snapshotRow(
+                          'Active Coil Targets',
+                          activeCoils.isEmpty ? 'None' : activeCoils.join(', '),
+                          AppColors.warning),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              _card(
-                title: 'AI Live Copilot',
-                icon: Icons.auto_awesome,
-                iconColor: liveAi.color,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
+              if (!widget.prototypeDemo) ...[
+                const SizedBox(height: 18),
+                _card(
+                  title: 'AI Live Copilot',
+                  icon: Icons.auto_awesome,
+                  iconColor: liveAi.color,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  liveAi.headline,
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  liveAi.summary,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: liveAi.color.withAlpha(18),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              liveAi.urgencyLabel,
+                              style: TextStyle(
+                                color: liveAi.color,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _snapshotRow(
+                              'Signal State',
+                              liveAi.signalLabel,
+                              liveAi.color,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _snapshotRow(
+                              'Recommended Action',
+                              liveAi.recommendedAction,
+                              AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...liveAi.bullets.map(
+                        (bullet) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                liveAi.headline,
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 18,
+                              Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.only(top: 6),
+                                decoration: BoxDecoration(
+                                  color: liveAi.color,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                liveAi.summary,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.45,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  bullet,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: liveAi.color.withAlpha(18),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            liveAi.urgencyLabel,
-                            style: TextStyle(
-                              color: liveAi.color,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _snapshotRow(
-                            'Signal State',
-                            liveAi.signalLabel,
-                            liveAi.color,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _snapshotRow(
-                            'Recommended Action',
-                            liveAi.recommendedAction,
-                            AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...liveAi.bullets.map(
-                      (bullet) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              margin: const EdgeInsets.only(top: 6),
-                              decoration: BoxDecoration(
-                                color: liveAi.color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                bullet,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 18),
               _card(
                 title: 'Live Anomaly Timeline',
@@ -11607,9 +11911,15 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                                 TextStyle(color: Colors.white54, fontSize: 12),
                           ),
                           Text(
-                            riskLevel > 0.6 ? 'ALERT' : 'STABLE',
+                            widget.prototypeDemo
+                                ? (hardwareConnected
+                                    ? 'HARDWARE STREAM'
+                                    : 'SIMULATED SIGNAL')
+                                : (riskLevel > 0.6 ? 'ALERT' : 'STABLE'),
                             style: TextStyle(
-                              color: riskColor,
+                              color: widget.prototypeDemo
+                                  ? AppColors.accentSoft
+                                  : riskColor,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
@@ -11620,111 +11930,116 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              _card(
-                title: 'Vest Coil Array (Concept)',
-                icon: Icons.blur_circular,
-                iconColor: AppColors.accent,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Detected Region: ${region == 'Low' ? 'None' : region}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    CoilArrayWidget(active: activeCoils),
-                    const SizedBox(height: 10),
-                    Text(
-                      activeCoils.isEmpty
-                          ? 'No activation'
-                          : 'Active coils: ${activeCoils.join(', ')}',
-                      style: TextStyle(
-                        color: activeCoils.isEmpty
-                            ? Colors.grey
-                            : AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Localized protective stimulation (conceptual)',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              _card(
-                title: 'Real-time Risk Level',
-                icon: Icons.analytics_outlined,
-                iconColor: AppColors.accent,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: riskLevel,
-                        minHeight: 14,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(riskColor),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        riskText,
-                        style: TextStyle(
-                          color: riskColor,
+              if (widget.prototypeDemo) ...[
+                const SizedBox(height: 18),
+                _prototypeBoundariesCard(),
+              ] else ...[
+                const SizedBox(height: 18),
+                _card(
+                  title: 'Vest Coil Array (Concept)',
+                  icon: Icons.blur_circular,
+                  iconColor: AppColors.accent,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Detected Region: ${region == 'Low' ? 'None' : region}',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              _card(
-                title: 'Safety Layer',
-                icon: Icons.shield_outlined,
-                iconColor: AppColors.success,
-                child: Column(
-                  children: const [
-                    SafetyRow(label: 'Current limit', value: 'Enabled'),
-                    SafetyRow(label: 'Temperature', value: 'Normal'),
-                    SafetyRow(label: 'Max on-time', value: '2s'),
-                    SafetyRow(label: 'Kill switch', value: 'Ready'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 55,
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  onPressed: _sendSOS,
-                  icon: const Icon(Icons.warning_amber_rounded,
-                      color: Colors.white),
-                  label: const Text(
-                    'SOS - EMERGENCY ALERT',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                      const SizedBox(height: 10),
+                      CoilArrayWidget(active: activeCoils),
+                      const SizedBox(height: 10),
+                      Text(
+                        activeCoils.isEmpty
+                            ? 'No activation'
+                            : 'Active coils: ${activeCoils.join(', ')}',
+                        style: TextStyle(
+                          color: activeCoils.isEmpty
+                              ? Colors.grey
+                              : AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Localized protective stimulation (conceptual)',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 18),
+                _card(
+                  title: 'Real-time Risk Level',
+                  icon: Icons.analytics_outlined,
+                  iconColor: AppColors.accent,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: riskLevel,
+                          minHeight: 14,
+                          backgroundColor: Colors.grey[200],
+                          valueColor: AlwaysStoppedAnimation<Color>(riskColor),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          riskText,
+                          style: TextStyle(
+                            color: riskColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _card(
+                  title: 'Safety Layer',
+                  icon: Icons.shield_outlined,
+                  iconColor: AppColors.success,
+                  child: Column(
+                    children: const [
+                      SafetyRow(label: 'Current limit', value: 'Enabled'),
+                      SafetyRow(label: 'Temperature', value: 'Normal'),
+                      SafetyRow(label: 'Max on-time', value: '2s'),
+                      SafetyRow(label: 'Kill switch', value: 'Ready'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 55,
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: _sendSOS,
+                    icon: const Icon(Icons.warning_amber_rounded,
+                        color: Colors.white),
+                    label: const Text(
+                      'SOS - EMERGENCY ALERT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
