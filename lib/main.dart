@@ -10884,10 +10884,16 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
   bool _connecting = false;
   String _connectionStatus = 'Not connected';
   String _connectionMode = 'Demo';
-  double t = 0;
   double riskLevel = 0.2;
   String region = 'Anterior';
   List<String> activeCoils = CoilLogic.coilsForRegion('Anterior');
+  double _demoBeatPhase = 0;
+  int _demoTick = 0;
+  int _demoStage = -1;
+  double _demoHeartRate = 76;
+  double _demoSignalQuality = 96;
+  String _demoRhythm = 'Normal sinus rhythm';
+  String _demoScreeningState = 'Stable screening pattern';
   List<LiveAlertEvent> _liveEvents = const [];
   String _lastRiskBand = 'low';
   String _lastRegionLabel = 'Anterior';
@@ -10916,23 +10922,118 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
 
   void _startDemoStream() {
     _demoTimer?.cancel();
-    _demoTimer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
+    _demoTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
       if (!mounted) return;
-      t += 0.11;
-      final value = -0.4 * math.sin(t) +
-          (t % 9 > 8.2 ? 2.2 * math.sin(11 * t) : 0) +
-          (math.Random().nextDouble() * 0.12);
+      _updateDemoScenario();
+      final phaseStep = (_demoHeartRate / 60) * 0.04;
+      _demoBeatPhase = (_demoBeatPhase + phaseStep) % 1;
+      final phase = _demoBeatPhase;
+      final baseline = 0.025 * math.sin(_demoTick * 0.025);
+      final noise = (math.Random().nextDouble() - 0.5) *
+          (1 - (_demoSignalQuality / 100)) *
+          0.8;
+      var value = baseline +
+          _demoWave(phase, 0.18, 0.035, 0.13) +
+          _demoWave(phase, 0.37, 0.012, -0.18) +
+          _demoWave(phase, 0.40, 0.010, 1.55) +
+          _demoWave(phase, 0.43, 0.014, -0.42) +
+          _demoWave(phase, 0.68, 0.055, 0.36) +
+          noise;
+      if (_demoStage == 2 && phase > 0.76 && phase < 0.82) {
+        value += _demoWave(phase, 0.79, 0.012, 0.45);
+      }
       _applyEcgSample(value);
+      _demoTick += 1;
     });
     _setStatus(
-      widget.prototypeDemo ? 'Prototype Demo' : 'Demo',
-      'Simulated stream',
+      widget.prototypeDemo ? 'ESP32 Demo' : 'Demo',
+      widget.prototypeDemo ? 'Streaming simulated patient' : 'Simulated stream',
     );
     _recordLiveEvent(
       title: 'Demo monitoring started',
       detail:
           'The live screen is using the internal ECG simulator until a wearable device connects.',
       color: AppColors.primary,
+    );
+  }
+
+  double _demoWave(
+    double phase,
+    double center,
+    double width,
+    double amplitude,
+  ) {
+    final distance = (phase - center) / width;
+    return amplitude * math.exp(-0.5 * distance * distance);
+  }
+
+  void _updateDemoScenario() {
+    if (!widget.prototypeDemo) return;
+    final seconds = (_demoTick * 0.04) % 60;
+    late final int nextStage;
+    late final double targetHeartRate;
+    late final double targetRisk;
+    late final double targetQuality;
+    late final String rhythm;
+    late final String screeningState;
+
+    if (seconds < 18) {
+      nextStage = 0;
+      targetHeartRate = 76;
+      targetRisk = 0.18;
+      targetQuality = 96;
+      rhythm = 'Normal sinus rhythm';
+      screeningState = 'Stable screening pattern';
+    } else if (seconds < 34) {
+      nextStage = 1;
+      targetHeartRate = 101;
+      targetRisk = 0.48;
+      targetQuality = 92;
+      rhythm = 'Sinus tachycardia pattern';
+      screeningState = 'Monitor closely';
+    } else if (seconds < 47) {
+      nextStage = 2;
+      targetHeartRate = 124;
+      targetRisk = 0.73;
+      targetQuality = 88;
+      rhythm = 'Irregular rapid rhythm pattern';
+      screeningState = 'Priority review simulated alert';
+    } else {
+      nextStage = 3;
+      targetHeartRate = 84;
+      targetRisk = 0.29;
+      targetQuality = 94;
+      rhythm = 'Recovering sinus rhythm';
+      screeningState = 'Returning toward baseline';
+    }
+
+    _demoHeartRate += (targetHeartRate - _demoHeartRate) * 0.035;
+    _demoHeartRate += math.sin(_demoTick * 0.037) * 0.035;
+    riskLevel += (targetRisk - riskLevel) * 0.035;
+    _demoSignalQuality += (targetQuality - _demoSignalQuality) * 0.045;
+    _demoRhythm = rhythm;
+    _demoScreeningState = screeningState;
+    region = 'Low';
+    activeCoils = const [];
+
+    if (nextStage == _demoStage) return;
+    _demoStage = nextStage;
+    final color = nextStage == 2
+        ? AppColors.danger
+        : nextStage == 1
+            ? AppColors.warning
+            : AppColors.success;
+    _recordLiveEvent(
+      title: nextStage == 0
+          ? 'Demo patient baseline established'
+          : nextStage == 1
+              ? 'Heart rate trend increased'
+              : nextStage == 2
+                  ? 'Simulated priority review alert'
+                  : 'Demo patient entered recovery phase',
+      detail:
+          '${_demoHeartRate.round()} BPM • $_demoRhythm • ${(riskLevel * 100).round()}% simulated risk.',
+      color: color,
     );
   }
 
@@ -11041,7 +11142,6 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       ecgPoints.removeAt(0);
       ecgPoints.add(value);
       if (widget.prototypeDemo) {
-        riskLevel = 0;
         region = 'Low';
         activeCoils = const [];
       } else {
@@ -11056,7 +11156,6 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
         activeCoils = region == 'Low' ? [] : CoilLogic.coilsForRegion(region);
       }
     });
-    if (widget.prototypeDemo) return;
     final newRiskBand =
         riskLevel > 0.62 ? 'high' : (riskLevel > 0.35 ? 'medium' : 'low');
     if (newRiskBand != _lastRiskBand) {
@@ -11067,8 +11166,9 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
             : newRiskBand == 'medium'
                 ? 'Moderate live risk window detected'
                 : 'Live risk returned to baseline',
-        detail:
-            'Risk band changed to ${newRiskBand.toUpperCase()} with current region ${region == 'Low' ? 'no dominant alert region' : region}.',
+        detail: widget.prototypeDemo
+            ? 'The simulated patient risk band changed to ${newRiskBand.toUpperCase()} at ${_demoHeartRate.round()} BPM.'
+            : 'Risk band changed to ${newRiskBand.toUpperCase()} with current region ${region == 'Low' ? 'no dominant alert region' : region}.',
         color: newRiskBand == 'high'
             ? AppColors.danger
             : newRiskBand == 'medium'
@@ -11076,6 +11176,7 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
                 : AppColors.success,
       );
     }
+    if (widget.prototypeDemo) return;
     final regionLabel = region == 'Low' ? 'Low' : region;
     if (regionLabel != _lastRegionLabel) {
       _lastRegionLabel = regionLabel;
@@ -11477,6 +11578,561 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
     );
   }
 
+  Widget _demoMetricTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String detail,
+    required Color color,
+  }) {
+    return Container(
+      width: MediaQuery.sizeOf(context).width < 700 ? double.infinity : 220,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withAlpha(45)),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withAlpha(18),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(height: 13),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            detail,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrototypePatientDemo({
+    required bool hardwareConnected,
+    required Color statusColor,
+    required String riskText,
+    required Color riskColor,
+  }) {
+    final simulationActive = _demoTimer?.isActive ?? false;
+    final streamColor = hardwareConnected || simulationActive
+        ? AppColors.success
+        : AppColors.warning;
+    final recommendation = riskLevel > 0.62
+        ? _t(
+            'Priority review is demonstrated. Pause activity and request clinician assessment.',
+            'تظهر المحاكاة أولوية للمراجعة. أوقف النشاط واطلب تقييم الطبيب.',
+          )
+        : riskLevel > 0.35
+            ? _t(
+                'Continue monitoring and review the trend if the pattern persists.',
+                'استمر في المراقبة وراجع الاتجاه إذا استمر النمط.',
+              )
+            : _t(
+                'The simulated patient is currently near the baseline monitoring range.',
+                'المريض التجريبي قريب حاليًا من نطاق المراقبة الأساسي.',
+              );
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(_t('Live Patient Session', 'جلسة المريض الحية')),
+        actions: [
+          _workspaceAction(context),
+          _settingsAction(context),
+          Container(
+            margin: const EdgeInsetsDirectional.only(end: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: streamColor.withAlpha(24),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: streamColor.withAlpha(60)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.circle, color: streamColor, size: 10),
+                const SizedBox(width: 6),
+                Text(
+                  hardwareConnected ? 'LIVE' : 'DEMO LIVE',
+                  style: TextStyle(
+                    color: streamColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: AppGradients.hero,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: AppShadows.lift,
+              ),
+              child: Wrap(
+                spacing: 18,
+                runSpacing: 16,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(24),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.monitor_heart_rounded,
+                      color: Colors.white,
+                      size: 31,
+                    ),
+                  ),
+                  SizedBox(
+                    width: math.min(
+                      520,
+                      MediaQuery.sizeOf(context).width - 72,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.username,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          _t(
+                            'Virtual wearable connected • ESP32-ECG-DEMO • One-lead stream',
+                            'جهاز تجريبي متصل • ESP32-ECG-DEMO • بث أحادي القناة',
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: streamColor.withAlpha(35),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: streamColor.withAlpha(110)),
+                    ),
+                    child: Text(
+                      hardwareConnected
+                          ? _t('HARDWARE STREAMING', 'بث الجهاز يعمل')
+                          : _t('SIMULATION STREAMING', 'المحاكاة تعمل'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _demoMetricTile(
+                  icon: Icons.favorite_rounded,
+                  label: _t('Heart Rate', 'معدل ضربات القلب'),
+                  value: '${_demoHeartRate.round()} BPM',
+                  detail: _t('Live simulated measurement', 'قياس تجريبي لحظي'),
+                  color: AppColors.danger,
+                ),
+                _demoMetricTile(
+                  icon: Icons.graphic_eq_rounded,
+                  label: _t('Heart Rhythm', 'نظم القلب'),
+                  value: _demoRhythm,
+                  detail: _t('Current waveform pattern', 'نمط الموجة الحالي'),
+                  color: AppColors.accentDeep,
+                ),
+                _demoMetricTile(
+                  icon: Icons.signal_cellular_alt_rounded,
+                  label: _t('Signal Quality', 'جودة الإشارة'),
+                  value: '${_demoSignalQuality.round()}%',
+                  detail: _t('Synthetic stream quality', 'جودة البث التجريبي'),
+                  color: AppColors.success,
+                ),
+                _demoMetricTile(
+                  icon: Icons.health_and_safety_rounded,
+                  label: _t('Live Risk', 'الخطورة الحالية'),
+                  value: '${(riskLevel * 100).round()}% • $riskText',
+                  detail: _t(
+                      'Simulation-derived screening', 'فحص مشتق من المحاكاة'),
+                  color: riskColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _card(
+              title: _t('Live One-Lead ECG', 'رسم القلب الحي أحادي القناة'),
+              icon: Icons.monitor_heart_outlined,
+              iconColor: riskColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 285,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                            child: CustomPaint(painter: GridPainter())),
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: CustomPaint(
+                            size: Size.infinite,
+                            painter: ECGPainter(ecgPoints),
+                          ),
+                        ),
+                        PositionedDirectional(
+                          top: 14,
+                          start: 14,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: riskColor.withAlpha(45),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${_demoHeartRate.round()} BPM  •  $riskText',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            if (_demoTimer?.isActive ?? false) {
+                              _stopDemoStream();
+                              _setStatus('ESP32 Demo', 'Paused');
+                            } else {
+                              _startDemoStream();
+                            }
+                            setState(() {});
+                          },
+                          icon: Icon(
+                            simulationActive
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(
+                            simulationActive
+                                ? _t('Pause stream', 'إيقاف مؤقت')
+                                : _t('Resume stream', 'استكمال البث'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _demoTick = 0;
+                              _demoStage = -1;
+                              _demoBeatPhase = 0;
+                              riskLevel = 0.18;
+                              _demoHeartRate = 76;
+                              _demoSignalQuality = 96;
+                            });
+                            _startDemoStream();
+                          },
+                          icon: const Icon(Icons.replay_rounded),
+                          label:
+                              Text(_t('Restart scenario', 'إعادة السيناريو')),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            _card(
+              title:
+                  _t('Live AI Screening • Demo', 'الفحص الذكي الحي • تجريبي'),
+              icon: Icons.auto_awesome_rounded,
+              iconColor: riskColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _demoScreeningState,
+                              style: TextStyle(
+                                color: riskColor,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              recommendation,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                height: 1.45,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${(riskLevel * 100).round()}%',
+                        style: TextStyle(
+                          color: riskColor,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: LinearProgressIndicator(
+                      value: riskLevel,
+                      minHeight: 14,
+                      backgroundColor: AppColors.border,
+                      valueColor: AlwaysStoppedAnimation<Color>(riskColor),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _snapshotRow(
+                    _t('Rhythm interpretation', 'تفسير النظم'),
+                    _demoRhythm,
+                    AppColors.accentDeep,
+                  ),
+                  const SizedBox(height: 9),
+                  _snapshotRow(
+                    _t('Review priority', 'أولوية المراجعة'),
+                    riskLevel > 0.62
+                        ? _t('Priority review', 'مراجعة ذات أولوية')
+                        : riskLevel > 0.35
+                            ? _t('Monitor closely', 'مراقبة دقيقة')
+                            : _t('Routine monitoring', 'مراقبة روتينية'),
+                    riskColor,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withAlpha(16),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: AppColors.warning.withAlpha(50)),
+                    ),
+                    child: Text(
+                      _t(
+                        'Demonstration mode: ECG, BPM, rhythm, and risk are generated by a controlled patient scenario. They are not a real diagnosis.',
+                        'وضع تجريبي: رسم القلب والنبض والنظم والخطورة ناتجة عن سيناريو مريض مُحاكى وليست تشخيصًا حقيقيًا.',
+                      ),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        height: 1.4,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            _card(
+              title: _t('Patient Event Timeline', 'الخط الزمني لحالة المريض'),
+              icon: Icons.timeline_rounded,
+              iconColor: AppColors.accentDeep,
+              child: Column(
+                children: _liveEvents.isEmpty
+                    ? [_emptyState(_t('No events yet.', 'لا توجد أحداث بعد.'))]
+                    : _liveEvents
+                        .map(
+                          (event) => Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: event.color.withAlpha(10),
+                              borderRadius: BorderRadius.circular(14),
+                              border:
+                                  Border.all(color: event.color.withAlpha(35)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 11,
+                                  height: 11,
+                                  margin: const EdgeInsets.only(top: 4),
+                                  decoration: BoxDecoration(
+                                    color: event.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 11),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        event.title,
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${event.timeLabel} • ${event.detail}',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+            const SizedBox(height: 18),
+            _card(
+              title:
+                  _t('Connect the Real Prototype', 'توصيل البروتوتايب الحقيقي'),
+              icon: Icons.developer_board_rounded,
+              iconColor: AppColors.accent,
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(
+                  _t(
+                    'ESP32 connection controls',
+                    'إعدادات اتصال ESP32',
+                  ),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                subtitle: Text(
+                  '$_connectionMode • $_connectionStatus',
+                  style: TextStyle(color: statusColor),
+                ),
+                children: [
+                  TextField(
+                    controller: _wifiHost,
+                    style: _inputTextStyle(context),
+                    decoration: const InputDecoration(
+                      labelText: 'ESP32 Wi-Fi URL',
+                      prefixIcon: Icon(Icons.router_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _connecting ? null : _connectBle,
+                          child: const Text('Connect BLE'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _connecting ? null : _connectWifi,
+                          child: const Text('Connect Wi-Fi'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final riskText = riskLevel > 0.6
@@ -11505,6 +12161,15 @@ class _PatientLiveScreenState extends State<PatientLiveScreen> {
       activeCoils: activeCoils,
       ecgPoints: ecgPoints,
     );
+
+    if (widget.prototypeDemo) {
+      return _buildPrototypePatientDemo(
+        hardwareConnected: hardwareConnected,
+        statusColor: statusColor,
+        riskText: riskText,
+        riskColor: riskColor,
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
